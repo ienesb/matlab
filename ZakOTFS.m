@@ -1,5 +1,5 @@
 clear;
-% close all;
+close all;
 
 M = 64;          % number of subcarriers
 N = 30;          % number of subsymbols/frame
