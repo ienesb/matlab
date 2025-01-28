@@ -29,3 +29,8 @@ codegen/
 
 # Octave session info
 octave-workspace
+
+# initialization files
+*.ini
+
+ltfat
