@@ -57,9 +57,9 @@ function [y,tfout] = helperOTFSdemod(x,M,padlen,offset,varargin)
 
     % This code segment shows the SFFT/OFDM demod representation
     % Wigner transform with rectangular window (OFDM demodulator)
-    tfout = fft(Y);
+    tfout = fft(Y); % tf
 
     % This code segment shows the simpler Zak transform representation
-    y = fft(Y.').' * M;
+    y = fft(Y.').' * M; % dd 
     % y = zak(Y, M);
 end
