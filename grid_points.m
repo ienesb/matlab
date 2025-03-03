@@ -58,6 +58,7 @@ Xdd = Xdd.';
 Ydd = zeros(N, M, Nrf);
 
 G = 0;
+G1 = 0;
 
 for p = 1:chanParams.P
     rhop = chanParams.pathGains(p);
@@ -76,13 +77,13 @@ for p = 1:chanParams.P
     temp = dd.*temp;
     temp = sum(sum(temp, 4), 3);
 
-    C = hp * U' * (a * a') * F;
-    % C = hp;
-    G = G + kron(C, ddm);
-    
+    C = U' * (a * a') * F;
+    % G = G + kron(C, ddm) * hp;
+
+    G = G + getGb(nup, taup, phip, b) * hp;
 
     for n = 1:Nrf
-        Ydd(:, :, n) = Ydd(:, :, n) + temp *  C(n);
+        Ydd(:, :, n) = Ydd(:, :, n) + temp *  C(n)*hp;
     end
 end
 
@@ -100,6 +101,11 @@ Ydd = permute(Ydd, [2, 1, 3]);
 
 yv1 = Ydd(:);
 yv2 = G*x;
+
+diff = yv1 - yv2;
+
+figure;
+plot(abs(diff));
 
 % Y = reshape(yv2, M, N);
 % 

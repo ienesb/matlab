@@ -23,7 +23,7 @@ chanParams.pathDopplers    = [0 -3   5  ]; % Doppler index as a multiple of fsam
     
 % Calculate the actual Doppler frequencies from the Doppler indices
 chanParams.pathDopplerFreqs = chanParams.pathDopplers * 1/(N*T); % Hz
-chanParams.pathDelayTimes = chanParams.pathDelays * 1/fsamp + 3*10^-5; % second
+chanParams.pathDelayTimes = chanParams.pathDelays * 1/fsamp; % second
 
 chanParams.P = length(chanParams.pathDelays);
 

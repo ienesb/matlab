@@ -1,5 +1,5 @@
 clear;
-close all;
+% close all;
 
 M = 64;          % number of subcarriers
 N = 30;          % number of subsymbols/frame
@@ -27,10 +27,10 @@ Tframe = N*T;   % frame duration
 W = M*df;       % bandwidth
 
 % Configure paths
-chanParams.pathDelays      = [0  5   8  ]; % number of samples that path is delayed
-chanParams.pathGains       = [1  0.7 0.5]; % complex path gain
-chanParams.pathDopplers    = [0 -3   5  ]; % Doppler index as a multiple of fsamp/MN
-chanParams.pathAoAs        = [0 -20 35].*(pi/180); % Doppler index as a multiple of fsamp/MN
+chanParams.pathDelays      = [5   8  ]; % number of samples that path is delayed
+chanParams.pathGains       = [0.7 0.5]; % complex path gain
+chanParams.pathDopplers    = [-3   5  ]; % Doppler index as a multiple of fsamp/MN
+chanParams.pathAoAs        = [-20 35].*(pi/180);
     
 % Calculate the actual Doppler frequencies from the Doppler indices
 chanParams.pathDopplerFreqs = chanParams.pathDopplers * 1/(N*T); % Hz
@@ -44,6 +44,7 @@ Xdd(1,pilotBin) = exp(1i*pi/4);
 x = Xdd(:);
 
 ys = zeros(N*M*Nrf,B);
+rs = zeros(N*M*Nrf,B);
 
 F = getF(Na, Ns);
 
@@ -67,11 +68,11 @@ for b = 1:B
         G = G + kron(C, ddm);
     end
 
-    sigma_w = 1;
-    w = normrnd(0, sigma_w, [N*M*Nrf,1]);
+    % sigma_w = 1;
+    % w = normrnd(0, sigma_w, [N*M*Nrf,1]);
     
-    y = G*x + w;
-    ys(:, b) = y; 
+    r = G*x;
+    rs(:, b) = r; 
 end
 
 ks = 0:N-1;
@@ -86,30 +87,42 @@ ns = (1:Nrf)';
 angle_grids = theta_min + (bs-1)*fov/B + (2*ns-1)/2*fov/(B*Nrf);
 angle_grids = angle_grids(:)';
 
-for nu = doppler_grids
-    for tau = delays_grids
-        for phi = angle_grids
-            tic
-            num = 0;
-            denum = 0;
-            for b = 1:B
-                U = getU(Na, Nrf, B, b);   
-                G = 0;
-                for p = 1:chanParams.P
-                    a = array_response(phi, Na);
-                
-                    dd = dd_crosstalk_coefficientsv2(nu, tau, T, N, M);
-                    ddm = dd2m(dd, M, N);
-                
-                    C = U' * (a * a') * F;
-                    G = G + kron(C, ddm);
-                end
-                num = num + ys(:, b)'*G*x;
-                denum = denum + norm(G*x)^2;
+
+
+test_indexes = [28;
+                6;
+                7];
+
+gt = [1 1 0];
+result = zeros(1,11);
+i = 1;
+for sigma_w = 100:1:110
+    sigma_w
+    for epoch = 1:20
+        w = normrnd(0, sigma_w, [N*M*Nrf, B]);
+        ys = rs + w;
+    
+        for idx = test_indexes
+            nu = doppler_grids(idx(1));
+            tau = delays_grids(idx(2));
+            phi = angle_grids(idx(3));
+        
+            test_grid = generateTestGrid(nu, tau, phi, N, M, T, B, fov, Nrf, 5);
+            th = 0;
+            for test = test_grid
+                nu_test = test(1);
+                tau_test = test(2);
+                phi_test = test(3);
+                th = th + getS(nu_test, tau_test, phi_test, ys, x, B);
             end
-            num = abs(num)^2;
-            S = num / denum;
-            toc
+            th = th/100;
+            if getS(nu, tau, phi, ys, x, B) > th
+                result(i) = result(i) + 1;
+            end
+    
         end
     end
+    i = i + 1;
 end
+
+result = result ./ 20;

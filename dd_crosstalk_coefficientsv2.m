@@ -17,7 +17,7 @@ function dd = dd_crosstalk_coefficientsv2(nu, tau, T, N, M)
     
     C = cross_ambgv2(arg1, arg2, T);
     
-    C = reshape(C, [N, N, M, M]); % ???
+    C = reshape(C, [N, N, M, M]);
     
     exp1 = exp(1j*2*pi*nps*T*nu);
     exp1 = reshape(exp1, [1, N, 1, 1]);
