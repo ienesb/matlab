@@ -1,7 +1,7 @@
 Na = 64;
 Nrf = 4;
 B = 6;
-G = 90;
+G = Na;
 
 theta_min = -pi/4;
 theta_max = pi/4;
@@ -16,7 +16,7 @@ phis = linspace(theta_min, theta_max, G);
 
 for b = 1:B
 
-    figure; hold on;
+    % figure; hold on;
     
     for n = 1:Nrf
     
@@ -36,16 +36,20 @@ for b = 1:B
         bv(idx1:idx2) = 1;
         
         % Given: A (matrix), b (vector)
-        u_unc = (A * A') \ (A * bv); % Unconstrained solution
+        u_unc = pinv(A) * bv; % Unconstrained solution
         
         % Normalize to satisfy f^H A A^H f = 1
-        u_opt = u_unc / sqrt(u_unc' * (A * A') * u_unc);
+        u_opt = u_unc ./ sqrt((u_unc' * (A * A') * u_unc));
         
-        u_opt'*A*A'*u_opt;
+        disp('****************')
+        abs(u_opt' * (A * A') * u_opt)
+        % (u_unc' * (A * A') * u_unc)
+        disp('****************')
         
         norm(A'*u_opt-bv)^2;
+
         
-        plot(phis*180/pi, abs(A'*u_opt))
+        % plot(phis*180/pi, abs(A'*u_opt))
     
     end
 end

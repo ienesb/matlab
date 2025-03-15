@@ -1,5 +1,5 @@
 function F = getF(Na, Ns)
-    G = 90;
+    G = Na;
     
     theta_min = -pi/4;
     theta_max = pi/4;
@@ -11,8 +11,8 @@ function F = getF(Na, Ns)
     
     b = ones(G, 1);
     
-    f_unc = (A * A') \ (A * b);
-    f_opt = f_unc / sqrt(f_unc' * (A * A') * f_unc);
+    f_unc = pinv(A) * b;
+    f_opt = f_unc ./ sqrt(f_unc' * (A * A') * f_unc);
     
     F = f_opt;
 end

@@ -1,4 +1,5 @@
-function C = cross_ambgv2(taus, nus, T)   
+function C = cross_ambg(taus, nus, T)   
+    % taus is row vector, nus is column vector, T is scalar
     C = zeros(length(taus), length(nus));
     
     C(taus<0, nus==0) = T + repmat(taus(taus<0),1,sum(nus==0));

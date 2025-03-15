@@ -12,7 +12,6 @@ Na = 64;
 Nrf = 4;
 Ns = 1;
 
-B = 6;
 
 theta_min = -pi/4;
 theta_max = pi/4;
@@ -43,6 +42,10 @@ Xdd = zeros(M, N);
 Xdd(1,pilotBin) = exp(1i*pi/4);
 x = Xdd(:);
 
+results = zeros(3, 11);
+Bidx = 1;
+for B = [6 10 18]
+B
 ys = zeros(N*M*Nrf,B);
 rs = zeros(N*M*Nrf,B);
 
@@ -94,9 +97,10 @@ test_indexes = [28;
                 7];
 
 gt = [1 1 0];
-result = zeros(1,11);
+% result = zeros(1,11);
 i = 1;
-for sigma_w = 100:1:110
+
+for sigma_w = 0:5:50
     sigma_w
     for epoch = 1:20
         w = normrnd(0, sigma_w, [N*M*Nrf, B]);
@@ -117,12 +121,13 @@ for sigma_w = 100:1:110
             end
             th = th/100;
             if getS(nu, tau, phi, ys, x, B) > th
-                result(i) = result(i) + 1;
+                % result(i) = result(i) + 1;
+                results(Bidx, i) = results(Bidx, i) + 1;
             end
     
         end
     end
     i = i + 1;
 end
-
-result = result ./ 20;
+Bidx = Bidx + 1;
+end

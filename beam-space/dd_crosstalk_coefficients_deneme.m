@@ -27,37 +27,6 @@ chanParams.pathDelayTimes = chanParams.pathDelays * 1/fsamp; % second
 
 chanParams.P = length(chanParams.pathDelays);
 
-pilotBin = floor(N/2)+1;
-Xdd = zeros(M,N);
-Xdd(1,pilotBin) = exp(1i*pi/4);
-
-% Data generation
-% Xdd = zeros(M,N);
-% Xdata = randi([0,1],2*M,N);
-% Xdd(1:M,:) = pskmod(Xdata,4,pi/4,InputType="bit");
-
-% Doppler Channel implementation
-
-% OTFS modulation
-txOut = helperOTFSmod(Xdd,padLen,padType);
-
-% Send the OTFS modulated signal through the channel
-dopplerOut = dopplerChannel(txOut,fsamp,chanParams);
-
-% Get a sample window
-rxIn = dopplerOut(1:numSamps);
-
-% OTFS demodulation
-Ydd = helperOTFSdemod(rxIn,M,padLen,0,padType);
-
-% figure; 
-% surf(abs(Xdd));
-% 
-% figure;
-% surf(abs(Ydd));
-
-
-
 ddv1 = zeros(N, N, M, M);
 
 for p = 3:chanParams.P

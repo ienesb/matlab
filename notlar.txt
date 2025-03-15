@@ -6,3 +6,9 @@ for loop ile yapılan isfft ile helperotfs'teki isfft aynı sonucları veriyor.
 dd_crosstalk_coefficients_deneme:
 Çalışması çok uzun sürüyor. Radar kanalını bu şekilde implement etmek mantıklı değil.
 Vektörizasyon yapılmalı veya farklı bir yöntem kullanılmalı (H matrixi veya time domaindeki işlemler).
+
+matlab1: B = 6 sigma = 0:10
+matlab2: B = 6 sigma = 11:20
+matlab3: B = 10 sigma = 0:20
+
+matlab4: B = 6,10,18 sigma = 0:5:50

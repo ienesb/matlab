@@ -1,5 +1,5 @@
 function U = getU(Na, Nrf, B, b)
-    G = 90;
+    G = Na;
     
     theta_min = -pi/4;
     theta_max = pi/4;
@@ -25,8 +25,8 @@ function U = getU(Na, Nrf, B, b)
         bv = zeros(G, 1);
         bv(idx1:idx2) = 1;
         
-        u_unc = (A * A') \ (A * bv);    
-        u_opt = u_unc / sqrt(u_unc' * (A * A') * u_unc);
+        u_unc = pinv(A) * bv;   
+        u_opt = u_unc ./ sqrt(u_unc' * (A * A') * u_unc);
         
         U(:, n) = u_opt;
     end
