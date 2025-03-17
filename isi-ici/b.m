@@ -1,10 +1,8 @@
-M = 64;          % number of subcarriers
-N = 30;          % number of subsymbols/frame
-df = 15e3;       % make this the frequency bin spacing of LTE
+M = 16;
+N = 32;
+df = 120e3;
 T = 1/df;
-fc = 5e9;        % carrier frequency in Hz
-padLen = 0;     % make this larger than the channel delay spread channel in samples
-padType = 'NONE';  % this example requires ZP for ISI mitigation
+fc = 28e9;
 
 tau = 0.1;
 nu = 0.1;

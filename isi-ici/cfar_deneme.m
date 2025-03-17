@@ -1,30 +1,20 @@
-clear;
+% close all;
+Nc = 100;
+Pfa = 1e-4;
+release(cfar);
+cfar = phased.CFARDetector;
+cfar.ThresholdFactor = "Custom";
+% cfar.CustomThresholdFactor = Nc*(Pfa^(-1/Nc) - 1);
+cfar.CustomThresholdFactor = 1.1;
+cfar.ThresholdOutputPort = true;
+cfar.NumTrainingCells = Nc;
+% cfar.ProbabilityFalseAlarm = Pfa;
 
-cfar = phased.CFARDetector('NumTrainingCells',20,'NumGuardCells',2);
+[x_detected,th] = cfar(range_profile.',1:length(range_profile));
 
-exp_pfa = 1e-3;
-cfar.ThresholdFactor = 'Auto';
-cfar.ProbabilityFalseAlarm = exp_pfa;
+figure;
+stem(x_detected);
 
-rs = RandStream('mt19937ar','Seed',2010);
-npower = db2pow(-10);  % Assume 10dB SNR ratio
-
-Ntrials = 1e5;
-Ncells = 23;
-CUTIdx = 12;
-
-rsamp = randn(rs,Ncells,Ntrials)+1i*randn(rs,Ncells,Ntrials);
-
-x = abs(sqrt(npower/2)*rsamp).^2;
-x_detected = cfar(x,CUTIdx);
-
-act_pfa = sum(x_detected)/Ntrials
-
-npower = db2pow(-10);  % Assume 10dB SNR ratio
-xn = 0;
-for m = 1:10
-    rsamp = randn(rs,Ncells,Ntrials)+1i*randn(rs,Ncells,Ntrials);
-    xn = xn + abs(sqrt(npower/2)*rsamp).^2;   % noncoherent integration
-end
-x_detected = cfar(xn,CUTIdx);
-act_pfa = sum(x_detected)/Ntrials
+figure; hold on;
+plot(range_profile);
+plot(th);
