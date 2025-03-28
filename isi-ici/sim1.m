@@ -22,6 +22,7 @@ targets.delays = 2*targets.ranges/c;
 targets.angles = [10, 10, 15, 10, 10] .*(pi/180);
 targets.SNRs = [20, 15, 5, 25, 10];
 targets.K = length(targets.ranges);
+targets.gains = sqrt(10.^(targets.SNRs/10) .* sigma^2);
 targets.gains = sqrt(10.^(targets.SNRs/10) .* sigma^2) .* exp(1j*rand(1, targets.K)*360);
 
 Ws = zeros(N, M, NT);
@@ -107,20 +108,48 @@ legend("range profile", "cfar threshold", "ground truth");
 grid minor;
 
 % figure 6
-% ranges = 0:500;
-% delays = 2*ranges/c;
-% velocities = -100:100;
-% dopplers = 2*velocities/lambda;
-% 
-% profiles = zeros(length(ranges), length(velocities));
-% 
-% for idx1 = 1:length(delays)
-%     for idx2 = 1:length(dopplers)
-%         tau = delays(idx1);
-%         nu = dopplers(idx2);
-% 
-%         B = getB(tau, df, N, M);
-%         C = getC(nu, T, N, M);
-%         profiles(idx1, idx2) = norm(S' * F' * B' * F * C' * Y, "fro")^2;
-%     end
-% end
+ranges = 0:500;
+delays = 2*ranges/c;
+velocities = -100:100;
+dopplers = 2*velocities/lambda;
+
+profiles = zeros(length(ranges), length(velocities));
+
+for idx1 = 1:length(delays)
+    for idx2 = 1:length(dopplers)
+        tau = delays(idx1);
+        nu = dopplers(idx2);
+
+        B = getB(tau, df, N, M);
+        C = getC(nu, T, N, M);
+        profiles(idx1, idx2) = norm(S' * F' * B' * F * C' * Y, "fro")^2;
+    end
+end
+
+range = 150;
+velocity = 20;
+tau = 2*range/c;
+nu = 2*velocity/lambda;
+B = getB(tau, df, N, M);
+C = getC(nu, T, N, M);
+
+thetas = linspace(-pi/4,pi/4,1000);
+angle_profile = zeros(size(thetas));
+
+for idx = 1:length(thetas)
+    theta = thetas(idx);
+    atx = getatx(theta, NT);
+    arx = getarx(theta, NR);
+    angle_profile(idx) = abs(atx' * S' * F' * B' * F * C' * Y_with_noise * conj(arx))^2 / real(atx' * (S' * S) * atx);
+end
+
+% figure; hold on;
+% plot(thetas*180/pi, angle_profile);
+% xline(60, '--', 'LineWidth', 1.5);
+% xline(150, '--', 'LineWidth', 1.5);
+% xline(360, '--', 'LineWidth', 1.5);
+% xline(460, '--', 'LineWidth', 1.5);
+% xlabel("Range (m)");
+% ylabel("Magnitude (dB)");
+% legend("range profile", "cfar threshold", "ground truth");
+% grid minor;
