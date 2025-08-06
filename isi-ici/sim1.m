@@ -1,7 +1,8 @@
 clear;
 close all;
 
-c = physconst('LightSpeed');
+% c = physconst('LightSpeed');
+c = 3*10^8;
 
 M = 16;
 N = 32;
