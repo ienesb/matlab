@@ -15,16 +15,17 @@ NT = 8;
 NR = 8;
 
 sigma = 1;
+% sigma = 0.0001;
 
-targets.velocities = [20, 20, 20, 20, 20];
-targets.ranges = [60 150 150 360 460];
+targets.velocities = [20, 20, 20, 20, 20]; % m/s
+targets.ranges = [60 150 150 360 460]; % m
 targets.dopplers = 2*targets.velocities/lambda;
 targets.delays = 2*targets.ranges/c;
 targets.angles = [10, 10, 15, 10, 10] .*(pi/180);
-targets.SNRs = [20, 15, 5, 25, 10];
+targets.SNRs = [20, 15, 5, 25, 10]; % dB
 targets.K = length(targets.ranges);
 targets.gains = sqrt(10.^(targets.SNRs/10) .* sigma^2);
-targets.gains = sqrt(10.^(targets.SNRs/10) .* sigma^2) .* exp(1j*rand(1, targets.K)*360);
+% targets.gains = sqrt(10.^(targets.SNRs/10) .* sigma^2) .* exp(1j*rand(1, targets.K)*360);
 
 Ws = zeros(N, M, NT);
 W = randi([1, NT], N, M);
@@ -84,7 +85,7 @@ for idx = 1:length(delays)
     C = getC(nu, T, N, M);
     range_profile(idx) = norm(S' * F' * B' * F * C' * Y_with_noise, "fro")^2;
 end
-range_profile = mag2db(range_profile);
+range_profile = pow2db(range_profile);
 
 Nc = 100;
 cfar = phased.CFARDetector;
@@ -117,13 +118,14 @@ dopplers = 2*velocities/lambda;
 profiles = zeros(length(ranges), length(velocities));
 
 for idx1 = 1:length(delays)
+    tau = delays(idx1);
+    B = getB(tau, df, N, M);
+    temp = S' * F' * B' * F;
     for idx2 = 1:length(dopplers)
-        tau = delays(idx1);
         nu = dopplers(idx2);
-
-        B = getB(tau, df, N, M);
         C = getC(nu, T, N, M);
-        profiles(idx1, idx2) = norm(S' * F' * B' * F * C' * Y, "fro")^2;
+
+        profiles(idx1, idx2) = norm(temp * C' * Y, "fro")^2;
     end
 end
 
@@ -144,13 +146,13 @@ for idx = 1:length(thetas)
     angle_profile(idx) = abs(atx' * S' * F' * B' * F * C' * Y_with_noise * conj(arx))^2 / real(atx' * (S' * S) * atx);
 end
 
-% figure; hold on;
-% plot(thetas*180/pi, angle_profile);
+figure; hold on;
+plot(thetas*180/pi, angle_profile);
 % xline(60, '--', 'LineWidth', 1.5);
 % xline(150, '--', 'LineWidth', 1.5);
 % xline(360, '--', 'LineWidth', 1.5);
 % xline(460, '--', 'LineWidth', 1.5);
-% xlabel("Range (m)");
-% ylabel("Magnitude (dB)");
+xlabel("Angle (deg)");
+ylabel("Magnitude (dB)");
 % legend("range profile", "cfar threshold", "ground truth");
-% grid minor;
+grid minor;
