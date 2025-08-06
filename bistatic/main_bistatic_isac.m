@@ -1,7 +1,3 @@
-% Bistatic OFDM ISAC - Modular Implementation
-% Based on: "Bridging the Gap via Data-Aided Sensing"
-
-% === Main Script ===
 clear;
 close all;
 
@@ -19,30 +15,44 @@ M = params.M;
 [X, Xp, Xd, pilot_mask, data_mask] = generate_ofdm_symbols(params);
 
 %% Channel Model
-[H, Y] = generate_channel_and_received_signal(X, params);
+% [H, Y] = generate_channel_and_received_signal(X, params);
 
+H = generate_channel(params);
+Y = generate_received_signal(X, H, params);
+
+Fn = dftmtx(N)./sqrt(N);
+Fm = dftmtx(M)./sqrt(M);
+
+DD_map_complex = Fn' * H * Fm;
+DD_map = abs(DD_map_complex).^2;
+
+threshold = mean(DD_map(:)) + 3 * std(DD_map(:));
+[rows, cols] = find(DD_map > threshold);
+peaks = [rows, cols];
+
+return;
 %% Stage 1 - Initial Channel Estimation (Pilot-only)
 H_hat = initial_channel_estimation(X, Y, pilot_mask);
-HDD = generate_dd_map(H_hat, params);
+% HDD = generate_dd_map(H_hat, params);
 
-d0 = norm(params.pT - params.pR);
-tau0 = d0 / c;
-alpha0 = lambda / (4*pi*d0);
-b0 = exp(-1j * 2*pi * (0:N-1)' * params.delta_f * tau0);
-c0 = ones(M, 1);
-A = kron(conj(c0), b0);
-
-
-for k = 1:params.K
-    tau_k = params.delays(k);
-    nu_k = params.dopplers(k);
-    b_tau_k = exp(-1j * 2*pi * (0:N-1)' * params.delta_f * tau_k);
-    c_nu_k = exp(1j * 2*pi * (0:M-1)' * params.Tsym * nu_k);
-    a_k = kron(conj(c_nu_k), b_tau_k);
-    A = [A a_k];
-end
-
-alpha_hat = A'*H_hat(:);
+% d0 = norm(params.pT - params.pR);
+% tau0 = d0 / c;
+% alpha0 = lambda / (4*pi*d0);
+% b0 = exp(-1j * 2*pi * (0:N-1)' * params.delta_f * tau0);
+% c0 = ones(M, 1);
+% A = kron(conj(c0), b0);
+% 
+% 
+% for k = 1:params.K
+%     tau_k = params.delays(k);
+%     nu_k = params.dopplers(k);
+%     b_tau_k = exp(-1j * 2*pi * (0:N-1)' * params.delta_f * tau_k);
+%     c_nu_k = exp(1j * 2*pi * (0:M-1)' * params.Tsym * nu_k);
+%     a_k = kron(conj(c_nu_k), b_tau_k);
+%     A = [A a_k];
+% end
+% 
+% alpha_hat = A'*H_hat(:);
 
 %% Stage 2 - Data Demodulation
 X_hat = data_demodulation(Y, H_hat, Xp, data_mask, params);
