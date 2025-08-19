@@ -17,7 +17,7 @@ function params = init_simulation_params()
     
     params.K = 2;                     % Number of targets
     params.known_data = false;       % Genie-aided or not
-    params.pilot_ratio = 0.05;       % Fraction of pilots
+    params.pilot_ratio = 0.5;       % Fraction of pilots
     params.modulation = 'QPSK';      % Data modulation
     
     % Locations (x,y): TX, RX, and 2 targets
@@ -25,7 +25,7 @@ function params = init_simulation_params()
     params.pR = [50, 0];
     params.targets = [56.9, 10; 79.4, 7];
     params.velocities = [1.4, -2.2; 2.2, -13.7];
-    params.rcs_dB = [4.9, 1.5];       % Target RCS in dBsm
+    params.rcs_dB = [4.9, 15];       % Target RCS in dBsm
     
     % Derived parameters
     c = 3e8;                          % Speed of light

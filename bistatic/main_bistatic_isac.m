@@ -33,7 +33,7 @@ H_hat = initial_channel_estimation(X, Y, pilot_mask);
 % Step 2: Target Detection/Estimation from Channel Estimate
 HDD = generate_dd_map(H_hat, params);
 % implement CFAR here
-
+return;
 % Step 3: Channel Reconstruction from Target Estimates
 d0 = norm(params.pT - params.pR);
 tau0 = d0 / c;
@@ -85,7 +85,7 @@ c0 = getc(nu0, params);
 H_hat2 = H_hat2 + alpha0 * (b0 * c0.');
 
 %% Stage 2 - Data Demodulation
-X_hat = data_demodulation(Y, H_hat, Xp, data_mask, params);
+X_hat = data_demodulation(Y, H, Xp, data_mask, params);
 
 %% Stage 3 - Iterative Refinement (1 iteration shown)
 H_hat = refine_channel_estimate(X_hat, Y, pilot_mask);
