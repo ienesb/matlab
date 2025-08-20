@@ -3,10 +3,10 @@ function params = init_simulation_params()
     
     params.N = 400;                   % Number of OFDM subcarriers
     params.M = 60;                    % Number of OFDM symbols
-    params.N_fft = params.N;
-    params.M_fft = params.M;
-    % params.N_fft = 4096;
-    % params.M_fft = 256;
+    % params.N_fft = params.N;
+    % params.M_fft = params.M;
+    params.N_fft = 4096;
+    params.M_fft = 256;
     params.fc = 28e9;                 % Carrier frequency
     params.delta_f = 120e3;           % Subcarrier spacing
     params.BW = params.N * params.delta_f;
