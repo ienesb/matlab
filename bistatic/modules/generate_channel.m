@@ -30,7 +30,7 @@ function H = generate_channel(params)
     
     % Add LOS path (k=0)
     d0 = norm(params.pT - params.pR);
-    tau0 = d0 / c;
+    tau0 = d0 / c
     nu0 = 0;
     alpha0 = lambda / (4*pi*d0);
     b0 = getb(tau0, params);

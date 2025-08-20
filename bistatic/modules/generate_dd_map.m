@@ -1,8 +1,6 @@
 function HDD = generate_dd_map(H, params)
-    % N = params.N;
-    % M = params.M;
-    N = 4096;
-    M = 256;
+    N = params.N_fft;
+    M = params.M_fft;
 
     Fn = dftmtx(N)./sqrt(N);
     Fm = dftmtx(M)./sqrt(M);

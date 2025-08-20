@@ -1,7 +1,7 @@
 main_bistatic_isac;
 
-N_fft = 4096;
-M_fft = 256;
+N_fft = params.N_fft;
+M_fft = params.M_fft;
 
 % DD_map(9,1) = 0;
 % DD_map(12,1) = 0;
@@ -25,8 +25,10 @@ DD_map_padded = padding(HDD, paddingsize);
 detections = reshape(detections, size(HDD));
 threshold = reshape(threshold, size(HDD));
 
-figure;
-imagesc(mag2db(HDD));
+% figure;
+% imagesc(mag2db(HDD));
+
+plotDDMap(mag2db(HDD), N_fft, M_fft, params.delta_f);
 
 figure;
 imagesc(detections);
