@@ -1,26 +1,26 @@
 function H = generate_channel(params)
-    N = params.N;
-    M = params.M;
-    K = params.K;
-    fc = params.fc;
-    c = 3e8;
-    lambda = c / fc;
-    
+    v2struct(params);
     H = zeros(N, M);
-    
+    taus = [0.13281, 0.39953] * 1e-6;
+    nus = [375.8984, 377.3253];
+    alphas = [5.3963e-7, 5.4666e-8];
+
     for k = 1:K
-        pk = params.targets(k, :);
-        vk = params.velocities(k, :);
+        pk = targets(k, :);
+        vk = velocities(k, :);
 
-        d1 = norm(params.pT - pk);
-        d2 = norm(pk - params.pR);
+        d1 = norm(pT - pk);
+        d2 = norm(pk - pR);
         tau = (d1 + d2) / c;
+        tau = taus(k);
 
-        v_rel = dot(vk, (params.pR - pk)) / norm(params.pR - pk);
+        v_rel = dot(vk, (pR - pk)) / norm(pR - pk);
         nu = 2 * v_rel / lambda;
+        nu = nus(k);
 
-        rcs = 10^(params.rcs_dB(k)/10);
+        rcs = 10^(rcs_dB(k)/10);
         alpha = lambda * sqrt(rcs) / ((4*pi)^(3/2) * d1 * d2);
+        alpha = alphas(k);
 
         b_tau = getb(tau, params);
         c_nu = getc(nu, params);
@@ -29,12 +29,12 @@ function H = generate_channel(params)
     end
     
     % Add LOS path (k=0)
-    d0 = norm(params.pT - params.pR);
-    tau0 = d0 / c
+    d0 = norm(pT - pR);
+    tau0 = d0 / c;
     nu0 = 0;
     alpha0 = lambda / (4*pi*d0);
     b0 = getb(tau0, params);
     c0 = getc(nu0, params);
     
-    H = H + alpha0 * (b0 * c0.');
+    % H = H + alpha0 * (b0 * c0.');
 end

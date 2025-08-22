@@ -1,39 +1,31 @@
 main_bistatic_isac;
 
-N_fft = params.N_fft;
-M_fft = params.M_fft;
-
-% DD_map(9,1) = 0;
-% DD_map(12,1) = 0;
-% DD_map(19,1) = 0;
-
 guardsize = [20, 12];
 trainingsize = [40, 42];
 paddingsize = [guardsize(1) + trainingsize(1), guardsize(2) + trainingsize(2)];
-pfa = 1e-4;
+pfa = 1e-5;
 
 cfar2D = phased.CFARDetector2D('GuardBandSize',guardsize,'TrainingBandSize',trainingsize,...
   'ProbabilityFalseAlarm',pfa, ThresholdOutputPort=true);
 
-[columnInds,rowInds] = meshgrid(paddingsize(2)+1:M_fft+paddingsize(2), paddingsize(1)+1:N_fft+paddingsize(1));
+% [columnInds,rowInds] = meshgrid(paddingsize(2)+1:M_fft+paddingsize(2), paddingsize(1)+1:N_fft+paddingsize(1));
+[columnInds,rowInds] = meshgrid(108:150, 62:280);
 CUTIdx = [rowInds(:) columnInds(:)]';
 
-DD_map_padded = padding(HDD, paddingsize(1), paddingsize(2));
+% HDD_padded = padding(HDD, paddingsize(1), paddingsize(2));
+HDD_padded = HDD;
 
-[detections, threshold] = cfar2D(DD_map_padded,CUTIdx);
+[detections, threshold] = cfar2D(HDD_padded,CUTIdx);
 
-detections = reshape(detections, size(HDD));
-threshold = reshape(threshold, size(HDD));
+detection_map = zeros(size(HDD_padded));
 
-% figure;
-% imagesc(mag2db(HDD));
+r = CUTIdx(1, detections);
+c = CUTIdx(2, detections);
 
-plotDDMap(mag2db(HDD), N_fft, M_fft, params.delta_f);
+lin = sub2ind(size(HDD_padded), r, c);
 
-figure;
-imagesc(detections);
+detection_map(lin) = HDD(lin);
 
-delays = linspace(0, params.Tsym*(N_fft-1)/N_fft, N_fft) .* 1e6;
-figure; hold on;
-plot(delays, HDD(:, 1));
-plot(delays, threshold(:, 1));
+plotDDMap(pow2db(HDD_padded), params, 1);
+
+plotDDMap(detection_map, params, 1);

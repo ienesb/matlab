@@ -1,23 +1,24 @@
 function [X, Xp, Xd, pilot_mask, data_mask] = generate_ofdm_symbols(params)
     % Generate OFDM symbols with pilots and data, and separate outputs
-    
-    NM = params.N * params.M;
-    pilot_mask = false(params.N, params.M);
+    v2struct(params);
+
+    NM = N * M;
+    pilot_mask = false(N, M);
     
     % Randomly assign pilots
-    num_pilots = round(params.pilot_ratio * NM);
+    num_pilots = round(pilot_ratio * NM);
     pilot_indices = randperm(NM, num_pilots);
     pilot_mask(pilot_indices) = true;
     
     % Assign pilot symbols
-    Xp = zeros(params.N, params.M);
+    Xp = zeros(N, M);
     Xp(pilot_mask) = 1;
     
     % Assign data symbols
-    Xd = zeros(params.N, params.M);
+    Xd = zeros(N, M);
     data_mask = ~pilot_mask;
     
-    switch params.modulation
+    switch modulation
         case 'QPSK'
             M_order = 4;
         case '16QAM'

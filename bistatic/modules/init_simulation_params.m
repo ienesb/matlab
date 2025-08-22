@@ -1,74 +1,73 @@
 function params = init_simulation_params()
-    % Simulation parameters for bistatic ISAC
+    c = physconst('LightSpeed');
     
-    params.N = 400;                   % Number of OFDM subcarriers
-    params.M = 60;                    % Number of OFDM symbols
-    % params.N_fft = params.N;
-    % params.M_fft = params.M;
-    params.N_fft = 4096;
-    params.M_fft = 256;
-    params.fc = 28e9;                 % Carrier frequency
-    params.delta_f = 120e3;           % Subcarrier spacing
-    params.BW = params.N * params.delta_f;
-    params.Tsym = 1 / params.delta_f; % Symbol duration
-    params.Tcp = 1.16e-6;             % Cyclic prefix duration
-    params.PT = 10^(20/10) / 1000;    % Transmit power (20 dBm)
-    params.NT = 8;                    % Number of TX antennas
-    params.noise_fig = 8;             % Noise figure (dB)
-    params.N0 = 10^(-174/10) / 1000;  % Noise PSD (W/Hz)
-    params.snr = 10;                  % SNR in dB
-    params.sigma2 = 10^(-params.snr/10);
+    N = 400;                   % Number of OFDM subcarriers
+    M = 60;                    % Number of OFDM symbols
+    % N_fft = N;
+    % M_fft = M;
+    N_fft = 4096;
+    M_fft = 256;
+
+    fc = 28e9;                 % Carrier frequency
+    delta_f = 120e3;           % Subcarrier spacing
+    BW = N * delta_f;
+    Tsym = 1 / delta_f; % Symbol duration
+    % Tcp = 1.16e-6;             % Cyclic prefix duration   kontrol et !!!!
+
+    % PT = 20;                   % Transmit power (20 dBm)
+    % NT = 8;                    % Number of TX antennas
+    noise_fig = 8;             % Noise figure (dB)
+    N0 = -174;  % Noise PSD (W/Hz)
+    sigma2 = db2pow(N0 + noise_fig) * 1e-3 * N * delta_f;
     
-    params.K = 2;                     % Number of targets
-    params.known_data = false;       % Genie-aided or not
-    params.pilot_ratio = 0.5;       % Fraction of pilots
-    params.modulation = 'QPSK';      % Data modulation
+    K = 2;                     % Number of targets
+    known_data = false;       % Genie-aided or not
+    pilot_ratio = 0.02;       % Fraction of pilots
+    modulation = 'QPSK';      % Data modulation
     
     % Locations (x,y): TX, RX, and 2 targets
-    params.pT = [0, 0];
-    params.pR = [50, 0];
-    params.targets = [56.9, 10; 79.4, 7];
-    params.velocities = [1.4, -2.2; 2.2, -13.7];
-    params.rcs_dB = [4.9, 15];       % Target RCS in dBsm
+    pT = [0, 0];
+    pR = [50, 0];
+    targets = [56.9, 10; 79.4, 7];
+    velocities = [1.4, -2.2; 2.2, -13.7];
+    rcs_dB = [4.9, 15];       % Target RCS in dBsm
     
     % Derived parameters
-    c = 3e8;                          % Speed of light
-    lambda = c / params.fc;
-    params.lambda = lambda;
-    
-    % Delay/Doppler resolution
-    params.delay_res = 1 / params.BW;
-    params.doppler_res = 1 / (params.M * params.Tsym);
-    
-    % Allocate arrays
-    params.delays = zeros(params.K, 1);
-    params.dopplers = zeros(params.K, 1);
-    params.delay_idxs = zeros(params.K, 1);
-    params.doppler_idxs = zeros(params.K, 1);
-    
-    for k = 1:params.K
-        pk = params.targets(k, :);
-        vk = params.velocities(k, :);
-    
-        d1 = norm(params.pT - pk);
-        d2 = norm(pk - params.pR);
-        tau = (d1 + d2) / c;
-        params.delays(k) = tau;
-    
-        los_vector = (params.pR - pk) / norm(params.pR - pk);
-        v_rel = dot(vk, los_vector);
-        nu = 2 * v_rel / lambda;
-        params.dopplers(k) = nu;
-    
-        % Find closest bin indices
-        delay_bins = (0:params.N-1) * params.delay_res;
-        doppler_bins = (-params.M/2:params.M/2-1) * params.doppler_res;
-    
-        [~, delay_idx] = min(abs(delay_bins - tau));
-        [~, doppler_idx] = min(abs(doppler_bins - nu));
-    
-        params.delay_idxs(k) = delay_idx;
-        params.doppler_idxs(k) = doppler_idx + params.M/2; % to match fftshifted layout
-    end
+    lambda = c / fc;
 
+    % % Delay/Doppler resolution
+    % delay_res = 1 / BW;
+    % doppler_res = 1 / (M * Tsym);
+    % 
+    % % Allocate arrays
+    % delays = zeros(K, 1);
+    % dopplers = zeros(K, 1);
+    % delay_idxs = zeros(K, 1);
+    % doppler_idxs = zeros(K, 1);
+    % 
+    % for k = 1:K
+    %     pk = targets(k, :);
+    %     vk = velocities(k, :);
+    % 
+    %     d1 = norm(pT - pk);
+    %     d2 = norm(pk - pR);
+    %     tau = (d1 + d2) / c;
+    %     delays(k) = tau;
+    % 
+    %     los_vector = (pR - pk) / norm(pR - pk);
+    %     v_rel = dot(vk, los_vector);
+    %     nu = 2 * v_rel / lambda;
+    %     dopplers(k) = nu;
+    % 
+    %     % Find closest bin indices
+    %     delay_bins = (0:N-1) * delay_res;
+    %     doppler_bins = (-M/2:M/2-1) * doppler_res;
+    % 
+    %     [~, delay_idx] = min(abs(delay_bins - tau));
+    %     [~, doppler_idx] = min(abs(doppler_bins - nu));
+    % 
+    %     delay_idxs(k) = delay_idx;
+    %     doppler_idxs(k) = doppler_idx + M/2; % to match fftshifted layout
+    % end
+    params = v2struct();
 end
