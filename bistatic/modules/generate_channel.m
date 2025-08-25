@@ -1,9 +1,6 @@
 function H = generate_channel(params)
     v2struct(params);
     H = zeros(N, M);
-    taus = [0.13281, 0.39953] * 1e-6;
-    nus = [375.8984, 377.3253];
-    alphas = [5.3963e-7, 5.4666e-8];
 
     for k = 1:K
         pk = targets(k, :);

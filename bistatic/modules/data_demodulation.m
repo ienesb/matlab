@@ -11,6 +11,8 @@ function X_hat = data_demodulation(Y, H_est, Xp, data_mask, params)
     
     X_hat = X_hat + Xp;
 
+    scatterplot(X_hat(:));
+
     data = qamdemod(X_hat(data_mask), 4);
     X_hat(data_mask) = qammod(data, 4, 'UnitAveragePower', true);
 end

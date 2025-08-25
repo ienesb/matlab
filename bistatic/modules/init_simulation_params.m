@@ -2,22 +2,22 @@ function params = init_simulation_params()
     c = physconst('LightSpeed');
     
     N = 400;                   % Number of OFDM subcarriers
-    M = 60;                    % Number of OFDM symbols
-    % N_fft = N;
-    % M_fft = M;
+    M = 60;                    %#ok<*NASGU> % Number of OFDM symbols
     N_fft = 4096;
     M_fft = 256;
 
     fc = 28e9;                 % Carrier frequency
     delta_f = 120e3;           % Subcarrier spacing
     BW = N * delta_f;
-    Tsym = 1 / delta_f; % Symbol duration
-    % Tcp = 1.16e-6;             % Cyclic prefix duration   kontrol et !!!!
+    T = 1 / delta_f;            % Symbol duration
+    Tcp = T * 0.07;
+    Tsym = Tcp + T;
 
-    % PT = 20;                   % Transmit power (20 dBm)
-    % NT = 8;                    % Number of TX antennas
-    noise_fig = 8;             % Noise figure (dB)
-    N0 = -174;  % Noise PSD (W/Hz)
+    PT_db = 20;                 % Transmit power (20 dBm)
+    PT = db2pow(PT_db) * 1e-3;  % Transmit power (0.1 W)
+    % NT = 8;                   % Number of TX antennas
+    noise_fig = 8;              % Noise figure (dB)
+    N0 = -174;                  % Noise PSD (dbm/Hz)
     sigma2 = db2pow(N0 + noise_fig) * 1e-3 * N * delta_f;
     
     K = 2;                     % Number of targets
@@ -28,17 +28,24 @@ function params = init_simulation_params()
     % Locations (x,y): TX, RX, and 2 targets
     pT = [0, 0];
     pR = [50, 0];
-    targets = [56.9, 10; 79.4, 7];
+    targets = [56.9, 10; 79.4, 7]; % targets(:, k) k = 1,2,...,K
     velocities = [1.4, -2.2; 2.2, -13.7];
     rcs_dB = [4.9, 15];       % Target RCS in dBsm
+    rcs = db2pow(rcs_dB) * 1e-3;
     
     % Derived parameters
     lambda = c / fc;
 
-    % % Delay/Doppler resolution
-    % delay_res = 1 / BW;
-    % doppler_res = 1 / (M * Tsym);
-    % 
+    taus = [0.13281, 0.39953] * 1e-6;
+    nus = [375.8984, 377.3253];
+    alphas = [5.3963e-7, 5.4666e-8];
+
+    tau_res = 1/BW;
+    nu_res = 1/(M*Tsym);
+
+    tau_idx = tau2idx(taus, Tsym, N_fft);
+    nu_idx = nu2idx(nus, delta_f, M_fft);
+
     % % Allocate arrays
     % delays = zeros(K, 1);
     % dopplers = zeros(K, 1);

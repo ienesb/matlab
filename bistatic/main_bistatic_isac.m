@@ -25,13 +25,21 @@ HDD = generate_dd_map(H_hat, params);
 
 [tau_hat, nu_hat] = detect_targets(HDD, params);
 
+% tau_idx_hat = tau2idx(tau_hat, Tsym, N_fft);
+% nu_idx_hat = nu2idx(nu_hat, delta_f, M_fft);
+
+[targetIdx, false_alarm] = getDetectedTarget(tau_hat, nu_hat, params)
+
+return
+
 % Step 3: Channel Reconstruction from Target Estimates
 
 b_tau = getb(tau_hat, params);
 c_nu = getc(nu_hat, params);
 A = kron((c_nu), b_tau);
 
-alpha_hat = abs(pinv(A)*H_hat(:));
+alpha_hat = (abs(pinv(A)*H_hat(:))) / pilot_ratio;
+% alpha_hat = 5.3963e-7;
 
 H_hat = zeros(size(H_hat));
 
@@ -42,11 +50,12 @@ H_hat = H_hat + alpha_hat * (b_tau * c_nu.');
 X_hat = data_demodulation(Y, H_hat, Xp, data_mask, params);
 ser = getSer(X, X_hat, data_mask)
 
+
 %% Stage 3 - Iterative Refinement (1 iteration shown)
 H_hat = refine_channel_estimate(X_hat, Y, pilot_mask);
 X_hat = data_demodulation(Y, H_hat, Xp, data_mask, params);
 ser = getSer(X, X_hat, data_mask)
-
+return
 %% Stage 4 - Final Detection (Delay-Doppler Map)
 [DD_map, peaks] = delay_doppler_detection(H, params);
 
