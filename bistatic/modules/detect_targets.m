@@ -24,7 +24,7 @@ function [tau, nu] = detect_targets(HDD, params) % assuming there is only 1 targ
     [~, linIdx] = max(detection_map(:));
     [row, col] = ind2sub(size(detection_map), linIdx);
     taus = getDelayArray(Tsym, N_fft);
-    nus = getDopplerArray(delta_f, M_fft);
+    nus = getDopplerArray(delta_f, M_fft, is_fftshifted);
 
     tau = taus(row);
     nu = nus(col);

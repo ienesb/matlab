@@ -9,7 +9,6 @@ function plotDDMap(DD, params, is_indexed, is_fftshifted)
         end
     end
 
-    Tsym = 1 / delta_f;
     delays = getDelayArray(Tsym, N);
     dopplers = getDopplerArray(delta_f, M, is_fftshifted);
 

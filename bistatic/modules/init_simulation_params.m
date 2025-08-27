@@ -10,8 +10,11 @@ function params = init_simulation_params()
     delta_f = 120e3;           % Subcarrier spacing
     BW = N * delta_f;
     T = 1 / delta_f;            % Symbol duration
-    Tcp = T * 0.07;
+    % Tcp = T * 0.07; 
+    Tcp = 0;
     Tsym = Tcp + T;
+
+    is_fftshifted = 1;
 
     PT_db = 20;                 % Transmit power (20 dBm)
     PT = db2pow(PT_db) * 1e-3;  % Transmit power (0.1 W)
@@ -22,59 +25,57 @@ function params = init_simulation_params()
     
     K = 2;                     % Number of targets
     known_data = false;       % Genie-aided or not
-    pilot_ratio = 0.02;       % Fraction of pilots
+    pilot_ratio = 0.05;       % Fraction of pilots
     modulation = 'QPSK';      % Data modulation
     
     % Locations (x,y): TX, RX, and 2 targets
     pT = [0, 0];
     pR = [50, 0];
-    targets = [56.9, 10; 79.4, 7]; % targets(:, k) k = 1,2,...,K
+    positions = [56.9, 10; 79.4, 7]; % targets(k, :) k = 1,2,...,K
     velocities = [1.4, -2.2; 2.2, -13.7];
-    rcs_dB = [4.9, 15];       % Target RCS in dBsm
-    rcs = db2pow(rcs_dB) * 1e-3;
+    rcs_dB = [4.9, 6];       % Target RCS in dBsm
+    rcs = db2pow(rcs_dB);
+
+    % lambda * sqrt(rcs) / ((4*pi)^1.5 * norm(targets(1, :) - pT) * norm(targets(1, :) - pR))
     
     % Derived parameters
     lambda = c / fc;
 
-    taus = [0.13281, 0.39953] * 1e-6;
-    nus = [375.8984, 377.3253];
-    alphas = [5.3963e-7, 5.4666e-8];
+    % taus = [0.13281, 0.39953] * 1e-6;
+    % nus = [375.8984, 377.3253];
+    % alphas = [5.3963e-7, 5.4666e-8];
+
+    taus = zeros(K, 1);
+    nus = zeros(K, 1);
+    alphas = zeros(K, 1);
+
+    for k = 1:K
+        pk = positions(k, :);
+        vk = velocities(k, :);
+
+        tau = pos2tau(pk, pT, pR);
+        taus(k) = tau;
+
+        % los_vector = (pR - pk) / norm(pR - pk);
+        % v_rel = dot(vk, los_vector);
+        % nu = 2 * v_rel / lambda;
+        nu = velocity2nu(vk.', pk.', pT.', pR.', lambda);
+        nus(k) = nu;
+
+        alpha = lambda * sqrt(rcs(k)) / ((4*pi)^1.5 * norm(pk - pT) * norm(pk - pR));
+        alphas(k) = alpha;
+    end
+
+    % alphas = alphas .* PT;
+
+    tau_idx = tau2idx(taus.', Tsym, N_fft);
+    nu_idx = nu2idx(nus.', delta_f, M_fft);
 
     tau_res = 1/BW;
     nu_res = 1/(M*Tsym);
 
-    tau_idx = tau2idx(taus, Tsym, N_fft);
-    nu_idx = nu2idx(nus, delta_f, M_fft);
+    delay_array = getDelayArray(Tsym, N_fft);
+    doppler_array = getDopplerArray(delta_f, M_fft, is_fftshifted);
 
-    % % Allocate arrays
-    % delays = zeros(K, 1);
-    % dopplers = zeros(K, 1);
-    % delay_idxs = zeros(K, 1);
-    % doppler_idxs = zeros(K, 1);
-    % 
-    % for k = 1:K
-    %     pk = targets(k, :);
-    %     vk = velocities(k, :);
-    % 
-    %     d1 = norm(pT - pk);
-    %     d2 = norm(pk - pR);
-    %     tau = (d1 + d2) / c;
-    %     delays(k) = tau;
-    % 
-    %     los_vector = (pR - pk) / norm(pR - pk);
-    %     v_rel = dot(vk, los_vector);
-    %     nu = 2 * v_rel / lambda;
-    %     dopplers(k) = nu;
-    % 
-    %     % Find closest bin indices
-    %     delay_bins = (0:N-1) * delay_res;
-    %     doppler_bins = (-M/2:M/2-1) * doppler_res;
-    % 
-    %     [~, delay_idx] = min(abs(delay_bins - tau));
-    %     [~, doppler_idx] = min(abs(doppler_bins - nu));
-    % 
-    %     delay_idxs(k) = delay_idx;
-    %     doppler_idxs(k) = doppler_idx + M/2; % to match fftshifted layout
-    % end
-    params = v2struct();
+    params = v2struct(c, N, M, N_fft, M_fft, fc, delta_f, BW, T, Tcp, Tsym, is_fftshifted, PT_db, PT, noise_fig, N0, sigma2, K, known_data, pilot_ratio, modulation, pT, pR, positions, velocities, rcs_dB, rcs, lambda, taus, nus, alphas, tau_idx, nu_idx, tau_res, nu_res, delay_array, doppler_array);
 end
