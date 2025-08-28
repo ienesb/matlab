@@ -1,4 +1,4 @@
-function params = init_simulation_params()
+function params = init_simulation_params(rho)
     c = physconst('LightSpeed');
     
     N = 400;                   % Number of OFDM subcarriers
@@ -25,7 +25,7 @@ function params = init_simulation_params()
     
     K = 2;                     % Number of targets
     known_data = false;       % Genie-aided or not
-    pilot_ratio = 0.05;       % Fraction of pilots
+    pilot_ratio = rho;       % Fraction of pilots
     modulation = 'QPSK';      % Data modulation
     
     % Locations (x,y): TX, RX, and 2 targets
@@ -33,8 +33,10 @@ function params = init_simulation_params()
     pR = [50, 0];
     positions = [56.9, 10; 79.4, 7]; % targets(k, :) k = 1,2,...,K
     velocities = [1.4, -2.2; 2.2, -13.7];
-    rcs_dB = [4.9, 6];       % Target RCS in dBsm
+    rcs_dB = [4.9, 2];       % Target RCS in dBsm
     rcs = db2pow(rcs_dB);
+
+    ref_target_idx = 2;
 
     % lambda * sqrt(rcs) / ((4*pi)^1.5 * norm(targets(1, :) - pT) * norm(targets(1, :) - pR))
     
@@ -77,5 +79,7 @@ function params = init_simulation_params()
     delay_array = getDelayArray(Tsym, N_fft);
     doppler_array = getDopplerArray(delta_f, M_fft, is_fftshifted);
 
-    params = v2struct(c, N, M, N_fft, M_fft, fc, delta_f, BW, T, Tcp, Tsym, is_fftshifted, PT_db, PT, noise_fig, N0, sigma2, K, known_data, pilot_ratio, modulation, pT, pR, positions, velocities, rcs_dB, rcs, lambda, taus, nus, alphas, tau_idx, nu_idx, tau_res, nu_res, delay_array, doppler_array);
+    monteCarlo = 100;
+
+    params = v2struct(c, N, M, N_fft, M_fft, fc, delta_f, BW, T, Tcp, Tsym, is_fftshifted, PT_db, PT, noise_fig, N0, sigma2, K, known_data, pilot_ratio, modulation, pT, pR, positions, velocities, rcs_dB, rcs, lambda, taus, nus, alphas, tau_idx, nu_idx, tau_res, nu_res, delay_array, doppler_array, ref_target_idx, monteCarlo);
 end
