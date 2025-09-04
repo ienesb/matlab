@@ -26,4 +26,4 @@ for r_idx = 1:length(rcs2)
 end
 toc
 
-save("sim3.mat")
+save("sim1v3.mat")
