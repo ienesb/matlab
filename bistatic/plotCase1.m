@@ -1,19 +1,19 @@
 clear;
-close all;
+% close all;
 clc
 
-load("sim1.mat");
+load("sim1v5.mat");
 
 figure; hold on;
 plot(rcs2_dB, Pds)
 
 clear;
-load("sim2.mat");
+load("sim2v5.mat");
 
 plot(rcs2_dB, Pds)
 
 clear;
-load("sim3.mat");
+load("sim3v5.mat");
 
 plot(rcs2_dB, Pds)
 
