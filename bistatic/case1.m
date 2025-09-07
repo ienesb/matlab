@@ -5,10 +5,10 @@ clc;
 addpath('modules');  % Optional folder for functions
 
 
-rcs2_dB = -5:5;
+rcs2_dB = 2;
 rcs2 = db2pow(rcs2_dB);
 
-nIter = 3;
+nIter = 1;
 
 Pds = zeros(length(rcs2), nIter);
 
@@ -16,10 +16,10 @@ tic
 for r_idx = 1:length(rcs2)
     r_idx
     clearvars -except r_idx rcs2 rcs2_dB Pds nIter;
-    pilot_ratio = 0.05;
-    monteCarlo = 500;
+    pilot_ratio = 0.02;
+    monteCarlo = 1;
     is_genie = 0;
-    is_data_only = 0;
+    is_data_only = 1;
     params = init_simulation_params(rcs2_dB(r_idx), pilot_ratio, nIter, monteCarlo, is_genie, is_data_only);
     v2struct(params);
 
@@ -36,4 +36,4 @@ toc
 figure;
 plot(rcs2_dB, Pds);
 
-save("sim7v5.mat")
+save("sim10v5.mat")

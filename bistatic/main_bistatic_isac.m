@@ -73,6 +73,25 @@ if ~is_data_only
         end
         is_ref_detected_array(iter) = is_ref_detected;
     end
+
+else
+    %% Stage 4 - Final Detection (Delay-Doppler Map)
+    HDD = generate_dd_map(H_hat, params);
+    
+    [tau_hats, nu_hats] = detect_targets(HDD, params);
+    
+    K_hat = length(tau_hats);
+    
+    is_ref_detected = 0;
+    
+    for k = 1:K_hat
+        [tau_hats(k), nu_hats(k)] = refine_parameters(tau_hats(k), nu_hats(k), H_hat, params);
+        [targetIdx, false_alarm] = getDetectedTarget(tau_hats(k), nu_hats(k), params);
+        if targetIdx == ref_target_idx && ~false_alarm
+            is_ref_detected = 1;
+        end
+    end
+    is_ref_detected_array = is_ref_detected;
 end
 
 
