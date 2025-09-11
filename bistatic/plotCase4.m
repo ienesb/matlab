@@ -9,7 +9,9 @@ figure; hold on;
 delays = getDelayArray(Tsym, N_fft);
 delays = delays .* 1e6;
 HDD_db = pow2db(HDD);
-plot(delays, HDD_db(:, 129), LineWidth=2, Color="red")
+range_profile = HDD_db(:, 129); 
+range_profile = range_profile - max(range_profile);
+plot(delays, range_profile, LineWidth=2, Color="red")
 
 
 clear;
@@ -18,7 +20,9 @@ load("sim9v5.mat");
 delays = getDelayArray(Tsym, N_fft);
 delays = delays .* 1e6;
 HDD_db = pow2db(HDD);
-plot(delays, HDD_db(:, 129), LineWidth=2, Color="green")
+range_profile = HDD_db(:, 129); 
+range_profile = range_profile - max(range_profile);
+plot(delays, range_profile, LineWidth=2, Color="green")
 
 
 clear;
@@ -27,7 +31,9 @@ load("sim10v5.mat");
 delays = getDelayArray(Tsym, N_fft);
 delays = delays .* 1e6;
 HDD_db = pow2db(HDD);
-plot(delays, HDD_db(:, 129), LineWidth=2, Color="blue")
+range_profile = HDD_db(:, 129); 
+range_profile = range_profile - max(range_profile);
+plot(delays, range_profile, LineWidth=2, Color="blue")
 
 xline(taus.*1e6, LineWidth=2);
 

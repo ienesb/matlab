@@ -2,55 +2,74 @@ clear;
 close all;
 clc;
 
-load("H.mat")
-load("H_hat1.mat")
-load("H_hat2.mat")
-H_hat = H_hat1;
+load("sim.mat");
 
-params = init_simulation_params();
-v2struct(params);
 
-%% CFAR Params
-guardsize = [20, 12];
-trainingsize = [40, 42];
-pfa = 1e-4;
+%% Stage 1 - Initial Channel Estimation
+% Step 1: Channel Estimation at Pilot Locations
+H_hat = initial_channel_estimation(X, Y, pilot_mask);
 
-cfar2D = phased.CFARDetector2D('GuardBandSize',guardsize,'TrainingBandSize',trainingsize,...
-  'ProbabilityFalseAlarm',pfa, ThresholdOutputPort=true);
-
-[columnInds,rowInds] = meshgrid(108:150, 62:280);
-CUTIdx = [rowInds(:) columnInds(:)]';
-
-%% Detection
-
+% Step 2: Target Detection/Estimation from Channel Estimate 
 HDD = generate_dd_map(H_hat, params);
 
-[detections, threshold] = cfar2D(HDD, CUTIdx);
+tau = 0.2332*1e-6;
+nu = -1.6457;
 
-detection_map = zeros(size(HDD));
+tic
+max_inner = 0;
+phis = zeros(N, M, 9417);
+for idx1 = 62:280
+    tau = delay_array(idx1);
+    b = getb(tau, params);
+    for idx2 = 108:150
+        nu = doppler_array(idx2);
+        c = getc(nu, params);
+        phi = b * c.';
+        temp = abs(trace(H_hat' * phi));
+        phis(:, :, (idx1-62)*43+idx2-107) = phi;
+        if temp > max_inner
+            max_inner = temp;
+            % idx1
+            % idx2
+        end
+    end
+end
+toc
 
-r = CUTIdx(1, detections);
-c = CUTIdx(2, detections);
+I = repmat(eye(M), 1, 1, 9417);
+tic
+temp = I .* pagemtimes(H_hat', phis);
+temp = sum(temp, [1, 2]);
+temp = temp(:);
+toc
+tic
+[tau_hats, nu_hats] = detect_targets(HDD, params);
+toc
+K_hat = length(tau_hats);
 
-lin = sub2ind(size(HDD), r, c);
+for k = 1:K_hat
+    [tau_hats(k), nu_hats(k)] = refine_parameters(tau_hats(k), nu_hats(k), H_hat, params);
+    [targetIdx, false_alarm] = getDetectedTarget(tau_hats(k), nu_hats(k), params);
+end
 
-% detection_map(lin) = HDD(lin);
-% detection_map(lin) = 1;
+% Step 3: Channel Reconstruction from Target Estimates
 
-epsilon = 5;
-minpts = 10;
-detection_map(lin) = dbscan([r.' c.'], epsilon, minpts);
+A = zeros(N*M, K_hat);
+for k = 1:K_hat
+    b_tau = getb(tau_hats(k), params);
+    c_nu = getc(nu_hats(k), params);
+    a_k = kron((c_nu), b_tau);
+    A(:, k) = a_k;
+end
 
-detection_map_reduced = detection_map(62:280, 108:150);
-max(detection_map_reduced(:))
+alpha_hat = (abs(pinv(A)*H_hat(:))) / pilot_ratio;
 
-plotDDMap(HDD, params, 1, 1)
-plotDDMap(detection_map, params, 1)
-hold on;
-line([108, 150], [62, 62], 'Color', 'r');
-line([108, 150], [280, 280], 'Color', 'r');
-line([108, 108], [62, 280], 'Color', 'r');
-line([150, 150], [62, 280], 'Color', 'r');
+for k = 1:K_hat
+    b_tau = getb(tau_hats(k), params);
+    c_nu = getc(nu_hats(k), params);
+    temp = alpha_hat(k) * (b_tau * c_nu.');
+    temp(pilot_mask) = 0;
 
-figure;
-imagesc(detection_map_reduced);
+    H_hat = H_hat + temp; % pilot_mask entrileri ayni kaliyor.
+end
+

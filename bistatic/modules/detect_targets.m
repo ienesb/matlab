@@ -9,9 +9,8 @@ function [tau_hats, nu_hats] = detect_targets(HDD, params) % assuming there is o
     
     [columnInds,rowInds] = meshgrid(108:150, 62:280);
     CUTIdx = [rowInds(:) columnInds(:)]';
-    
+
     [detections, threshold] = cfar2D(HDD, CUTIdx);
-    
     detection_map = zeros(size(HDD));
     
     r = CUTIdx(1, detections);
