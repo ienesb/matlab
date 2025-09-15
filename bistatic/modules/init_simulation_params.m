@@ -1,5 +1,6 @@
 function params = init_simulation_params(rcs2_dB, rho, nIter, monteCarlo, is_genie, is_data_only)
-    c = physconst('LightSpeed');
+    % c = physconst('LightSpeed');
+    c = 3e8;
     
     N = 400;                   % Number of OFDM subcarriers
     M = 60;                    % Number of OFDM symbols (words)
@@ -64,7 +65,7 @@ function params = init_simulation_params(rcs2_dB, rho, nIter, monteCarlo, is_gen
         % los_vector = (pR - pk) / norm(pR - pk);
         % v_rel = dot(vk, los_vector);
         % nu = 2 * v_rel / lambda;
-        nu = velocity2nu(vk.', pk.', pos_Tx.', pos_Rx.', lambda);
+        nu = velocity2nu(vk.', pk.', pos_Tx.', pos_Tx.', lambda);
         nus(k) = nu;
 
         alpha = lambda * sqrt(rcs(k)) / ((4*pi)^1.5 * norm(pk - pos_Tx) * norm(pk - pos_Rx));

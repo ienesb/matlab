@@ -2,7 +2,7 @@ clear;
 close all;
 clc;
 
-load("sim.mat");
+load("results/sim.mat");
 
 
 %% Stage 1 - Initial Channel Estimation
@@ -18,15 +18,15 @@ nu = -1.6457;
 tic
 max_inner = 0;
 phis = zeros(N, M, 9417);
-for idx1 = 62:280
+for idx1 = 62:280 % 219
     tau = delay_array(idx1);
     b = getb(tau, params);
-    for idx2 = 108:150
+    for idx2 = 108:150 % 43
         nu = doppler_array(idx2);
         c = getc(nu, params);
         phi = b * c.';
         temp = abs(trace(H_hat' * phi));
-        phis(:, :, (idx1-62)*43+idx2-107) = phi;
+        phis(:, :, (idx1-62)*43+idx2-108+1) = phi;
         if temp > max_inner
             max_inner = temp;
             % idx1
@@ -40,8 +40,11 @@ I = repmat(eye(M), 1, 1, 9417);
 tic
 temp = I .* pagemtimes(H_hat', phis);
 temp = sum(temp, [1, 2]);
-temp = temp(:);
+temp = abs(temp(:));
+[~, max_idx] = max(temp);
 toc
+
+return
 tic
 [tau_hats, nu_hats] = detect_targets(HDD, params);
 toc

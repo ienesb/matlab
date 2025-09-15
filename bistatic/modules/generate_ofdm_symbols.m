@@ -8,7 +8,8 @@ function [X, pilot_mask] = generate_ofdm_symbols(params) % N, M, M_order, pilot_
     pilot_mask(pilot_indices) = true;
     
     Xp = zeros(N, M);
-    Xp(pilot_mask) = 1;
+    % Xp(pilot_mask) = 1;
+    Xp(pilot_mask) = qammod(randi([0 M_order-1], sum(pilot_mask(:)), 1), M_order, 'UnitAveragePower', true);
     
     Xd = zeros(N, M);
     data_mask = ~pilot_mask;

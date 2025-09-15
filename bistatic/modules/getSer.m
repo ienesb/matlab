@@ -1,8 +1,12 @@
-function ser = getSer(X, X_hat, data_mask)
-
-    RMSE_dB = pow2db((mean(abs(X_hat(:) - X(:)).^2)))
+function [ser, rmse] = getSer(X, X_hat, pilot_mask, bPlot)
+    if nargin < 4
+        bPlot = 0;
+    end
+    data_mask = ~pilot_mask;
+    rmse = mean(abs(X_hat(:) - X(:)).^2);
     errors = X ~= X_hat;
-    ser = sum(errors, "all") / sum(data_mask, "all");
-
-    scatterplot(X_hat(:));
+    ser = sum(errors(:)) / sum(data_mask(:));
+    if bPlot
+        scatterplot(X_hat(:));
+    end
 end
