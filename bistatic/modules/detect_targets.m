@@ -1,4 +1,4 @@
-function [tau_hats, nu_hats] = detect_targets(HDD, params) % assuming there is only 1 target detected. For multiple targets, add clustering !!!!!!!!
+function [tau_hats, nu_hats] = detect_targets(HDD, params)
     v2struct(params);
     guardsize = [20, 12];
     trainingsize = [40, 42];
@@ -10,20 +10,23 @@ function [tau_hats, nu_hats] = detect_targets(HDD, params) % assuming there is o
     [columnInds,rowInds] = meshgrid(108:150, 62:280);
     CUTIdx = [rowInds(:) columnInds(:)]';
 
-    [detections, threshold] = cfar2D(HDD, CUTIdx);
+    [detections, threshold] = cfar2D(HDD, CUTIdx); %#ok<ASGLU>
     detection_map = zeros(size(HDD));
     
-    r = CUTIdx(1, detections);
-    c = CUTIdx(2, detections);
+    row = CUTIdx(1, detections);
+    col = CUTIdx(2, detections);
+
+    rangesCUT = range_array(row);
+    velocitiesCUT = velocity_array(col);
     
-    lin = sub2ind(size(HDD), r, c);
+    lin = sub2ind(size(HDD), row, col);
     
     detection_map(lin) = HDD(lin);
 
-    epsilon = 5;
-    minpts = 10;
+    epsilon = 10.4897;
+    minpts = 1;
 
-    detection_map(lin) = dbscan([r.' c.'], epsilon, minpts);
+    detection_map(lin) = dbscan([rangesCUT.' velocitiesCUT.'], epsilon, minpts);
     detection_map(detection_map < 0) = 0;
     Ntargets = max(detection_map(:));
     
@@ -38,11 +41,9 @@ function [tau_hats, nu_hats] = detect_targets(HDD, params) % assuming there is o
         nu_hats_idx(k) = nu_hat_idx;
     end  
     
-    [~, linIdx] = max(detection_map(:));
-    [row, col] = ind2sub(size(detection_map), linIdx);
-    taus = getDelayArray(Tsym, N_fft);
-    nus = getDopplerArray(delta_f, M_fft, is_fftshifted);
+    % [~, linIdx] = max(detection_map(:));
+    % [row, col] = ind2sub(size(detection_map), linIdx);
 
-    tau_hats = taus(tau_hats_idx);
-    nu_hats = nus(nu_hats_idx);
+    tau_hats = delay_array(tau_hats_idx);
+    nu_hats = doppler_array(nu_hats_idx);
 end

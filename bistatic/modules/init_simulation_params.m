@@ -1,4 +1,4 @@
-function params = init_simulation_params(rcs2_dB, rho, nIter, monteCarlo, is_genie, is_data_only)
+function params = init_simulation_params(rcs2_dB, pilot_ratio, nIter, monteCarlo)
     % c = physconst('LightSpeed');
     c = 3e8;
     
@@ -8,11 +8,12 @@ function params = init_simulation_params(rcs2_dB, rho, nIter, monteCarlo, is_gen
     M_fft = 256;
 
     fc = 28e9;                 % Carrier frequency
+    lambda = c / fc;
     delta_f = 120e3;           % Subcarrier spacing
     BW = N * delta_f;
     T = 1 / delta_f;            % Symbol duration
-    % Tcp = T * 0.07; 
-    Tcp = 0;
+    Tcp = T * 0.07; 
+    % Tcp = 0;
     Tsym = Tcp + T;
 
     is_fftshifted = 1;
@@ -23,13 +24,7 @@ function params = init_simulation_params(rcs2_dB, rho, nIter, monteCarlo, is_gen
     noise_fig = 8;              % Noise figure (dB)
     N0 = -174;                  % Noise PSD (dbm/Hz)
     sigma2 = db2pow(N0 + noise_fig) * 1e-3 * N * delta_f;
-    
-    if is_genie
-        pilot_ratio = 1;       % Fraction of pilots
-    else
-        pilot_ratio = rho;
-    end
-
+        
     % modulation = 'QPSK';      % Data modulation
     M_order = 4;
     
@@ -43,11 +38,11 @@ function params = init_simulation_params(rcs2_dB, rho, nIter, monteCarlo, is_gen
 
     K = length(positions);
 
-    angles = [10, 5];
+    % angles = [10, 5];
+    angles = [9.96776418019114, 5.03823907333103];
 
     ref_target_idx = 2;
     
-    lambda = c / fc;
     ft = conj(geta(10, lambda, NT));
     ft = ft ./ norm(ft);
 
@@ -65,28 +60,28 @@ function params = init_simulation_params(rcs2_dB, rho, nIter, monteCarlo, is_gen
         % los_vector = (pR - pk) / norm(pR - pk);
         % v_rel = dot(vk, los_vector);
         % nu = 2 * v_rel / lambda;
-        nu = velocity2nu(vk.', pk.', pos_Tx.', pos_Tx.', lambda);
+        nu = velocity2nu(vk.', pk.', pos_Tx.', pos_Rx.', lambda);
         nus(k) = nu;
 
         alpha = lambda * sqrt(rcs(k)) / ((4*pi)^1.5 * norm(pk - pos_Tx) * norm(pk - pos_Rx));
         alpha = alpha * sqrt(PT);
-        alpha = alpha * abs(geta(angles(k), lambda, NT).' * ft);
+        alpha = alpha * (geta(angles(k), lambda, NT).' * ft);
         alphas(k) = alpha;
     end
 
 
-    tau_idx = tau2idx(taus.', Tsym, N_fft);
-    nu_idx = nu2idx(nus.', delta_f, M_fft);
+    tau_idx = tau2idx(taus.', delta_f, N_fft);
+    nu_idx = nu2idx(nus.', Tsym, M_fft, lambda);
 
     tau_res = 1/BW;
     nu_res = 1/(M*Tsym);
 
-    delay_array = getDelayArray(Tsym, N_fft);
-    doppler_array = getDopplerArray(delta_f, M_fft, is_fftshifted);
+    [delay_array, range_array] = getDelayArray(delta_f, N_fft);
+    [doppler_array, velocity_array] = getDopplerArray(Tsym, M_fft, lambda);
 
     params = v2struct(c, N, M, N_fft, M_fft, fc, delta_f, BW, T, Tcp, ...
         Tsym, is_fftshifted, NT, PT_db, PT, noise_fig, N0, sigma2, nIter, ...
         pilot_ratio, M_order, pos_Tx, pos_Rx, positions, velocities, ...
         rcs_dB, rcs, K, angles, lambda, taus, nus, alphas, tau_idx, nu_idx, tau_res, nu_res, ...
-        delay_array, doppler_array, ref_target_idx, monteCarlo, is_data_only, is_genie);
+        delay_array, range_array, doppler_array, velocity_array, ref_target_idx, monteCarlo);
 end

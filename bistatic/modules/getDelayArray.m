@@ -1,3 +1,5 @@
-function delays = getDelayArray(Tsym, N)
-    delays = linspace(0, Tsym*(N-1)/N, N);
+function [delay_array, range_array] = getDelayArray(delta_f, N)
+    c = 3e8;
+    delay_array = (0:N-1)/ N / delta_f;
+    range_array = delay_array * c/2;
 end

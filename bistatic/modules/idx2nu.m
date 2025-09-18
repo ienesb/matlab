@@ -1,4 +1,4 @@
-function nu = idx2nu(idx, delta_f, M)
-    nus = getDopplerArray(delta_f, M, 1);
+function nu = idx2nu(idx, Tsym, M, lambda)
+    nus = getDopplerArray(Tsym, M, lambda);
     nu = nus(idx);
 end

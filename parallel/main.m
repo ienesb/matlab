@@ -7,7 +7,7 @@ tic
 piEst = computePi(m,n);
 toc
 
-pool = parpool("Threads");
+% pool = parpool("Threads");
 
 tic
 piEstParfor = computePiParfor(m,n);

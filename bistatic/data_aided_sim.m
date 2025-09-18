@@ -9,6 +9,7 @@ function [is_ref_detected, ser, rmse] = data_aided_sim(params)
     % Step 1: Channel Estimation at Pilot Locations
     % H_hat = initial_channel_estimation(X, Y, pilot_mask);
     H_hat = zeros(N, M);
+    % SNRh = sum(abs(alphas).^2) / sigma2;
     H_hat = estimate_channel(X, Y, H_hat, pilot_mask, "RF"); % Initial Channel Estimation
     H_hat = pilotBasedChannelNormalization(H_hat, pilot_mask);
     
@@ -52,7 +53,7 @@ function [is_ref_detected, ser, rmse] = data_aided_sim(params)
     for iter = 1:nIter
         %% Stage 2 - Data Demodulation
         X_hat = data_demodulation(Y, H_hat, X, pilot_mask, params);
-        X_hat = hard_demod(X_hat, ~pilot_mask);
+        % X_hat = hard_demod(X_hat, ~pilot_mask);
         
         %% Stage 3 - Iterative Refinement
         % H_hat = refine_channel_estimate(X_hat, Y, pilot_mask, alphas, sigma2); % bunun yerine estimate_channel kullan!!!

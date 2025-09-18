@@ -1,20 +1,17 @@
-function plotDDMap(DD, params, is_indexed, is_fftshifted)
+function plotDDMap(DD, params, is_indexed)
     v2struct(params);
     [N, M] = size(DD);
 
-    if nargin < 4
-        is_fftshifted = 1;
-        if nargin < 3
-            is_indexed = 0;
-        end
+    if nargin < 3
+        is_indexed = 0;
     end
-
-    delays = getDelayArray(Tsym, N);
-    dopplers = getDopplerArray(delta_f, M, is_fftshifted);
 
     if is_indexed
         delays = 0:(N-1);
         dopplers = 0:(M-1);
+    else
+        delays = delay_array;
+        dopplers = doppler_array;
     end
     
     figure;
