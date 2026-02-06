@@ -1,0 +1,9 @@
+sim1v7: nIter = 1, pT = 20 dbm, rho = 5%, 
+
+sim4v7: nIter = 3, pT = 20 dbm, rcs2 = 2dbsm
+
+sim7v7: nIter = 1, pT = 40dbm, rho = 5%
+
+sim11v7: nIter = 3, pT = 40dbm, rho = 5%
+
+sim12v7: nIter = 3, pT = 40dbm, rho = 5%, pilot_only

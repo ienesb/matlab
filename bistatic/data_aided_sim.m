@@ -1,4 +1,4 @@
-function [is_ref_detected, ser, rmse] = data_aided_sim(params)
+function [is_ref_detected, ber, rmse] = data_aided_sim(params)
     v2struct(params);
     [X, pilot_mask] = generate_ofdm_symbols(params);
     
@@ -53,6 +53,7 @@ function [is_ref_detected, ser, rmse] = data_aided_sim(params)
     for iter = 1:nIter
         %% Stage 2 - Data Demodulation
         X_hat = data_demodulation(Y, H_hat, X, pilot_mask, params);
+        [rmse, ber] = getSer(X, X_hat, pilot_ratio);
         % X_hat = hard_demod(X_hat, ~pilot_mask);
         
         %% Stage 3 - Iterative Refinement
@@ -75,9 +76,5 @@ function [is_ref_detected, ser, rmse] = data_aided_sim(params)
                 is_ref_detected(iter) = 1;
             end
         end
-
-        [~, rmse] = getSer(X, X_hat, pilot_mask);
-        X_hat = hard_demod(X_hat, ~pilot_mask);
-        [ser, ~] = getSer(X, X_hat, pilot_mask);
     end
 end

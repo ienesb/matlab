@@ -1,0 +1,6 @@
+1a. generate getCRB_OFDM/OTFS functions (no ICI/ISI)
+1b. generate getMCRB_OFDM/OTFS functions (no ICI/ISI)
+
+2. compare monostatic/genie CRB for OTFS and OFDM (no ICI/ISI)
+
+3. generate getCRB_OFDM for ICI channel

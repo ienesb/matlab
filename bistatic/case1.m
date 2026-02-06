@@ -4,7 +4,7 @@ clc;
 
 addpath('modules');
 
-rcs2_dB = -5:0.5:5;
+rcs2_dB = -5:5;
 rcs2 = db2pow(rcs2_dB);
 
 nIter = 1;
@@ -17,14 +17,17 @@ sers = zeros(length(rcs2), 1);
 rmse_dBs = zeros(length(rcs2), 1);
 
 tic
-for idx = 1:length(rcs2)    
+for idx = 1:length(rcs2_dB)    
     params = init_simulation_params(rcs2_dB(idx), pilot_ratio, nIter, monteCarlo);
+    % params = init_simulation_params(rcs2_dB, pilot_ratio(idx), nIter, monteCarlo);
 
     Pd = zeros(nIter, 1);
     ser = 0;
     rmse = 0;
-    parfor m = 1:monteCarlo % parfor
-        % is_ref_detected = pilot_only(params, is_genie);
+    for m = 1:monteCarlo % parfor
+        % is_ref_detected = pilot_only_sim(params, is_genie);
+        % s = 0;
+        % r = 0;
         [is_ref_detected, s, r] = data_aided_sim(params);
         Pd = Pd + is_ref_detected;
         ser = ser + s;
@@ -45,18 +48,18 @@ figure; hold on;
 plot(rcs2_dB, Pds(:, 1), "Color", colors(2, :), LineWidth=2);
 % plot(rcs2_dB, Pds(:, 2), "Color", colors(3, :), LineWidth=2);
 % plot(rcs2_dB, Pds(:, 3), "Color", colors(4, :), LineWidth=2);
+% legend("Iteration-1", "Iteration-2", "Iteration-3");
 xlabel("Target RCS (dBsm)");
 ylabel("Probability of Detection");
-% legend("Iteration-1", "Iteration-2", "Iteration-3");
 grid on;
 % 
-% figure;
-% plot(rcs2_dB, sers, LineWidth=2);
-% grid on;
-% xlabel("Target RCS (dBsm)");
-% ylabel("Symbol Error Rate");
-% 
-% figure;
-% plot(rcs2_dB, rmse_dBs);
+figure;
+plot(rcs2_dB, sers, LineWidth=2);
+grid on;
+xlabel("Target RCS (dBsm)");
+ylabel("Symbol Error Rate");
 
-% save("results/sim1v6hard.mat")
+figure;
+plot(rcs2_dB, rmse_dBs);
+
+% save("results/sim1v7p3.mat")
