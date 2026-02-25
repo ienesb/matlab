@@ -1,4 +1,4 @@
-%% MCRB and MLE for pilot-only, data aided, and genie OFDM (QPSK)
+%% MCRB and MLE for pilot-only, data aided, and genie OFDM (QPSK) (CRB derived)
 clear;
 % close all;
 clc;
@@ -12,10 +12,12 @@ options = optimoptions('fmincon', ...
               'StepTolerance',1e-14, ...
               'OptimalityTolerance',1e-12);
 
-nMonteCarlo = 10;
+nMonteCarlo = 100;
 
 N = 70;
 M = 50;
+
+M_order = 4;
 
 c = 3e8;
 fc = 30*1e9; % 30 GHz
@@ -48,20 +50,26 @@ nu_gt = 2*v_bis*cos(beta/2)/lambda;
 SNR_dbs = -30:30;
 SNR_lins = db2pow(SNR_dbs);
 
+sigma2 = 1;
+
 MCRBs = zeros(4, 4, length(SNR_dbs), nMonteCarlo);
 tau_errors = zeros(length(SNR_dbs), nMonteCarlo);
 tau_errors_pilot_only = zeros(length(SNR_dbs), nMonteCarlo);
-tau_errors_genie = zeros(length(SNR_dbs), nMonteCarlo);
+tau_errors_full_data = zeros(length(SNR_dbs), nMonteCarlo);
 
 nu_errors = zeros(length(SNR_dbs), nMonteCarlo);
 nu_errors_pilot_only = zeros(length(SNR_dbs), nMonteCarlo);
-nu_errors_genie = zeros(length(SNR_dbs), nMonteCarlo);
+nu_errors_full_data = zeros(length(SNR_dbs), nMonteCarlo);
 
 % pilot_periods = [10, 2, 2, 1; 5, 5, 1, 1];
-pilot_period = [2; 5];
+np = 2;
+mp = 5;
 
-np = pilot_period(1);
-mp = pilot_period(2);
+pilot_indices = zeros(N, M);
+pilot_indices(1:np:end, 1:mp:end) = 1;
+pilot_indices = logical(pilot_indices);
+
+data_indices = ~pilot_indices;
 
 tic
 for SNR_idx = 1:length(SNR_dbs)
@@ -69,11 +77,10 @@ for SNR_idx = 1:length(SNR_dbs)
     SNR_lin = SNR_lins(SNR_idx);
     % rng(0);
     parfor mc_idx = 1:nMonteCarlo
-        sigma2 = 1;
         alpha_gt = sqrt(SNR_lin * sigma2) * exp(1j*rand*2*pi);
         
-        symbols = randi(4, N, M)-1;
-        X = qammod(symbols, 4, UnitAveragePower=true);
+        symbols = randi(M_order, N, M)-1;
+        X = qammod(symbols, M_order, UnitAveragePower=true);
         
         ns = (0:(N-1)).';
         ms = 0:(M-1);
@@ -87,11 +94,7 @@ for SNR_idx = 1:length(SNR_dbs)
         Y = H .* X + Z;
         y = Y(:);
 
-        %% Channel Estimation            
-        pilot_indices = zeros(N, M);
-        pilot_indices(1:np:end, 1:mp:end) = 1;
-        pilot_indices = logical(pilot_indices);
-
+        %% Channel Estimation
         X_hat = zeros(N, M);
         
         X_hat(pilot_indices) = X(pilot_indices);
@@ -124,7 +127,7 @@ for SNR_idx = 1:length(SNR_dbs)
         
         H_hat = alpha_hat * E;     % full grid channel (phase terms apply everywhere)
 
-        %% Genie
+        %% Full Data Parameter Estimation
         [eta_opt, ~] = fmincon( ...
             @(eta) cost_tau_nu(eta, deltaf, T, X, y), ...
             eta0, [], [], [], [], lb, ub, [], options);
@@ -132,14 +135,14 @@ for SNR_idx = 1:length(SNR_dbs)
         nu_opt = eta_opt(1);
         tau_opt = eta_opt(2);
 
-        tau_errors_genie(SNR_idx, mc_idx) = abs(tau_gt - tau_opt);
-        nu_errors_genie(SNR_idx, mc_idx) = abs(nu_gt - nu_opt);
+        tau_errors_full_data(SNR_idx, mc_idx) = abs(tau_gt - tau_opt);
+        nu_errors_full_data(SNR_idx, mc_idx) = abs(nu_gt - nu_opt);
 
         %% Data-Aided Parameter Estimation
         % X_hat = (Y .* conj(H_hat)) ./ (abs(H_hat).^2 + sigma2);
         X_soft = (Y .* conj(H_hat)) ./ (abs(H_hat).^2 + sigma2);
-        sym_hat = qamdemod(X_soft, 4, UnitAveragePower=true);
-        X_hat   = qammod(sym_hat, 4, UnitAveragePower=true);
+        sym_hat = qamdemod(X_soft, M_order, UnitAveragePower=true);
+        X_hat   = qammod(sym_hat, M_order, UnitAveragePower=true);
         
         X_hat(pilot_indices) = X(pilot_indices);
 
@@ -155,7 +158,7 @@ for SNR_idx = 1:length(SNR_dbs)
 
         %% MCRB Calculation
         
-        MCRB = getMCRB(X_hat, mu_gt, deltaf, T, sigma2, alpha_gt, nu_gt, tau_gt);
+        MCRB = getMCRB_OFDM(X_hat, mu_gt, deltaf, T, sigma2, alpha_gt, nu_gt, tau_gt);
         MCRBs(:, :, SNR_idx, mc_idx) = MCRB;
     end
 end
@@ -165,24 +168,30 @@ MCRBs = mean(MCRBs, 4);
 
 MCRB_range = sqrt(MCRBs(4, 4, :) * c^2);
 MCRB_range = MCRB_range(:);
+MCRB_delay = MCRB_range ./ c;
 
 MCRB_velocity = sqrt(MCRBs(3, 3, :));
 MCRB_velocity = MCRB_velocity(:) * (lambda / (2*cos(beta/2)));
+MCRB_doppler = MCRB_velocity ./ (lambda / (2*cos(beta/2)));
 
 tau_errors = sqrt(mean(tau_errors.^2, 2));
 range_errors = tau_errors .* c;
+
 nu_errors = sqrt(mean(nu_errors.^2, 2));
 velocity_errors = nu_errors .* (lambda / (2*cos(beta/2)));
 
 tau_errors_pilot_only = sqrt(mean(tau_errors_pilot_only.^2, 2));
 range_errors_pilot_only = tau_errors_pilot_only .* c;
+
 nu_errors_pilot_only = sqrt(mean(nu_errors_pilot_only.^2, 2));
 velocity_errors_pilot_only = nu_errors_pilot_only .* (lambda / (2*cos(beta/2)));
 
-tau_errors_genie = sqrt(mean(tau_errors_genie.^2, 2));
-range_errors_genie = tau_errors_genie .* c;
-nu_errors_genie = sqrt(mean(nu_errors_genie.^2, 2));
-velocity_errors_genie = nu_errors_genie .* (lambda / (2*cos(beta/2)));
+tau_errors_full_data = sqrt(mean(tau_errors_full_data.^2, 2));
+range_errors_full_data = tau_errors_full_data .* c;
+
+nu_errors_full_data = sqrt(mean(nu_errors_full_data.^2, 2));
+velocity_errors_full_data = nu_errors_full_data .* (lambda / (2*cos(beta/2)));
+
 
 %% CRB Pilot Only
 K = ceil((N - 1) / np);
@@ -192,9 +201,11 @@ absP = (K + 1) * (L + 1);
 
 CRB_range_pilot_only = 12 / (K * (K + 2) * absP * np^2) * c^2 ./ (8 * pi^2 * SNR_lins * deltaf^2);
 CRB_range_pilot_only = sqrt(CRB_range_pilot_only);
+CRB_delay_pilot_only = CRB_range_pilot_only ./ c;
 
 CRB_velocity_pilot_only = 12 / (L * (L + 2) * absP * mp^2) * lambda^2 ./ (32 * pi^2 * SNR_lins * T^2 * cos(beta/2)^2);
 CRB_velocity_pilot_only = sqrt(CRB_velocity_pilot_only);
+CRB_doppler_pilot_only = CRB_velocity_pilot_only ./ (lambda / (2*cos(beta/2)));
 
 %% CRB Full Data
 np = 1;
@@ -204,37 +215,70 @@ L = ceil((M - 1) / mp);
 
 absP = (K + 1) * (L + 1);
 
-CRB_range_genie = 12 / (K * (K + 2) * absP * np^2) * c^2 ./ (8 * pi^2 * SNR_lins * deltaf^2);
-CRB_range_genie = sqrt(CRB_range_genie);
+CRB_range_full_data = 12 / (K * (K + 2) * absP * np^2) * c^2 ./ (8 * pi^2 * SNR_lins * deltaf^2);
+CRB_range_full_data = sqrt(CRB_range_full_data);
+CRB_delay_full_data = CRB_range_full_data ./ c;
 
-CRB_velocity_genie = 12 / (L * (L + 2) * absP * mp^2) * lambda^2 ./ (32 * pi^2 * SNR_lins * T^2 * cos(beta/2)^2);
-CRB_velocity_genie = sqrt(CRB_velocity_genie);
+CRB_velocity_full_data = 12 / (L * (L + 2) * absP * mp^2) * lambda^2 ./ (32 * pi^2 * SNR_lins * T^2 * cos(beta/2)^2);
+CRB_velocity_full_data = sqrt(CRB_velocity_full_data);
+CRB_doppler_full_data = CRB_velocity_full_data ./ (lambda / (2*cos(beta/2)));
 
 %% Figure
 
 colors = lines(3);
 
 figure;
-semilogy(SNR_dbs, range_errors, "Color", colors(1, :), 'LineWidth', 2); hold on;
-semilogy(SNR_dbs, MCRB_range, "Color", colors(1, :), "LineStyle", '--', 'LineWidth', 2);
-semilogy(SNR_dbs, range_errors_pilot_only, "Color", colors(2, :),  'LineWidth', 2);
-semilogy(SNR_dbs, CRB_range_pilot_only, "Color", colors(2, :), "LineStyle", '--', 'LineWidth', 2);
-semilogy(SNR_dbs, range_errors_genie, "Color", colors(3, :), 'LineWidth', 2);
-semilogy(SNR_dbs, CRB_range_genie, "Color", colors(3, :), "LineStyle", '--', 'LineWidth', 2);
-legend("MLE (Data-aided)", "MCRB (Data-aided)", "MLE (Pilot only)", "CRB (Pilot only)", "MLE (Full Data)", "CRB (Full Data)");
+semilogy(SNR_dbs, tau_errors, "Color", colors(1, :), "LineStyle", '-', 'LineWidth', 2); hold on;
+semilogy(SNR_dbs, MCRB_delay, "Color", colors(1, :), "LineStyle", '--', 'LineWidth', 2);
+semilogy(SNR_dbs, tau_errors_pilot_only, "Color", colors(2, :), "LineStyle", '-', 'LineWidth', 2);
+semilogy(SNR_dbs, CRB_delay_pilot_only, "Color", colors(2, :), "LineStyle", '--', 'LineWidth', 2);
+semilogy(SNR_dbs, tau_errors_full_data, "Color", colors(3, :), "LineStyle", '-', 'LineWidth', 2);
+semilogy(SNR_dbs, CRB_delay_full_data, "Color", colors(3, :), "LineStyle", '--', 'LineWidth', 2);
 grid on;
+legend("Data Aided MLE", "Data Aided MCRB", "Pilot Only MLE", "Pilot Only CRB", "Full Data MLE", "Full Data CRB");
 xlabel("SNR [dB]");
-ylabel("Range RMSE [m]");
-
+ylabel("Delay RMSE [s]");
+title("OFDM");
+theme(gcf, "light");
 
 figure;
-semilogy(SNR_dbs, velocity_errors, "Color", colors(1, :), 'LineWidth', 2); hold on;
-semilogy(SNR_dbs, MCRB_velocity, "Color", colors(1, :), "LineStyle", '--', 'LineWidth', 2);
-semilogy(SNR_dbs, velocity_errors_pilot_only, "Color", colors(2, :),  'LineWidth', 2);
-semilogy(SNR_dbs, CRB_velocity_pilot_only, "Color", colors(2, :), "LineStyle", '--', 'LineWidth', 2);
-semilogy(SNR_dbs, velocity_errors_genie, "Color", colors(3, :), 'LineWidth', 2);
-semilogy(SNR_dbs, CRB_velocity_genie, "Color", colors(3, :), "LineStyle", '--', 'LineWidth', 2);
-legend("MLE (Data-aided)", "MCRB (Data-aided)", "MLE (Pilot only)", "CRB (Pilot only)", "MLE (Full Data)", "CRB (Full Data)");
+semilogy(SNR_dbs, nu_errors, "Color", colors(1, :), "LineStyle", '-', 'LineWidth', 2); hold on;
+semilogy(SNR_dbs, MCRB_doppler, "Color", colors(1, :), "LineStyle", '--', 'LineWidth', 2);
+semilogy(SNR_dbs, nu_errors_pilot_only, "Color", colors(2, :), "LineStyle", '-', 'LineWidth', 2);
+semilogy(SNR_dbs, CRB_doppler_pilot_only, "Color", colors(2, :), "LineStyle", '--', 'LineWidth', 2);
+semilogy(SNR_dbs, nu_errors_full_data, "Color", colors(3, :), "LineStyle", '-', 'LineWidth', 2);
+semilogy(SNR_dbs, CRB_doppler_full_data, "Color", colors(3, :), "LineStyle", '--', 'LineWidth', 2);
 grid on;
+legend("Data Aided MLE", "Data Aided MCRB", "Pilot Only MLE", "Pilot Only CRB", "Full Data MLE", "Full Data CRB");
+xlabel("SNR [dB]");
+ylabel("Doppler RMSE [Hz]");
+title("OFDM");
+theme(gcf, "light");
+
+figure;
+semilogy(SNR_dbs, range_errors, "Color", colors(1, :), "LineStyle", '-', 'LineWidth', 2); hold on;
+semilogy(SNR_dbs, MCRB_range, "Color", colors(1, :), "LineStyle", '--', 'LineWidth', 2);
+semilogy(SNR_dbs, range_errors_pilot_only, "Color", colors(2, :), "LineStyle", '-', 'LineWidth', 2);
+semilogy(SNR_dbs, CRB_range_pilot_only, "Color", colors(2, :), "LineStyle", '--', 'LineWidth', 2);
+semilogy(SNR_dbs, range_errors_full_data, "Color", colors(3, :), "LineStyle", '-', 'LineWidth', 2);
+semilogy(SNR_dbs, CRB_range_full_data, "Color", colors(3, :), "LineStyle", '--', 'LineWidth', 2);
+grid on;
+legend("Data Aided MLE", "Data Aided MCRB", "Pilot Only MLE", "Pilot Only CRB", "Full Data MLE", "Full Data CRB");
+xlabel("SNR [dB]");
+ylabel("Range RMSE [m]");
+title("OFDM");
+theme(gcf, "light");
+
+figure;
+semilogy(SNR_dbs, velocity_errors, "Color", colors(1, :), "LineStyle", '-', 'LineWidth', 2); hold on;
+semilogy(SNR_dbs, MCRB_velocity, "Color", colors(1, :), "LineStyle", '--', 'LineWidth', 2);
+semilogy(SNR_dbs, velocity_errors_pilot_only, "Color", colors(2, :), "LineStyle", '-', 'LineWidth', 2);
+semilogy(SNR_dbs, CRB_velocity_pilot_only, "Color", colors(2, :), "LineStyle", '--', 'LineWidth', 2);
+semilogy(SNR_dbs, velocity_errors_full_data, "Color", colors(3, :), "LineStyle", '-', 'LineWidth', 2);
+semilogy(SNR_dbs, CRB_velocity_full_data, "Color", colors(3, :), "LineStyle", '--', 'LineWidth', 2);
+grid on;
+legend("Data Aided MLE", "Data Aided MCRB", "Pilot Only MLE", "Pilot Only CRB", "Full Data MLE", "Full Data CRB");
 xlabel("SNR [dB]");
 ylabel("Velocity RMSE [m/s]");
+title("OFDM");
+theme(gcf, "light");

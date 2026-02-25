@@ -92,6 +92,10 @@ for SNR_idx = 1:length(SNR_dbs)
 end
 toc
 
+CRB_delay_pilot_only = CRBs_pilot_only(:, :, 4, 4);
+CRB_delay_pilot_only = mean(CRB_delay_pilot_only, 2);
+CRB_delay_pilot_only = sqrt(CRB_delay_pilot_only);
+
 CRB_delay_mono = CRBs_mono(:, :, 4, 4);
 CRB_delay_mono = mean(CRB_delay_mono, 2);
 CRB_delay_mono = sqrt(CRB_delay_mono);
@@ -120,7 +124,7 @@ CRB_doppler_mono_ICIv2 = sqrt(CRB_doppler_mono_ICIv2);
 colors = lines(5);
 
 figure;
-% semilogy(SNR_dbs, CRB_delay_pilot_only, "Color", colors(2, :), "LineStyle", '--', 'LineWidth', 2); hold on;
+semilogy(SNR_dbs, CRB_delay_pilot_only, "Color", colors(2, :), "LineStyle", '--', 'LineWidth', 2); hold on;
 semilogy(SNR_dbs, CRB_delay_mono, "Color", colors(3, :), "LineStyle", '--', 'LineWidth', 2); hold on;
 semilogy(SNR_dbs, CRB_delay_mono_ICI, "Color", colors(4, :), "LineStyle", '--', 'LineWidth', 2);
 semilogy(SNR_dbs, CRB_delay_mono_ICIv2, "Color", colors(5, :), "LineStyle", '--', 'LineWidth', 2);
