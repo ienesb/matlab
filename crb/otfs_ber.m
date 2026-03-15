@@ -2,57 +2,11 @@ clear;
 % close all;
 % clc;
 
-options = optimoptions('fmincon', ...
-                  'Algorithm','interior-point', ...
-                  'Display','off', ...
-                  'MaxFunctionEvaluations',1e5, ...
-                  'FiniteDifferenceType','central', ...
-                  'FiniteDifferenceStepSize',[1e-2; 1e-10], ...  % (Hz step, seconds step)
-                  'StepTolerance',1e-14, ...
-                  'OptimalityTolerance',1e-12);
+type = "OTFS";
 
-nMonteCarlo = 100;
+initialize_parameters;
 
-N = 70;
-M = 50;
-
-M_order = 4;
-
-c = 3e8;
-fc = 30*1e9; % 30 GHz
-lambda = c / fc;
-
-deltaf = 200*1e3; % 200 kHz
-Tcp = 1*1e-6; % 1 us
-T = 1/deltaf + Tcp;
-
-p_tx = [-40, 0];
-p_rx = [0, 40];
-
-p = [rand*20+80, rand*20-100]; % m
-
-v = rand*60-30; % m/s
-delta = rand*10-5; % degree
-
-d_tx = norm(p - p_tx);
-d_rx = norm(p - p_rx);
-D = norm(p_tx - p_rx);
-
-d_bis = (d_tx + d_rx);
-v_bis = v * cosd(delta);
-
-beta = acos((d_tx^2 + d_rx^2 - D^2)/(2*d_tx*d_rx));
-
-tau_gt = d_bis / c;
-nu_gt = 2*v_bis*cos(beta/2)/lambda;
-
-delta_tau = 1/(N*deltaf);
-delta_nu = 1/(M*T);
-
-SNR_dbs = -40:2:30;
-SNR_lins = db2pow(SNR_dbs);
-
-sigma2 = 1;
+generate_indices;
 
 pilot_indices = zeros(N, M);
 pilot_indices(35, 25) = 1;
@@ -86,21 +40,14 @@ for SNR_idx = 1:length(SNR_dbs)
         X_DDp = X_DD;
         X_DDp(data_indices) = 0;
 
-        X_DDd = X_DD
+        X_DDd = X_DD;
         X_DDd(pilot_indices) = 0;
 
         X_TF = isfft(X_DD);
         X_TFp = isfft(X_DDp);
         X_TFd = isfft(X_DDd);
 
-        ns = (0:(N-1)).';
-        ms = 0:(M-1);
-        
-        H_TF = alpha_gt * exp(-1j*2*pi*deltaf*ns*tau_gt) * exp(1j*2*pi*T*ms*nu_gt);
-    
-        Z = (randn(N, M) + 1j*randn(N, M)) * sqrt(sigma2/2);
-        % Z = 0;
-        Y_TF = H_TF .* X_TF + Z;
+        Y_TF = channel(X_TF, alpha_gt, tau_gt, nu_gt, deltaf, T, sigma2);
         y = Y_TF(:);
 
         Y_DD = sfft(Y_TF);
@@ -123,10 +70,13 @@ for SNR_idx = 1:length(SNR_dbs)
         alpha_hat = alpha_gt; % Remove this line!!!!!!!!!!!!!!!!!!
 
         %% Channel Estimation
-        H_TF_hat = alpha_hat * exp(-1j*2*pi*deltaf*ns*tau_hat) * exp(1j*2*pi*T*ms*nu_hat);
+        % H_TF_hat = alpha_hat * exp(-1j*2*pi*deltaf*ns*tau_hat) * exp(1j*2*pi*T*ms*nu_hat);
 
         %% X_hat Calculation
-        X_TF_hat = (Y_TF .* conj(H_TF_hat)) ./ (abs(H_TF_hat).^2 + sigma2);
+        % X_TF_hat = (Y_TF .* conj(H_TF_hat)) ./ (abs(H_TF_hat).^2 + sigma2);
+
+        X_TF_hat = getChannelMatrixPinv(N, M, tau_hat, nu_hat, alpha_hat, deltaf, Ts) * y; % 10 1 100
+        X_TF_hat = reshape(X_TF_hat, [N, M]);
         X_DD_hat = sfft(X_TF_hat);
 
         sym_hat = qamdemod(X_DD_hat, M_order, UnitAveragePower=true);

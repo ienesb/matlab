@@ -8,7 +8,8 @@ function J = cost_tau_nu(eta, deltaf, T, X_use, y)
     ns = (0:(N-1)).';
     ms = 0:(M-1);
 
-    C = (exp(-1j*2*pi*deltaf*ns*tau) * exp(1j*2*pi*T*ms*nu)) .* X_use;
+    % C = (exp(-1j*2*pi*deltaf*ns*tau) * exp(1j*2*pi*T*ms*nu)) .* X_use;
+    C = channel(X_use, 1, tau, nu, deltaf, T, 0);
     c = C(:);
 
     cy = c' * y;

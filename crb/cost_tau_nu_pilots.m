@@ -9,7 +9,8 @@ function J = cost_tau_nu_pilots(eta, deltaf, T, X, y, pilot_indices)
     P = pilot_indices;               % logical N×M
     Y = reshape(y, N, M);
 
-    C = (exp(-1j*2*pi*deltaf*ns*tau) * exp(1j*2*pi*T*ms*nu)) .* X;
+    % C = (exp(-1j*2*pi*deltaf*ns*tau) * exp(1j*2*pi*T*ms*nu)) .* X;
+    C = channel(X, 1, tau, nu, deltaf, T, 0);
 
     % only pilots
     c = C(P);

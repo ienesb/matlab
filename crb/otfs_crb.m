@@ -3,72 +3,11 @@ clear;
 % close all;
 % clc;
 
-options = optimoptions('fmincon', ...
-                  'Algorithm','interior-point', ...
-                  'Display','off', ...
-                  'MaxFunctionEvaluations',1e5, ...
-                  'FiniteDifferenceType','central', ...
-                  'FiniteDifferenceStepSize',[1e-2; 1e-10], ...  % (Hz step, seconds step)
-                  'StepTolerance',1e-14, ...
-                  'OptimalityTolerance',1e-12);
+type = "OTFS";
 
-nMonteCarlo = 100;
+initialize_parameters;
 
-N = 70;
-M = 50;
-
-M_order = 4;
-
-c = 3e8;
-fc = 30*1e9; % 30 GHz
-lambda = c / fc;
-
-deltaf = 200*1e3; % 200 kHz
-Tcp = 1*1e-6; % 1 us
-T = 1/deltaf + Tcp;
-
-p_tx = [-40, 0];
-p_rx = [0, 40];
-
-p = [rand*20+80, rand*20-100]; % m
-
-v = rand*60-30; % m/s
-delta = rand*10-5; % degree
-
-d_tx = norm(p - p_tx);
-d_rx = norm(p - p_rx);
-D = norm(p_tx - p_rx);
-
-d_bis = (d_tx + d_rx);
-v_bis = v * cosd(delta);
-
-beta = acos((d_tx^2 + d_rx^2 - D^2)/(2*d_tx*d_rx));
-
-tau_gt = d_bis / c;
-nu_gt = 2*v_bis*cos(beta/2)/lambda;
-
-delta_tau = 1/(N*deltaf);
-delta_nu = 1/(M*T);
-
-SNR_dbs = -40:2:30;
-SNR_lins = db2pow(SNR_dbs);
-
-sigma2 = 1;
-
-pilot_indices = zeros(N, M);
-pilot_indices(35, 25) = 1;
-pilot_indices = logical(pilot_indices);
-
-guard_indices = zeros(N, M);
-guard_indices(25:45, 15:35) = 1;
-guard_indices(35, 25) = 0;
-guard_indices = logical(guard_indices);
-
-Xp = sqrt(sum(guard_indices(:)) + 1);
-
-data_indices = guard_indices + pilot_indices;
-data_indices = ~data_indices;
-
+generate_indices;
 
 CRBs_pilot_only = zeros(length(SNR_dbs), nMonteCarlo, 4, 4);
 CRBs_full_data = zeros(length(SNR_dbs), nMonteCarlo, 4, 4);
@@ -78,7 +17,6 @@ nu_errors_pilot_only = zeros(length(SNR_dbs), nMonteCarlo);
 
 tau_errors_full_data = zeros(length(SNR_dbs), nMonteCarlo);
 nu_errors_full_data = zeros(length(SNR_dbs), nMonteCarlo);
-
 
 tic
 for SNR_idx = 1:length(SNR_dbs)
@@ -106,11 +44,12 @@ for SNR_idx = 1:length(SNR_dbs)
         ns = (0:(N-1)).';
         ms = 0:(M-1);
         
-        H_TF = alpha_gt * exp(-1j*2*pi*deltaf*ns*tau_gt) * exp(1j*2*pi*T*ms*nu_gt);
-    
-        Z = (randn(N, M) + 1j*randn(N, M)) * sqrt(sigma2/2);
-        % Z = 0;
-        Y_TF = H_TF .* X_TF + Z;
+        % H_TF = alpha_gt * exp(-1j*2*pi*deltaf*ns*tau_gt) * exp(1j*2*pi*T*ms*nu_gt);
+        % 
+        % Z = (randn(N, M) + 1j*randn(N, M)) * sqrt(sigma2/2);
+        % % Z = 0;
+        % Y_TF = H_TF .* X_TF + Z;
+        Y_TF = channel(X_TF, alpha_gt, tau_gt, nu_gt, deltaf, Ts, sigma2);
         y = Y_TF(:);
 
         Y_DD = sfft(Y_TF);
@@ -124,7 +63,7 @@ for SNR_idx = 1:length(SNR_dbs)
         ub = [nu_gt+100000; tau_gt+1e-6];
 
         [eta_opt, ~] = fmincon( ...
-            @(eta) cost_tau_nu(eta, deltaf, T, X_TFp, y), ...
+            @(eta) cost_tau_nu(eta, deltaf, Ts, X_TFp, y), ...
             eta0, [], [], [], [], lb, ub, [], options);
 
         nu_hat  = eta_opt(1);
@@ -133,13 +72,13 @@ for SNR_idx = 1:length(SNR_dbs)
         tau_errors_pilot_only(SNR_idx, mc_idx) = abs(tau_gt - tau_hat);
         nu_errors_pilot_only(SNR_idx, mc_idx) = abs(nu_gt - nu_hat);
 
-        CRB_pilot_only = getCRB_OTFS(X_DD, deltaf, T, sigma2, alpha_gt, nu_gt, tau_gt, pilot_indices);
+        CRB_pilot_only = getCRB_OTFS(X_DD, deltaf, Ts, sigma2, alpha_gt, nu_gt, tau_gt, pilot_indices);
         CRBs_pilot_only(SNR_idx, mc_idx, :, :) = CRB_pilot_only;
         
         %% Full Data Parameter Estimation
 
         [eta_opt, ~] = fmincon( ...
-            @(eta) cost_tau_nu(eta, deltaf, T, X_TF, y), ...
+            @(eta) cost_tau_nu(eta, deltaf, Ts, X_TF, y), ...
             eta0, [], [], [], [], lb, ub, [], options);
 
         nu_hat  = eta_opt(1);
@@ -148,7 +87,7 @@ for SNR_idx = 1:length(SNR_dbs)
         tau_errors_full_data(SNR_idx, mc_idx) = abs(tau_gt - tau_hat);
         nu_errors_full_data(SNR_idx, mc_idx) = abs(nu_gt - nu_hat);
 
-        CRB_full_data = getCRB_OTFS(X_DD, deltaf, T, sigma2, alpha_gt, nu_gt, tau_gt, ones(N, M));
+        CRB_full_data = getCRB_OTFS(X_DD, deltaf, Ts, sigma2, alpha_gt, nu_gt, tau_gt, ones(N, M));
         CRBs_full_data(SNR_idx, mc_idx, :, :) = CRB_full_data;
         
     end
