@@ -1,6 +1,6 @@
 % EVA Channel model    1, 5, 3, 2, 4, 7, 6, 8, 9
 
-nMonteCarlo = 100;
+nMonteCarlo = 10;
 
 N = 512; % number of subcarriers
 M = 128; % number of symbols
@@ -18,7 +18,7 @@ Ts = T + Tcp;
 
 sigma2 = 1;
 
-SNR_dbs = -10:2:18;
+SNR_dbs = 10:2:18;
 SNR_lins = db2pow(SNR_dbs);
 
 time_delays = [0, 30 ,150, 310, 370, 710, 1090, 1730, 2510] .* 1e-9; % ns
@@ -41,3 +41,7 @@ path_gains_amp = sqrt(normalized_power_profile);
 % SNR_db = SNR_dbs(SNR_idx);
 % path_gains_db = SNR_db + relative_powers;
 % path_gains = db2pow(path_gains_db); % add random phase shift !!!!!!
+
+% Delay-Doppler tap indices (integer, worst-case)
+l_tau = ceil(max(time_delays) * N * deltaf);  % max delay tap  = 20
+k_nu  = ceil(nu_max * M / deltaf);            % max Doppler tap = 4
