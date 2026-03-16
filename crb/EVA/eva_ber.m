@@ -16,6 +16,10 @@ bers_ofdm    = zeros(length(SNR_dbs), nMonteCarlo);
 bers_otfs    = zeros(length(SNR_dbs), nMonteCarlo);
 bers_otfs_ce = zeros(length(SNR_dbs), nMonteCarlo);
 
+mses_tau   = zeros(length(SNR_dbs), nMonteCarlo);
+mses_nu    = zeros(length(SNR_dbs), nMonteCarlo);
+mses_alpha = zeros(length(SNR_dbs), nMonteCarlo);
+
 % --- Channel estimation (CE) design parameters ---
 % Full guard symbols, fractional Doppler case
 % (Raviteja 2019, Section III.B.1 -- corresponds to Fig. 9)
@@ -56,6 +60,7 @@ for SNR_idx = 1:length(SNR_dbs)
         % Generate random phases and doppler shifts for THIS specific packet
         current_doppler = nu_max * cos(2*pi*rand(1, length(path_gains_amp)) - pi);
         current_path_gains = path_gains_amp .* exp(1j*rand(1, length(path_gains_amp))*2*pi);
+        doppler_taps = round(current_doppler * M / deltaf);
 
         % Pass N0 as the noise variance, and use the randomized channel parameters
         Y = channel(X, current_path_gains, time_delays, current_doppler, deltaf, Ts, N0);
@@ -87,39 +92,20 @@ for SNR_idx = 1:length(SNR_dbs)
                           current_doppler, deltaf, Ts, N0);
         Y_DD_ce = sfft(Y_TF_ce);
 
-        % 3. Estimate path parameters (tau, nu, alpha) from the pilot region.
-        %    For each delay bin l' in [0, l_tau]:
-        %      H_row[k''] = Y_DD[l_p+l', (k_p+k'') mod M] / x_p  for all k''
-        %    With full guard, H_row is purely channel response + noise (no data ICI).
-        %    Use oversampled FFT (4x) along the Doppler profile to estimate
-        %    the fractional Doppler ν̂ at sub-bin resolution.
-        %    Threshold per element: 3 * noise_std / x_p  (3σ criterion).
-        K_os  = 4;                                 % Doppler oversampling factor
-        est_alpha = zeros(1, P);
-        est_tau   = zeros(1, P);
-        est_nu    = zeros(1, P);
+        % 3. Estimate path parameters (tau, nu, alpha) from the pilot region.        
+        Y_DD_guard = Y_DD_ce;
+        Y_DD_guard(data_mask_ce) = 0;
 
-        % EVA delays are deterministic — iterate over the P known physical paths
-        for i = 1:P
-            l_prime_i = min(round(time_delays(i) * N * deltaf), l_tau);
-            row   = l_p_ce + l_prime_i + 1;
-            H_row = circshift(Y_DD_ce(row, :), -k_p_ce) / x_p_ce;
+        [est_tau, est_nu, est_alpha] = est_parameters(Y_DD_guard, data_mask_ce, ...
+            l_p_ce, k_p_ce, deltaf, T, x_p_ce);
 
-            % Find fractional Doppler via oversampled FFT of the Doppler profile
-            H_row_os = fft(H_row, K_os * M);
-            [~, k_os] = max(abs(H_row_os));
-            k_frac = (k_os - 1) / K_os;          % fractional bin (0-indexed float)
-            if k_frac >= M/2
-                k_frac = k_frac - M;              % wrap to [-M/2, M/2)
-            end
+        % est_alpha = est_alpha ./ abs(est_alpha(1));
+        % est_alpha = est_alpha .* path_gains_amp(1);
 
-            % Gain: read H_row at integer bin nearest to estimated Doppler
-            k_int_idx = mod(round(k_frac), M) + 1;
-
-            est_tau(i)   = time_delays(i);        % exact known delay (not quantized)
-            est_nu(i)    = k_frac * deltaf / M;
-            est_alpha(i) = H_row(k_int_idx);
-        end
+        % 6. MSE of parameter estimates vs ground truth
+        [mses_tau(SNR_idx, mc_idx), mses_nu(SNR_idx, mc_idx), mses_alpha(SNR_idx, mc_idx)] = ...
+            mse_est(time_delays, current_doppler, current_path_gains, ...
+                    est_tau,     est_nu,           est_alpha, deltaf, N, M);
 
         % 4. TF-domain MMSE equalization with estimated path parameters.
         X_TF_ce_hat = channel_inverse(Y_TF_ce, est_alpha, est_tau, est_nu, ...
@@ -147,6 +133,10 @@ bers_ofdm    = mean(bers_ofdm,    2);
 bers_otfs    = mean(bers_otfs,    2);
 bers_otfs_ce = mean(bers_otfs_ce, 2);
 
+mses_tau   = mean(mses_tau,   2);
+mses_nu    = mean(mses_nu,    2);
+mses_alpha = mean(mses_alpha, 2);
+
 figure;
 semilogy(SNR_dbs, bers_ofdm,    "LineStyle", '-',  'LineWidth', 2); hold on;
 semilogy(SNR_dbs, bers_otfs,    "LineStyle", '-',  'LineWidth', 2);
@@ -157,4 +147,15 @@ ylabel("BER");
 legend("OFDM (CSI)", "OTFS (CSI)", sprintf("OTFS (Ch. Est., SNR_p=%d dB)", SNR_p_dB));
 theme(gcf, "light");
 ylim([1e-5, 1]);
-xlim([-10, 18]);
+xlim([10, 18]);
+
+figure;
+semilogy(SNR_dbs, sqrt(mses_tau),   'LineWidth', 2); hold on;
+semilogy(SNR_dbs, sqrt(mses_nu),    'LineWidth', 2);
+semilogy(SNR_dbs, sqrt(mses_alpha), 'LineWidth', 2);
+grid on;
+xlabel("SNR [dB]");
+ylabel("RMSE");
+legend("Delay \tau (s)", "Doppler \nu (Hz)", "Path gain |\alpha|");
+title(sprintf("Channel Estimation RMSE  (SNR_p = %d dB)", SNR_p_dB));
+theme(gcf, "light");

@@ -1,6 +1,6 @@
 % EVA Channel model    1, 5, 3, 2, 4, 7, 6, 8, 9
 
-nMonteCarlo = 10;
+nMonteCarlo = 1;
 
 N = 512; % number of subcarriers
 M = 128; % number of symbols
@@ -45,3 +45,12 @@ path_gains_amp = sqrt(normalized_power_profile);
 % Delay-Doppler tap indices (integer, worst-case)
 l_tau = ceil(max(time_delays) * N * deltaf);  % max delay tap  = 20
 k_nu  = ceil(nu_max * M / deltaf);            % max Doppler tap = 4
+
+% Per-path integer delay taps: l_i = round(tau_i * N * deltaf)
+% Bin width in delay = 1/(N*deltaf).  EVA: [0 0 1 2 3 5 8 13 19]
+delay_taps = round(time_delays * N * deltaf);
+
+% Per-path integer Doppler taps: k_i = round(nu_i * M / deltaf)
+% Bin width in Doppler = deltaf/M.  nu_i is random per MC iteration,
+% drawn as nu_i = nu_max * cos(theta_i).  Worst-case magnitude = k_nu.
+% doppler_taps = round(current_doppler * M / deltaf);  % computed inside MC loop
