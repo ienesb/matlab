@@ -41,15 +41,10 @@ function J_tau = getFIM_OFDM_ICI(X, deltaf, Ts, alphas, nus, taus, mask) % only 
             g3(n+1, :) = sum(temp3, 1);
         end
         g0 = g0(:);
+        g1 = 1j * g0;
         g2 = alpha * g2(:);
         g3 = alpha * g3(:);
-    
-        
-        % g0 = g0;
-        g1 = 1j * g0;
-        % g2 = 1j * 2 * pi * T * alpha .* m_array .* g0; % Incorrect !!!!!!!!!
-        % g3 = -1j * 2 * pi * deltaf * alpha.* n_array .* g0;
-        
+
         % G  = [g0, g1, g2, g3];             % NM x 4
         % J  = (2/sigma2) * real(G' * G);    % exact J_like
         % CRB((4*p-3):(4*p), (4*p-3):(4*p)) = inv(J);

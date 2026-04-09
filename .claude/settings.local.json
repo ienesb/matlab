@@ -1,0 +1,15 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(find /c/Users/İsmailEnesBülbül/Desktop/matlab -type f -name \"*mp*\" -o -name \"*MP*\" | grep -i \"\\\\.m$\")",
+      "Bash(matlab -batch \"cd\\('C:\\\\Users\\\\İsmailEnesBülbül\\\\Desktop\\\\matlab\\\\crb\\\\EVA'\\); eva_ber_mp; save\\('eva_ber_mp_results.mat', 'bers_otfs_csi', 'bers_otfs_mp', 'SNR_dbs'\\)\" 2>&1)",
+      "Bash(ls /c/Users/İsmailEnesBülbül/Desktop/matlab/beam-space/*.m)",
+      "Bash(python -c \":*)",
+      "Bash(pip install:*)",
+      "Bash(octave:*)",
+      "Bash(python3:*)",
+      "Bash(find /c/Users/İsmailEnesBülbül/Desktop/matlab/crb/EVA -name *paper* -o -name *ref* -o -name *eq*)",
+      "Bash(grep -r \"Raviteja\\\\|Eq\\\\|equation\\\\|TVT\\\\|WCNC\" /c/Users/İsmailEnesBülbül/Desktop/matlab/crb/EVA/*.m)"
+    ]
+  }
+}
