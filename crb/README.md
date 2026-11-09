@@ -10,7 +10,7 @@ setup_crb                 % adds cfg/ io/ fim/ rx/ mcrb/ util/ run/ plot/ test/;
 run_all_tests             % Phase 0 + Phase 1 identities (< 1 min)
 run_all_tests('full')     % + Monte-Carlo closed-form checks (~1 min)
 ```
-Headless: `"C:/Program Files/MATLAB/R2025b/bin/matlab.exe" -batch "cd('.../matlab/crb'); setup_crb; run_all_tests"`.
+Headless (Linux, R2026b): `cd matlab/crb && /usr/local/bin/matlab -batch "setup_crb; run_all_tests"`.
 
 ## Conventions (asserted by `test/`)
 

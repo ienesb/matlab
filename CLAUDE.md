@@ -25,10 +25,15 @@ cd matlab/crb; setup_crb              % adds cfg/ io/ fim/ rx/ mcrb/ run/ plot/ 
 run_all_tests                         % identities + regressions (~1 min)
 run_all_tests('full')                 % + Monte-Carlo closed-form checks (~3.5 min, 249 checks)
 ```
-Headless: `"C:/Program Files/MATLAB/R2025b/bin/matlab.exe" -batch "cd('.../matlab/crb'); setup_crb; run_all_tests"`.
+Headless (Linux, R2026b): `cd matlab/crb && /usr/local/bin/matlab -batch "setup_crb; run_all_tests"`.
+All results in `crb/results/` were produced on Windows with R2025b; the workspace moved to Linux on 2026-11-09.
+**Toolboxes (2026-11-09):** Optimization and Parallel Computing Toolboxes were installed on Linux with
+`mpm install --release=R2026b --destination=/usr/local/MATLAB/R2026b --products Optimization_Toolbox Parallel_Computing_Toolbox`;
+`run_all_tests('full')` passes 249/249 (280 s), `run_manuscript_checks` 115/115. This PC has 4 cores, so the
+default `Processes` pool is 4 workers; `run/run_manuscript_confirmation.m` hard-codes `parpool('Processes',8)`.
 Drivers in `crb/run/` take `'tier', 'smoke'|'dev'|'paper'` (or a trial count) and write
 `crb/results/*.mat` + `crb/figures/*.png`; every driver prints its acceptance table (PASS/WARN).
-Parallel Computing Toolbox: drivers use `parfor` (8 workers). Optimization Toolbox: `lsqnonlin`
+Parallel Computing Toolbox: drivers use `parfor` (8 workers on the old PC, 4 here). Optimization Toolbox: `lsqnonlin`
 in `pseudo_true` (built-in LM fallback exists).
 
 ## Conventions that bite (asserted by `crb/test/`)
@@ -52,10 +57,11 @@ in `pseudo_true` (built-in LM fallback exists).
   posterior-damping mode (0.3 / 30) exists only as a regression option.
 - Common random numbers: `crn_stream(seed, sweep_idx, trial)`; never keyed on the waveform.
 
-## Stale helpers (do not follow)
-`matlab/.claude/commands/run-ber.md` and `matlab/.claude/skills/otfs-sim/SKILL.md` still point
-to `crb/EVA/` (now `old/crb/EVA/`), swap N/M and quote `ν_max ≈ 540 Hz`. Use `crb/run/run_ber_eva`
-and `crb/run/run_ber_fig9` instead.
+## Helpers
+`.claude/skills/implement-paper` (one self-contained `impl/<paper>/` folder per reproduced paper) is current.
+The stale `run-ber` command and `otfs-sim` skill (pointing to the retired `crb/EVA/`, swapped N/M,
+wrong `ν_max ≈ 540 Hz`) were removed on 2026-11-09; use `crb/run/run_ber_eva` and `crb/run/run_ber_fig9`.
+`.claude/settings.local.json` holds only Windows-path permissions from the old PC.
 
 ## Reference papers (`crb/papers/`)
 - Raviteja, Phan, Hong, "Embedded Pilot-Aided Channel Estimation for OTFS in Delay–Doppler Channels," IEEE TVT 2019 (EVA, Fig. 9).
