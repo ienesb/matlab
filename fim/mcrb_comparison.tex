@@ -1,0 +1,266 @@
+\documentclass[11pt]{article}
+
+\usepackage{amsmath,amssymb,bm}
+\usepackage{hyperref}
+\usepackage{svg}
+\usepackage[a4paper,margin=1in]{geometry}
+\usepackage{array}
+
+\newcolumntype{C}{>{\centering\arraybackslash}m{0.21\textwidth}}
+
+\title{Single-Target MCRB Comparison: \texorpdfstring{\(\bm{A}\) and \(\bm{B}\)}{A and B} Matrices\\
+OFDM vs OTFS, with and without OFDM-side ICI}
+\author{}
+\date{}
+
+\begin{document}
+\maketitle
+
+\section{Setup}
+
+We compare the single-target MCRB component matrices \(\bm{A}\) and \(\bm{B}\) derived in
+\texttt{ofdm\_mcrb.tex} (Section~1--2) and \texttt{otfs\_mcrb.tex} (Section~1--2) for the
+same four combinations used in \texttt{fim\_comparison.tex}:
+\begin{enumerate}
+    \item OFDM with no ICI (\(I(n'-n) = \delta[n'-n]\)),
+    \item OFDM with the full Doppler-induced ICI kernel \(I(n'-n)\),
+    \item Two-step OTFS using the no-ICI form of the inner OFDM modulator,
+    \item Two-step OTFS using the full ICI form of the inner OFDM modulator.
+\end{enumerate}
+In all four cases the parameter vector is \(\bm{\eta} = [\tilde{\alpha}_R, \tilde{\alpha}_I, \tau, \nu]^T\), the noise per observation bin has variance \(\sigma^2\), the true data symbols are i.i.d.\ zero-mean unit-energy QPSK, and the assumed symbols (\(\hat{X}[n,m]\) for OFDM, \(\hat{x}[l,k]\) for OTFS) are obtained from the true symbols via a binary symmetric channel with crossover probability \(p\). The MCRB framework of \texttt{MCRB derivations.pdf} gives two matrices
+\begin{equation}
+    \boxed{\;\bm{B}(\bm{\eta}) = \tilde{\bm{J}}(\bm{\eta}) + \bm{b}(\bm{\eta})\, \bm{b}^T(\bm{\eta}), \qquad \bm{A}(\bm{\eta}) = -\tilde{\bm{J}}(\bm{\eta}) + \bm{A}_\Delta(\bm{\eta}),\;}
+\end{equation}
+with three building blocks:
+\begin{equation}
+    [\tilde{\bm{J}}]_{kl} = \tfrac{2}{\sigma^2}\, \mathrm{Re}\{\tilde{g}_k^H \tilde{g}_l\}, \qquad
+    [\bm{b}]_k = \tfrac{2}{\sigma^2}\, \mathrm{Re}\{\bm{\Delta}^H \tilde{g}_k\}, \qquad
+    [\bm{A}_\Delta]_{kl} = \tfrac{2}{\sigma^2}\, \mathrm{Re}\{\bm{\Delta}^H \tilde{h}_{kl}\},
+\end{equation}
+where \(\tilde{g}_k = \partial \tilde{\mu}/\partial \eta_k\), \(\tilde{h}_{kl} = \partial^2 \tilde{\mu}/\partial \eta_k \partial \eta_l\), and \(\bm{\Delta} = \bm{\mu} - \tilde{\bm{\mu}}\) is the mean mismatch driven by symbol errors \(E := X - \hat{X}\) (OFDM) or \(e := x - \hat{x}\) (OTFS).
+
+Since \(\hat{X}\) and \(\hat{x}\) inherit the unit-energy QPSK alphabet (the BSC re-maps to the same constellation), the matrix \(\tilde{\bm{J}}\) is, in expectation, identical to the FIM \(\bm{J}\) of \texttt{fim\_comparison.tex}; the entire content of this document concerns the new pieces \(\bm{b}\) and \(\bm{A}_\Delta\).
+
+\subsection*{Notation}
+
+We reuse \(P_a := \sum_{n=0}^{N-1} n^a\), \(Q_b := \sum_{m=0}^{M-1} m^b\), and the kernel-summed moments \(\mathcal{S}_a, \mathcal{T}_a, \mathcal{U}\) of \texttt{fim\_comparison.tex}. The MCRB additionally introduces compound ICI moments
+\begin{align}
+    \mathcal{W}_0 &:= T_S\, Q_1\, \mathcal{S}_0 + M\, \mathcal{T}_0, &
+    \mathcal{W}_1 &:= T_S\, Q_1\, \mathcal{S}_1 + M\, \mathcal{T}_1, \\
+    \mathcal{V}   &:= T_S^2\, Q_2\, \mathcal{S}_0 + T_S\, M(M-1)\, \mathrm{Re}\{\mathcal{T}_0\} + M\, \mathcal{U}, & &
+\end{align}
+which capture the diagonal collapse of the BSC-driven cross-bin sums under expectation; these reduce to \(\mathcal{W}_0 \to T_S Q_1 P_0 = T_S Q_1 N\), \(\mathcal{W}_1 \to T_S Q_1 P_1\), \(\mathcal{V} \to T_S^2 Q_2 N\) in the limit \(I \to \delta\). Both \(\mathcal{S}_a\) and \(\mathcal{V}\) are real; \(\mathcal{W}_0, \mathcal{W}_1\) are real in the no-ICI limit and generically complex when \(\mathcal{T}_a\) has a nonzero imaginary part.
+
+\section{Bias vector \texorpdfstring{\(\bm{b}\)}{b}}
+
+Under i.i.d.\ unit-energy QPSK with BSC error rate \(p\), the four expected bias vectors collapse to two distinct columns by the (I)SFFT-unitarity argument of \texttt{fim\_comparison.tex} \(\S\)3. The four entries of \(\bm{b}\) are collected in Table~\ref{tab:b_compare}.
+
+\begin{table}[h]
+\centering
+\renewcommand{\arraystretch}{2.4}
+\(
+\begin{array}{l|c|c|c|c}
+\hline
+\text{Bias entry} & \text{OFDM, no ICI} & \text{OFDM, ICI} & \text{OTFS, no OFDM-ICI} & \text{OTFS, OFDM-ICI} \\
+\hline
+\mathrm{E}\{b_{\tilde{\alpha}_R}\}
+    & -\dfrac{4p\, \tilde{\alpha}_R\, NM}{\sigma^2}
+    & -\dfrac{4p\, \tilde{\alpha}_R\, M\, \mathcal{S}_0}{\sigma^2}
+    & -\dfrac{4p\, \tilde{\alpha}_R\, NM}{\sigma^2}
+    & -\dfrac{4p\, \tilde{\alpha}_R\, M\, \mathcal{S}_0}{\sigma^2} \\
+\mathrm{E}\{b_{\tilde{\alpha}_I}\}
+    & -\dfrac{4p\, \tilde{\alpha}_I\, NM}{\sigma^2}
+    & -\dfrac{4p\, \tilde{\alpha}_I\, M\, \mathcal{S}_0}{\sigma^2}
+    & -\dfrac{4p\, \tilde{\alpha}_I\, NM}{\sigma^2}
+    & -\dfrac{4p\, \tilde{\alpha}_I\, M\, \mathcal{S}_0}{\sigma^2} \\
+\mathrm{E}\{b_\tau\}
+    & 0 & 0 & 0 & 0 \\
+\mathrm{E}\{b_\nu\}
+    & 0
+    & \dfrac{8\pi\, p\, |\tilde{\alpha}|^2\, M}{\sigma^2}\, \mathrm{Im}\{\mathcal{T}_0\}
+    & 0
+    & \dfrac{8\pi\, p\, |\tilde{\alpha}|^2\, M}{\sigma^2}\, \mathrm{Im}\{\mathcal{T}_0\} \\
+\hline
+\end{array}
+\)
+\caption{Expected single-target MCRB bias vector entries under i.i.d.\ unit-energy QPSK with BSC error rate \(p\). The kinematic entries \(b_\tau\) vanish in expectation in all four cases (the relevant moment \(\mathcal{S}_1\) or \(P_1\) is real). The Doppler entry \(b_\nu\) vanishes in the no-ICI cases (real \(Q_1\)) and picks up a small linear-in-\(p\) bias proportional to \(\mathrm{Im}\{\mathcal{T}_0\}\) in the ICI cases. The gain entries are linear in \(p\) and point along the gain vector \((\tilde{\alpha}_R, \tilde{\alpha}_I)\): bit errors mimic a real attenuation of the gain estimate by \(1-2p\). Columns 1, 3 and columns 2, 4 coincide by (I)SFFT unitarity.}
+\label{tab:b_compare}
+\end{table}
+
+\section{Hessian-mean correction \texorpdfstring{\(\bm{A}_\Delta\)}{A\_Delta}}
+
+The gain--gain block of \(\bm{A}_\Delta\) vanishes in all four cases because \(\tilde{\mu}\) is linear in \(\tilde{\alpha}\). The seven non-trivial entries are collected in Table~\ref{tab:Adelta_compare}; off-diagonal entries follow from symmetry \([\bm{A}_\Delta]_{l,k} = [\bm{A}_\Delta]_{k,l}\).
+
+\begin{table}[h]
+\centering
+\resizebox{\textwidth}{!}{\(
+\renewcommand{\arraystretch}{2.4}
+\begin{array}{l|c|c|c|c}
+\hline
+\text{Entry} & \text{OFDM, no ICI} & \text{OFDM, ICI} & \text{OTFS, no OFDM-ICI} & \text{OTFS, OFDM-ICI} \\
+\hline
+\mathrm{E}\{[\bm{A}_\Delta]_{\tilde{\alpha}_R, \tau}\}
+    & 0 & 0 & 0 & 0 \\
+\mathrm{E}\{[\bm{A}_\Delta]_{\tilde{\alpha}_R, \nu}\}
+    & 0
+    & \dfrac{8\pi\, p}{\sigma^2}\, \mathrm{Im}\{\tilde{\alpha}^*\, \mathcal{W}_0\}
+    & 0
+    & \dfrac{8\pi\, p}{\sigma^2}\, \mathrm{Im}\{\tilde{\alpha}^*\, \mathcal{W}_0\} \\
+\mathrm{E}\{[\bm{A}_\Delta]_{\tilde{\alpha}_I, \tau}\}
+    & -\dfrac{8\pi\, p\, \tilde{\alpha}_R\, \Delta f\, M\, P_1}{\sigma^2}
+    & -\dfrac{8\pi\, p\, \tilde{\alpha}_R\, \Delta f\, M\, \mathcal{S}_1}{\sigma^2}
+    & -\dfrac{8\pi\, p\, \tilde{\alpha}_R\, \Delta f\, M\, P_1}{\sigma^2}
+    & -\dfrac{8\pi\, p\, \tilde{\alpha}_R\, \Delta f\, M\, \mathcal{S}_1}{\sigma^2} \\
+\mathrm{E}\{[\bm{A}_\Delta]_{\tilde{\alpha}_I, \nu}\}
+    & \dfrac{8\pi\, p\, \tilde{\alpha}_R\, T_S\, N\, Q_1}{\sigma^2}
+    & \dfrac{8\pi\, p}{\sigma^2}\, \mathrm{Re}\{\tilde{\alpha}^*\, \mathcal{W}_0\}
+    & \dfrac{8\pi\, p\, \tilde{\alpha}_R\, T_S\, N\, Q_1}{\sigma^2}
+    & \dfrac{8\pi\, p}{\sigma^2}\, \mathrm{Re}\{\tilde{\alpha}^*\, \mathcal{W}_0\} \\
+\mathrm{E}\{[\bm{A}_\Delta]_{\tau, \tau}\}
+    & \dfrac{16\pi^2\, p\, |\tilde{\alpha}|^2\, M\, (\Delta f)^2\, P_2}{\sigma^2}
+    & \dfrac{16\pi^2\, p\, |\tilde{\alpha}|^2\, M\, (\Delta f)^2\, \mathcal{S}_2}{\sigma^2}
+    & \dfrac{16\pi^2\, p\, |\tilde{\alpha}|^2\, M\, (\Delta f)^2\, P_2}{\sigma^2}
+    & \dfrac{16\pi^2\, p\, |\tilde{\alpha}|^2\, M\, (\Delta f)^2\, \mathcal{S}_2}{\sigma^2} \\
+\mathrm{E}\{[\bm{A}_\Delta]_{\nu, \nu}\}
+    & \dfrac{16\pi^2\, p\, |\tilde{\alpha}|^2\, T_S^2\, N\, Q_2}{\sigma^2}
+    & \dfrac{16\pi^2\, p\, |\tilde{\alpha}|^2\, \mathcal{V}}{\sigma^2}
+    & \dfrac{16\pi^2\, p\, |\tilde{\alpha}|^2\, T_S^2\, N\, Q_2}{\sigma^2}
+    & \dfrac{16\pi^2\, p\, |\tilde{\alpha}|^2\, \mathcal{V}}{\sigma^2} \\
+\mathrm{E}\{[\bm{A}_\Delta]_{\tau, \nu}\}
+    & -\dfrac{16\pi^2\, p\, |\tilde{\alpha}|^2\, \Delta f\, T_S\, P_1\, Q_1}{\sigma^2}
+    & -\dfrac{16\pi^2\, p\, |\tilde{\alpha}|^2\, \Delta f}{\sigma^2}\, \mathrm{Re}\{\mathcal{W}_1\}
+    & -\dfrac{16\pi^2\, p\, |\tilde{\alpha}|^2\, \Delta f\, T_S\, P_1\, Q_1}{\sigma^2}
+    & -\dfrac{16\pi^2\, p\, |\tilde{\alpha}|^2\, \Delta f}{\sigma^2}\, \mathrm{Re}\{\mathcal{W}_1\} \\
+\hline
+\end{array}
+\)}
+\caption{Expected single-target MCRB Hessian-mean correction \(\bm{A}_\Delta\) under i.i.d.\ unit-energy QPSK with BSC error rate \(p\). The gain--gain block \([\bm{A}_\Delta]_{\tilde{\alpha}_R\tilde{\alpha}_R} = [\bm{A}_\Delta]_{\tilde{\alpha}_I\tilde{\alpha}_I} = [\bm{A}_\Delta]_{\tilde{\alpha}_R\tilde{\alpha}_I} = 0\) is omitted. The four no-ICI / ICI columns differ by the substitutions \(P_a \to \mathcal{S}_a\), \(Q_a \to Q_a\) (unchanged), and the \(\nu\)-derivative entries pick up additional \(\mathcal{T}_a, \mathcal{U}\) contributions through \(\mathcal{W}_0, \mathcal{W}_1, \mathcal{V}\). Columns 1, 3 and columns 2, 4 coincide by (I)SFFT unitarity.}
+\label{tab:Adelta_compare}
+\end{table}
+
+\section{Equivalence between OFDM and OTFS under QPSK and BSC}
+
+Columns 1 and 3 (no-ICI) and columns 2 and 4 (ICI) coincide entry by entry in both Table~\ref{tab:b_compare} and Table~\ref{tab:Adelta_compare}. That is, under i.i.d.\ unit-energy QPSK with BSC error rate \(p\),
+\begin{equation}
+    \boxed{\;
+    \mathrm{E}\{\bm{b}^{\text{OFDM, no ICI}}\} = \mathrm{E}\{\bm{b}^{\text{OTFS, no OFDM-ICI}}\},
+    \qquad
+    \mathrm{E}\{\bm{A}_\Delta^{\text{OFDM, no ICI}}\} = \mathrm{E}\{\bm{A}_\Delta^{\text{OTFS, no OFDM-ICI}}\},
+    \;}
+\end{equation}
+and analogously for the ICI pair. Combined with \(\mathrm{E}\{\tilde{\bm{J}}^{\text{OFDM}}\} = \mathrm{E}\{\tilde{\bm{J}}^{\text{OTFS}}\}\) inherited from \texttt{fim\_comparison.tex} \(\S\)3, this gives
+\begin{equation}
+    \boxed{\;
+    \mathrm{E}\{\bm{B}^{\text{OFDM}}\} = \mathrm{E}\{\bm{B}^{\text{OTFS}}\}, \qquad
+    \mathrm{E}\{\bm{A}^{\text{OFDM}}\} = \mathrm{E}\{\bm{A}^{\text{OTFS}}\}
+    \;}
+\end{equation}
+for each ICI model. The mechanism is the same as for the FIM: the ISFFT and SFFT are unitary transforms that preserve all second-order statistics of the (jointly circularly symmetric) unit-energy QPSK ensemble. The BSC operates on bits before the (I)SFFT, but because BSC-flipped QPSK is still unit-energy QPSK with the same second-order statistics, the symbol-level error \(E = X - \hat{X}\) (resp.\ \(e = x - \hat{x}\)) carries identical sufficient statistics in either grid:
+\begin{equation}
+    \mathrm{E}\{E^*[n,m]\, \hat{X}[n,m]\} = -2p = \mathrm{E}\{e^*[l,k]\, \hat{x}[l,k]\}.
+\end{equation}
+Two corollaries follow:
+\begin{itemize}
+    \item \emph{MCRBs match.} The misspecified Cram\'er--Rao bound \(\bm{A}^{-1}\bm{B}\bm{A}^{-T}\) is identical for OFDM and OTFS in expectation, just as the matched CRB was.
+    \item \emph{Waveform does not protect against bit errors.} The choice between placing data in \((n,m)\) or \((l,k)\) does not change the leading-order \((O(p))\) MCRB inflation induced by a BSC; what matters is the ICI/no-ICI receiver model.
+\end{itemize}
+As in the FIM case, the equivalence breaks down for pilot-bearing or non-constant-modulus signalling, or for any data model in which the symbol-level error \(E\) is not jointly stationary under the (I)SFFT.
+
+\section{No-ICI vs.\ ICI under QPSK and BSC}
+
+Since the OFDM/OTFS pairs agree, the comparison reduces to two distinct expected \(\bm{b}\) (no-ICI vs.\ ICI) and two distinct expected \(\bm{A}_\Delta\). Their entry-by-entry differences mirror the FIM comparison closely:
+
+\paragraph{Bias vector.} Three patterns emerge:
+\begin{itemize}
+    \item \emph{Gain components} \(b_{\tilde{\alpha}_R}, b_{\tilde{\alpha}_I}\): both columns are negative-real and point along \((\tilde{\alpha}_R, \tilde{\alpha}_I)\), differing only by the substitution \(P_0 \to \mathcal{S}_0\) (just as the FIM gain-gain entries do). Bit errors look like a real attenuation of the complex gain estimate by \(1 - 2p\).
+    \item \emph{Delay component} \(b_\tau\): identically zero in expectation in both columns. The relevant moment (\(P_1\) or \(\mathcal{S}_1\)) is real, so taking \(\mathrm{Im}\{\cdot\}\) kills it.
+    \item \emph{Doppler component} \(b_\nu\): zero in the no-ICI column (\(Q_1\) is real) and non-zero in the ICI column, proportional to \(\mathrm{Im}\{\mathcal{T}_0\}\). The Doppler-direction bias is therefore a purely ICI effect, signalling that bit errors interact with the Doppler-dependent kernel \(I(n;\nu)\) in a way that has no analog in the no-ICI regime.
+\end{itemize}
+
+\paragraph{Hessian-mean correction.} The same two patterns from the FIM comparison apply:
+\begin{itemize}
+    \item \emph{Entries with no \(\nu\)-derivative} (\([\bm{A}_\Delta]_{\tau\tau}\), \([\bm{A}_\Delta]_{\tilde{\alpha}_I\tau}\), and the trivially-zero \([\bm{A}_\Delta]_{\tilde{\alpha}_R\tau}\)): differ only through the substitution \(P_a \to \mathcal{S}_a\). The shape of the kernel \(I\) smears the discrete index moments into lag-summed quadratic moments, but no \(\mathcal{T}, \mathcal{U}\) corrections appear.
+    \item \emph{Entries with a \(\nu\)-derivative} (\([\bm{A}_\Delta]_{\nu\nu}\), \([\bm{A}_\Delta]_{\tau\nu}\), \([\bm{A}_\Delta]_{\tilde{\alpha}_R\nu}\), \([\bm{A}_\Delta]_{\tilde{\alpha}_I\nu}\)): pick up \(\mathcal{T}_a, \mathcal{U}\) corrections via the compound moments \(\mathcal{W}_0, \mathcal{W}_1, \mathcal{V}\). These have no analog in the no-ICI form and reflect the \(\nu\)-dependence of \(I\) itself.
+\end{itemize}
+
+\paragraph{Structural identity: \(\bm{A}_\Delta \overset{?}{=} 2p\, \bm{J}\).} A useful identity links the expected \(\bm{A}_\Delta\) to the expected FIM \(\bm{J}\) of \texttt{fim\_comparison.tex}:
+\begin{equation}
+    \mathrm{E}\{[\bm{A}_\Delta]_{kl}\} = 2p\, \mathrm{E}\{[\bm{J}]_{kl}\} \quad \text{for } (k,l) \in \{(\tau,\tau), (\nu,\nu), (\tau,\nu), (\tilde{\alpha}_I, \tau)\},
+\end{equation}
+which holds in both no-ICI and ICI columns. The four entries above all reduce to real moments \(\mathcal{S}_a, \mathrm{Re}\{\mathcal{W}_1\}, \mathcal{V}\) that are insensitive to the gain phase, and the symbol-error expectation simply scales each by \(-2p\) and conjugates the gain factor in a way that preserves the real part. On those four entries, the corresponding \(\bm{A}\) entries are
+\begin{equation}
+    \mathrm{E}\{[\bm{A}]_{kl}\} = -\mathrm{E}\{[\tilde{\bm{J}}]_{kl}\} + \mathrm{E}\{[\bm{A}_\Delta]_{kl}\} = -(1 - 2p)\, \mathrm{E}\{[\bm{J}]_{kl}\}.
+\end{equation}
+The identity does \emph{not} hold for \((\tilde{\alpha}_R,\nu)\) or \((\tilde{\alpha}_I,\nu)\) in the ICI column, because \(\bm{A}_\Delta\) carries \(\tilde{\alpha}^*\, \mathcal{W}_0\) while \(\bm{J}\) carries \(\tilde{\alpha}\, \mathcal{W}_0\); the two agree only when \(\mathcal{W}_0\) is real (no-ICI limit, \(\mathcal{T}_0 \to 0\)). At the no-ICI level, all six non-trivial entries of \(\bm{A}_\Delta\) satisfy \(\mathrm{E}\{[\bm{A}_\Delta]\} = 2p\, \mathrm{E}\{[\bm{J}]\}\); the gain--Doppler entries lose this clean scaling exactly when ICI activates the imaginary part of \(\mathcal{T}_0\).
+
+\paragraph{Asymptotic scaling.} For large \((N, M)\), the no-ICI MCRB pieces scale as
+\begin{equation}
+    \bm{b} \sim p \cdot NM, \qquad \bm{A}_\Delta \sim p \cdot \bm{J} \sim p \cdot (N^aM^b),
+\end{equation}
+with the same \((a,b)\) exponents as the FIM (\(NM\), \(N^3 M\), \(NM^3\)). The ICI signature lives in the constants and the \(\mathcal{T}_a, \mathcal{U}\) sub-leading corrections, exactly mirroring the FIM. Both \(\bm{b}\bm{b}^T\) and \(\bm{A}_\Delta\) are \(O(p)\) or \(O(p^2)\) perturbations of \(\bm{J}\): for small \(p\) the MCRB equals the CRB to leading order and the linear-in-\(p\) corrections come from the four entries identified above.
+
+\paragraph{Limit \(I \to \delta\).} Setting \(I(n) = \delta[n]\) and \(I'(n) = 0\) gives \(\mathcal{S}_a \to P_a\), \(\mathcal{T}_a \to 0\), \(\mathcal{U} \to 0\), \(\mathcal{W}_0 \to T_S Q_1 N\), \(\mathcal{W}_1 \to T_S Q_1 P_1\), \(\mathcal{V} \to T_S^2 Q_2 N\). Columns 2 and 4 of both tables collapse onto columns 1 and 3, and the full no-ICI \(\bm{A}_\Delta = 2p\, \bm{J}\) identity is recovered.
+
+\paragraph{Limit \(p \to 0\).} Setting \(p = 0\) (perfect bit recovery) sends \(\bm{b} \to \bm{0}\) and \(\bm{A}_\Delta \to \bm{0}\), so \(\bm{B} \to \tilde{\bm{J}} = \bm{J}\) and \(\bm{A} \to -\tilde{\bm{J}} = -\bm{J}\). The MCRB \(\bm{A}^{-1}\bm{B}\bm{A}^{-T} \to \bm{J}^{-1}\) collapses to the standard CRB of \texttt{fim\_comparison.tex} in every column.
+
+\section{Multi-target case}
+
+For \(P > 1\) targets, all four MCRBs share the block structure
+\begin{equation}
+    \bm{A}(\bm{\eta}) = \begin{bmatrix} \bm{A}_{1,1} & \cdots & \bm{A}_{1,P} \\ \vdots & \ddots & \vdots \\ \bm{A}_{P,1} & \cdots & \bm{A}_{P,P} \end{bmatrix}, \qquad \bm{B}(\bm{\eta}) = \begin{bmatrix} \bm{B}_{1,1} & \cdots & \bm{B}_{1,P} \\ \vdots & \ddots & \vdots \\ \bm{B}_{P,1} & \cdots & \bm{B}_{P,P} \end{bmatrix},
+\end{equation}
+with \(\bm{\eta}_p = [\tilde{\alpha}_{p,R}, \tilde{\alpha}_{p,I}, \tau_p, \nu_p]^T\). The block decomposition of the new pieces is:
+\begin{itemize}
+    \item \(\tilde{\bm{J}}\) inherits the cross-target coupling of \texttt{fim\_comparison.tex} \(\S\)5 verbatim, evaluated at \(\hat{X}\) (\(\hat{x}\)).
+    \item The bias vector \(\bm{b}\) has per-target components \(\bm{b}_p\) that pick up sums over all source targets \(r\): \(\bm{b}_p = (2/\sigma^2)\sum_r \tilde{\alpha}_r^*\, \langle \Phi_{e,r}, \tilde{g}_{p,\cdot}\rangle\). Off-diagonal blocks of \(\bm{B}\) are therefore \(\bm{B}_{p,q} = \tilde{\bm{J}}_{p,q} + \bm{b}_p\, \bm{b}_q^T\).
+    \item The Hessian correction \(\bm{A}_\Delta\) is block-diagonal in the target index of the second derivative (\(\tilde{h}_{p,kl} = 0\) for cross-target \(k,l\)), so \(\bm{A}_{p,q} = -\tilde{\bm{J}}_{p,q}\) for \(p \neq q\) and \(\bm{A}_{p,p} = -\tilde{\bm{J}}_{p,p} + \bm{A}_{\Delta, p,p}\).
+\end{itemize}
+
+\subsection*{Diagonal blocks}
+
+Each diagonal block \(\bm{B}_{p,p}\), \(\bm{A}_{p,p}\) equals the single-target MCRB of Sections~2--3 with parameters indexed by \(p\). The same four-way comparison collapses to two distinct columns by (I)SFFT unitarity:
+\begin{equation}
+    \boxed{\;
+    \mathrm{E}\{\bm{B}_{p,p}^{\text{OFDM}}\} = \mathrm{E}\{\bm{B}_{p,p}^{\text{OTFS}}\}, \qquad
+    \mathrm{E}\{\bm{A}_{p,p}^{\text{OFDM}}\} = \mathrm{E}\{\bm{A}_{p,p}^{\text{OTFS}}\}
+    \quad\text{for each ICI model.}
+    \;}
+\end{equation}
+Tables~\ref{tab:b_compare} and \ref{tab:Adelta_compare} apply to each diagonal block under the substitutions \(\tilde{\alpha} \to \tilde{\alpha}_p\), \(\tau \to \tau_p\), \(\nu \to \nu_p\), \(I \to I_p\).
+
+\subsection*{Cross-target structure}
+
+Define the inter-target separations \(\Delta\tau_{rp} := \tau_p - \tau_r\), \(\Delta\nu_{rp} := \nu_p - \nu_r\) and the Dirichlet sum \(F_a(z,K) := \sum_{k=0}^{K-1} k^a e^{j2\pi kz}\). For both no-ICI cases (OFDM and OTFS) the expected cross-target ``mismatch moment'' factorises as
+\begin{equation}
+    \mathrm{E}\{\langle \Phi_{e,r}, \tilde{\Phi}_p^{(a,b)}\rangle\} = -2p\, (\Delta f)^a\, T_S^b\, F_a(-\Delta f\,\Delta\tau_{rp}, N)\, F_b(T_S\,\Delta\nu_{rp}, M),
+\end{equation}
+where \(\tilde{\Phi}_p^{(a,b)} \in \{\tilde{\Phi}_p, \tilde{\Psi}_p, \tilde{\Omega}_p, \ldots\}\) and \((a,b)\) reads off the appropriate \((\Delta f, T_S)\) prefactor. In the ICI case the same factorisation holds with \(F_a^{(\tau)} := F_a(-\Delta f\,\Delta\tau_{rp},N)\) replaced by the kernel-summed cross moments \(\mathcal{S}_a^{r,p}, \mathcal{T}_a^{r,p}, \mathcal{U}^{r,p}\) of \texttt{fim\_comparison.tex} \(\S\)5, each with an overall \(-2p\) factor. Substituting into the bias and Hessian expressions of \texttt{ofdm\_mcrb.tex} \(\S\)2.2 and \texttt{otfs\_mcrb.tex} \(\S\)2.2 gives identical expected \(\bm{B}\) and \(\bm{A}\) matrices for OFDM and OTFS in each ICI model, by the same (I)SFFT-unitarity argument that links the FIM blocks.
+
+\subsection*{Off-diagonal observations}
+
+\paragraph{Equivalence persists block-by-block.}
+\begin{equation}
+    \boxed{\;
+    \mathrm{E}\{\bm{B}_{p,q}^{\text{OFDM}}\} = \mathrm{E}\{\bm{B}_{p,q}^{\text{OTFS}}\}, \qquad
+    \mathrm{E}\{\bm{A}_{p,q}^{\text{OFDM}}\} = \mathrm{E}\{\bm{A}_{p,q}^{\text{OTFS}}\}
+    \quad \forall\, p, q,
+    \;}
+\end{equation}
+for each ICI model. The whole \(4P \times 4P\) MCRB component matrices are therefore identical between OFDM and OTFS in expectation; only the ICI/no-ICI distinction matters.
+
+\paragraph{Cross-target bias coupling.} The off-diagonal blocks of \(\bm{B}\) are \(\bm{B}_{p,q} = \tilde{\bm{J}}_{p,q} + \bm{b}_p\, \bm{b}_q^T\), so the rank-one bias outer product \(\bm{b}_p\, \bm{b}_q^T\) couples \emph{every} pair of targets through the same mismatch direction. This is different from the FIM cross-target coupling, which decays at the ambiguity-function rate \(|F_a^{(\tau)}|\,|F_b^{(\nu)}|\): the bias coupling is \emph{not} resolution-limited and persists even for well-separated targets, although its magnitude scales as \(p^2\) and is therefore small for low BSC error rates.
+
+\paragraph{Cross-target Hessian.} For \(\bm{A}\), the off-diagonal blocks \(\bm{A}_{p,q} = -\tilde{\bm{J}}_{p,q}\) inherit the FIM cross-target coupling unchanged (up to sign). The mismatch correction is confined to the diagonal blocks, so resolvability of targets in \(\bm{A}\) follows the same ambiguity-function decay as in the FIM: well-separated targets give \(\bm{A} \approx -\mathrm{blkdiag}(\bm{A}_{p,p})\) and the multi-target MCRB factorises into independent per-target MCRBs.
+
+\paragraph{Limit \(I \to \delta\).} The ICI moments collapse to their no-ICI counterparts entry-by-entry, as in the single-target case; the four-column multi-target comparison reduces to two distinct columns and then to one in the limit \(I \to \delta\).
+
+\section{Summary}
+
+Under the i.i.d.\ unit-energy QPSK assumption combined with a BSC error rate \(p\) on the bits, the four single-target MCRB pairs \((\bm{A}, \bm{B})\) and the four multi-target MCRB pairs each collapse to \emph{two} distinct cases:
+\begin{itemize}
+    \item \textbf{No OFDM-side ICI} (OFDM no-ICI \(=\) OTFS no-OFDM-ICI): single-target \(\bm{b}\) has gain components linear in \(p\,\tilde{\alpha}\) and zero kinematic components; \(\bm{A}_\Delta\) is exactly \(2p\) times the FIM on every non-zero entry, so \(\bm{A} = -(1-2p)\, \bm{J}\) and the MCRB inflation is purely \((1-2p)^{-2}\). Both matrices are deterministic in the data symbols, operating-point free (\(\tau, \nu\)-independent), and driven by the elementary power sums \(P_a, Q_b\) of the grid.
+    \item \textbf{With OFDM-side ICI} (OFDM ICI \(=\) OTFS OFDM-ICI): single-target \(\bm{b}\) acquires a Doppler-direction bias proportional to \(\mathrm{Im}\{\mathcal{T}_0\}\) absent in the no-ICI case; \(\bm{A}_\Delta\) follows the \(2p\, \bm{J}\) identity on \((\tau,\tau), (\nu,\nu), (\tau,\nu), (\tilde{\alpha}_I,\tau)\), but the gain--Doppler entries deviate due to the \(\tilde{\alpha}^*\) vs.\ \(\tilde{\alpha}\) asymmetry that ICI activates through complex \(\mathcal{W}_0\). The CRB is operating-point dependent through the Doppler \(\nu\), and the linear-in-\(p\) MCRB corrections inherit this dependence.
+\end{itemize}
+The OFDM/OTFS labels distinguish only the data-domain interpretation; the MCRB content is the same for both waveforms so long as the symbols are i.i.d.\ unit-energy QPSK and the bit-level corruption is BSC. To break this equivalence one must depart from i.i.d.\ unit-energy symbols (pilots, non-constant-modulus alphabets, correlated training) or replace the BSC with a domain-specific error model, in which case the OFDM and OTFS columns can separate and waveform choice begins to matter for misspecified parameter estimation.
+
+\end{document}

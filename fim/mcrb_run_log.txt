@@ -1,0 +1,39 @@
+rho = 0.00 done   (elapsed 7.5 s)
+rho = 0.05 done   (elapsed 58.2 s)
+rho = 0.10 done   (elapsed 113.2 s)
+rho = 0.15 done   (elapsed 196.9 s)
+rho = 0.20 done   (elapsed 282.7 s)
+rho = 0.25 done   (elapsed 364.5 s)
+rho = 0.30 done   (elapsed 451.5 s)
+rho = 0.35 done   (elapsed 544.5 s)
+rho = 0.40 done   (elapsed 636.6 s)
+rho = 0.45 done   (elapsed 734.4 s)
+rho = 0.50 done   (elapsed 1121.5 s)
+Saved mcrb_results.mat
+
+case            | path |   rho   |   MCRB(tau)   |   MCRB(nu)   
+---------------------------------------------------------------------------
+ofdm_single     |  1   |  0.00   |  3.932e-20    |  3.177e-02
+ofdm_multi      |  1   |  0.00   |  1.022e-19    |  8.248e-02
+ofdm_multi      |  2   |  0.00   |  1.200e-19    |  9.817e-02
+ofdm_multi      |  3   |  0.00   |  1.443e-19    |  1.180e-01
+otfs_single     |  1   |  0.00   |  3.935e-20    |  3.175e-02
+otfs_multi      |  1   |  0.00   |  1.023e-19    |  8.243e-02
+otfs_multi      |  2   |  0.00   |  1.201e-19    |  9.814e-02
+otfs_multi      |  3   |  0.00   |  1.446e-19    |  1.180e-01
+ofdm_single     |  1   |  0.25   |  1.622e-18    |  3.312e+00
+ofdm_multi      |  1   |  0.25   |  9.402e-19    |  3.082e+00
+ofdm_multi      |  2   |  0.25   |  5.193e-19    |  3.849e-01
+ofdm_multi      |  3   |  0.25   |  7.759e-18    |  1.614e+01
+otfs_single     |  1   |  0.25   |  9.948e-20    |  8.448e-02
+otfs_multi      |  1   |  0.25   |  4.888e-19    |  2.684e-01
+otfs_multi      |  2   |  0.25   |  1.800e-18    |  3.701e+00
+otfs_multi      |  3   |  0.25   |  4.072e-18    |  6.263e+00
+ofdm_single     |  1   |  0.50   |  1.674e-12    |  6.143e+05
+ofdm_multi      |  1   |  0.50   |  2.420e-11    |  2.202e+07
+ofdm_multi      |  2   |  0.50   |  1.894e-11    |  1.792e+07
+ofdm_multi      |  3   |  0.50   |  1.754e-11    |  1.949e+07
+otfs_single     |  1   |  0.50   |  1.623e-14    |  3.246e+04
+otfs_multi      |  1   |  0.50   |  3.191e-14    |  1.065e+04
+otfs_multi      |  2   |  0.50   |  3.396e-14    |  1.507e+04
+otfs_multi      |  3   |  0.50   |  3.432e-14    |  1.465e+04

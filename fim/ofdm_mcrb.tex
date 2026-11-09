@@ -1,0 +1,385 @@
+\documentclass[11pt]{article}
+
+\usepackage{amsmath,amssymb,bm}
+\usepackage{hyperref}
+\usepackage{svg}
+\usepackage[a4paper,margin=1in]{geometry}
+
+\title{OFDM MCRB A and B Matrix Calculations}
+\author{}
+\date{}
+
+\begin{document}
+\maketitle
+OFDM io equation given as (ofdm\_io.tex)
+\begin{equation}
+    Y[n,m]
+= \sum_{p=0}^{P-1} \tilde{\alpha}_p
+  \sum_{n'=0}^{N-1} X[n',m]\,
+  e^{-j2\pi n'\Delta f\, \tau_p}\,
+  e^{j2\pi mT_S\, \nu_p}\,
+  I_p(n'-n) + Z[n,m]
+\end{equation}
+where, for the ICI channel,
+\begin{equation}
+    I_p(n)
+ = \frac{e^{j2\pi \nu_p T} - 1}{j2\pi(n\Delta f + \nu_p)},
+\end{equation}
+and for the no-ICI channel \(I_p(n) = \delta[n]\), \(I_p'(n) = 0\). The MCRB framework (\texttt{MCRB derivations.pdf}) requires both a \emph{true} mean
+\begin{equation}
+    \mu[n,m]
+= \sum_{p=0}^{P-1} \tilde{\alpha}_p
+  \sum_{n'=0}^{N-1} X[n',m]\,
+  e^{-j2\pi n'\Delta f\, \tau_p}\,
+  e^{j2\pi mT_S\, \nu_p}\,
+  I_p(n'-n),
+\end{equation}
+and an \emph{assumed} mean \(\tilde{\mu}[n,m]\) of identical functional form but built from the receiver-side symbols \(\hat{X}[n',m]\):
+\begin{equation}
+    \tilde{\mu}[n,m]
+= \sum_{p=0}^{P-1} \tilde{\alpha}_p
+  \sum_{n'=0}^{N-1} \hat{X}[n',m]\,
+  e^{-j2\pi n'\Delta f\, \tau_p}\,
+  e^{j2\pi mT_S\, \nu_p}\,
+  I_p(n'-n).
+\end{equation}
+The channel-parameter vector \(\bm{\eta}\) is identical in both means; mismatch enters only through the symbols. The mismatch signal is
+\begin{equation}
+    \Delta[n,m] := \mu[n,m] - \tilde{\mu}[n,m]
+    = \sum_{p=0}^{P-1} \tilde{\alpha}_p \sum_{n'=0}^{N-1} E[n',m]\, e^{-j2\pi n'\Delta f\, \tau_p}\, e^{j2\pi mT_S\, \nu_p}\, I_p(n'-n),
+\end{equation}
+where \(E[n',m] := X[n',m] - \hat{X}[n',m]\).
+
+\paragraph{Binary symmetric channel model for \(\hat{X}\).} The receiver-side symbols \(\hat{X}\) are obtained by passing the bit-stream that generated \(X\) through a binary symmetric channel (BSC) with crossover probability \(p\), then re-mapping. For Gray-coded unit-energy QPSK \(X = (s_R + j s_I)/\sqrt{2}\) with \(s_R, s_I \in \{\pm 1\}\), each component bit flips independently with probability \(p\). The first- and second-order statistics conditional on \(X\) are then
+\begin{align}
+    \mathrm{E}[\hat{X}[n,m] \mid X] &= (1-2p)\, X[n,m], \\
+    \mathrm{E}[|\hat{X}[n,m]|^2 \mid X] &= 1, \\
+    \mathrm{E}[E^*[n,m]\, \hat{X}[n,m] \mid X] &= -2p, \\
+    \mathrm{E}[|E[n,m]|^2 \mid X] &= 4p, \\
+    \mathrm{E}[E[n',m]\, \hat{X}^*[n'',m'] \mid X] &= -2p\, \delta_{n',n''}\, \delta_{m,m'} \quad \text{(i.i.d.\ QPSK across \((n',m)\))},
+\end{align}
+so the BSC behaves like a deterministic symbol-domain attenuation of \(\hat{X}\) by \((1-2p)\) plus i.i.d.\ unit-variance ``error'' with magnitude controlled by \(p\). The same identities hold for BPSK with the obvious one-bit specialization.
+
+\paragraph{First derivatives of \(\tilde{\mu}\).} Replacing \(X\) by \(\hat{X}\) in equations (5)--(8) of \texttt{ofdm\_fim.tex} gives
+\begin{align}
+    \tilde{g}_{\tilde{\alpha}_{p,R}}[n,m] &:= \frac{\partial \tilde{\mu}[n,m]}{\partial \tilde{\alpha}_{p,R}} = \tilde{\Phi}_p[n,m], \\
+    \tilde{g}_{\tilde{\alpha}_{p,I}}[n,m] &:= \frac{\partial \tilde{\mu}[n,m]}{\partial \tilde{\alpha}_{p,I}} = j\, \tilde{\Phi}_p[n,m], \\
+    \tilde{g}_{\tau_p}[n,m] &:= \frac{\partial \tilde{\mu}[n,m]}{\partial \tau_p} = -j2\pi\, \tilde{\alpha}_p\, \tilde{\Psi}_p[n,m], \\
+    \tilde{g}_{\nu_p}[n,m] &:= \frac{\partial \tilde{\mu}[n,m]}{\partial \nu_p} = j2\pi\, \tilde{\alpha}_p\, \tilde{\Omega}_p[n,m],
+\end{align}
+with the receiver-side shorthand
+\begin{align}
+    \tilde{\Phi}_p[n,m]   &:= \sum_{n'=0}^{N-1} \hat{X}[n',m]\, e^{-j2\pi n'\Delta f\, \tau_p}\, e^{j2\pi mT_S\, \nu_p}\, I_p(n'-n), \\
+    \tilde{\Psi}_p[n,m]   &:= \sum_{n'=0}^{N-1} \hat{X}[n',m]\, n'\Delta f\, e^{-j2\pi n'\Delta f\, \tau_p}\, e^{j2\pi mT_S\, \nu_p}\, I_p(n'-n), \\
+    \tilde{\Omega}_p[n,m] &:= \sum_{n'=0}^{N-1} \hat{X}[n',m]\, e^{-j2\pi n'\Delta f\, \tau_p}\, e^{j2\pi mT_S\, \nu_p}\, \left( mT_S I_p(n'-n) + I_p'(n'-n) \right).
+\end{align}
+The mismatch signal in shorthand reads \(\Delta = \sum_p \tilde{\alpha}_p\, \Phi_{E,p}\), where \(\Phi_{E,p}\) is defined exactly as \(\tilde{\Phi}_p\) with \(\hat{X}\) replaced by the error \(E\).
+
+\paragraph{Second derivatives of \(\tilde{\mu}\).} The matrix \(\bm{A}\) requires the Hessian entries \(\tilde{h}_{kl} := \partial^2 \tilde{\mu}/\partial \eta_k \partial \eta_l\). Cross-target second derivatives vanish whenever \(k\) and \(l\) belong to different targets, because \(\tilde{\mu}\) is linear in each \(\tilde{\alpha}_p\) and each per-target phase factor depends only on \((\tau_p, \nu_p)\) of its own target. Within a single target \(p\), introduce two additional shorthand quantities
+\begin{align}
+    \tilde{\Xi}_p[n,m]      &:= \sum_{n'=0}^{N-1} \hat{X}[n',m]\, (n'\Delta f)^2\, e^{-j2\pi n'\Delta f\, \tau_p}\, e^{j2\pi mT_S\, \nu_p}\, I_p(n'-n), \\
+    \tilde{\Omega}_{1,p}[n,m] &:= \sum_{n'=0}^{N-1} \hat{X}[n',m]\, n'\Delta f\, e^{-j2\pi n'\Delta f\, \tau_p}\, e^{j2\pi mT_S\, \nu_p}\, \left( mT_S I_p(n'-n) + I_p'(n'-n) \right), \\
+    \tilde{\Theta}_p[n,m]   &:= \sum_{n'=0}^{N-1} \hat{X}[n',m]\, e^{-j2\pi n'\Delta f\, \tau_p}\, e^{j2\pi mT_S\, \nu_p}\, \left( (mT_S)^2 I_p(n'-n) + 2 mT_S I_p'(n'-n) + I_p''(n'-n) \right),
+\end{align}
+where \(I_p'(n) := \frac{1}{j2\pi}\partial I_p/\partial \nu_p\) (as in \texttt{ofdm\_fim.tex}) and \(I_p''(n) := \frac{1}{j2\pi}\partial I_p'/\partial \nu_p\). With these the nontrivial Hessian entries are
+\begin{align}
+    \tilde{h}_{\tilde{\alpha}_{p,R}, \tau_p} &= -j2\pi\, \tilde{\Psi}_p, &
+    \tilde{h}_{\tilde{\alpha}_{p,R}, \nu_p} &= j2\pi\, \tilde{\Omega}_p, \\
+    \tilde{h}_{\tilde{\alpha}_{p,I}, \tau_p} &= 2\pi\, \tilde{\Psi}_p, &
+    \tilde{h}_{\tilde{\alpha}_{p,I}, \nu_p} &= -2\pi\, \tilde{\Omega}_p, \\
+    \tilde{h}_{\tau_p, \tau_p} &= -4\pi^2\, \tilde{\alpha}_p\, \tilde{\Xi}_p, &
+    \tilde{h}_{\nu_p, \nu_p} &= -4\pi^2\, \tilde{\alpha}_p\, \tilde{\Theta}_p, \\
+    \tilde{h}_{\tau_p, \nu_p} &= 4\pi^2\, \tilde{\alpha}_p\, \tilde{\Omega}_{1,p}. & &
+\end{align}
+The remaining entries are zero (all second derivatives in the gain components vanish because \(\tilde{\mu}\) is linear in \(\tilde{\alpha}_p\)). For the no-ICI specialization \(I_p \to \delta\), \(I_p' \to 0\), \(I_p'' \to 0\), so the shorthand collapses to
+\begin{equation}
+    \tilde{\Phi}_p[n,m] = \hat{X}[n,m]\, \phi_p[n,m], \quad \tilde{\Psi}_p = (n\Delta f)\, \tilde{\Phi}_p, \quad \tilde{\Omega}_p = (mT_S)\, \tilde{\Phi}_p,
+\end{equation}
+\begin{equation}
+    \tilde{\Xi}_p = (n\Delta f)^2\, \tilde{\Phi}_p, \quad \tilde{\Omega}_{1,p} = (n\Delta f)(mT_S)\, \tilde{\Phi}_p, \quad \tilde{\Theta}_p = (mT_S)^2\, \tilde{\Phi}_p,
+\end{equation}
+where \(\phi_p[n,m] := e^{-j2\pi n\Delta f\, \tau_p}\, e^{j2\pi mT_S\, \nu_p}\).
+
+\paragraph{MCRB component matrices.} From \texttt{MCRB derivations.pdf}:
+\begin{align}
+    \bm{B}(\bm{\eta}) &= \tilde{\bm{J}}(\bm{\eta}) + \bm{b}(\bm{\eta})\, \bm{b}^T(\bm{\eta}), & [\tilde{\bm{J}}]_{kl} &= \tfrac{2}{\sigma^2}\, \mathrm{Re}\{\tilde{g}_k^H\, \tilde{g}_l\}, & [\bm{b}]_k &= \tfrac{2}{\sigma^2}\, \mathrm{Re}\{\bm{\Delta}^H\, \tilde{g}_k\}, \\
+    \bm{A}(\bm{\eta}) &= -\tilde{\bm{J}}(\bm{\eta}) + \bm{A}_\Delta(\bm{\eta}), & [\bm{A}_\Delta]_{kl} &= \tfrac{2}{\sigma^2}\, \mathrm{Re}\{\bm{\Delta}^H\, \tilde{h}_{kl}\}. & &
+\end{align}
+The matrix \(\tilde{\bm{J}}\) is structurally identical to the FIM of \texttt{ofdm\_fim.tex}, evaluated at \(\hat{X}\) in place of \(X\); the new content of this document is the bias vector \(\bm{b}\) and the Hessian correction \(\bm{A}_\Delta\), both of which are linear in the mismatch \(\bm{\Delta}\). The bilinear pairing \(\langle f, g \rangle := \sum_{n=0}^{N-1}\sum_{m=0}^{M-1} f^*[n,m]\, g[n,m]\) is reused throughout.
+
+\section{Matrix B}
+
+\subsection{Single Target Case}
+
+For \(P=1\) drop the target index. Parameter vector \(\bm{\eta} = [\tilde{\alpha}_R, \tilde{\alpha}_I, \tau, \nu]^T\) and mismatch \(\bm{\Delta} = \tilde{\alpha}\, \Phi_E\), where \(\Phi_E[n,m] := \sum_{n'} E[n',m]\, e^{-j2\pi n'\Delta f\, \tau}\, e^{j2\pi m T_S\, \nu}\, I(n'-n)\).
+
+\subsubsection{No ICI Channel}
+
+The matrix \(\tilde{\bm{J}}\) is the no-ICI FIM of \texttt{ofdm\_fim.tex} \(\S\)3.1.1 with \(X\) replaced by \(\hat{X}\); each \(|X[n,m]|^2\) and weighted moment becomes the corresponding sum over \(|\hat{X}[n,m]|^2\):
+\begin{align}
+    [\tilde{\bm{J}}]_{\tilde{\alpha}_R, \tilde{\alpha}_R} &= [\tilde{\bm{J}}]_{\tilde{\alpha}_I, \tilde{\alpha}_I} = \tfrac{2}{\sigma^2}\, \textstyle\sum_{n,m} |\hat{X}[n,m]|^2, &
+    [\tilde{\bm{J}}]_{\tilde{\alpha}_R, \tilde{\alpha}_I} &= 0, \\
+    [\tilde{\bm{J}}]_{\tau, \tau} &= \tfrac{8\pi^2 |\tilde{\alpha}|^2}{\sigma^2}\, \textstyle\sum_{n,m} (n\Delta f)^2\, |\hat{X}[n,m]|^2, &
+    [\tilde{\bm{J}}]_{\nu, \nu} &= \tfrac{8\pi^2 |\tilde{\alpha}|^2}{\sigma^2}\, \textstyle\sum_{n,m} (mT_S)^2\, |\hat{X}[n,m]|^2, \\
+    [\tilde{\bm{J}}]_{\tau, \nu} &= -\tfrac{8\pi^2 |\tilde{\alpha}|^2}{\sigma^2}\, \textstyle\sum_{n,m} n\Delta f\, mT_S\, |\hat{X}[n,m]|^2, &
+    [\tilde{\bm{J}}]_{\tilde{\alpha}_R, \tau} &= \tfrac{4\pi\, \tilde{\alpha}_I}{\sigma^2}\, \textstyle\sum_{n,m} n\Delta f\, |\hat{X}[n,m]|^2, \\
+    [\tilde{\bm{J}}]_{\tilde{\alpha}_R, \nu} &= -\tfrac{4\pi\, \tilde{\alpha}_I}{\sigma^2}\, \textstyle\sum_{n,m} mT_S\, |\hat{X}[n,m]|^2, &
+    [\tilde{\bm{J}}]_{\tilde{\alpha}_I, \tau} &= -\tfrac{4\pi\, \tilde{\alpha}_R}{\sigma^2}\, \textstyle\sum_{n,m} n\Delta f\, |\hat{X}[n,m]|^2, \\
+    [\tilde{\bm{J}}]_{\tilde{\alpha}_I, \nu} &= \tfrac{4\pi\, \tilde{\alpha}_R}{\sigma^2}\, \textstyle\sum_{n,m} mT_S\, |\hat{X}[n,m]|^2.
+\end{align}
+For unit-energy QPSK \(\hat{X}\), \(|\hat{X}|^2 = 1\) and these reduce exactly to the closed-form FIM entries of \texttt{ofdm\_fim.tex} (eqs.\ (24)--(32)), independent of the BSC error rate.
+
+\paragraph{Bias vector \(\bm{b}\).} The inner product \(\bm{\Delta}^H \tilde{g}_k = \tilde{\alpha}^* \langle \Phi_E, \tilde{g}_k\rangle / \tilde{\alpha}\) — strictly \(\bm{\Delta}^H \tilde{g}_k = \tilde{\alpha}^* \langle \Phi_E, \tilde{g}_k / \tilde{\alpha} \cdot \tilde{\alpha}\rangle\); equivalently, with \(\Phi_E[n,m] = E[n,m]\, \phi[n,m]\) the phase factors \(\phi^*\phi = 1\) cancel and the inner products reduce to data moments. Define
+\begin{equation}
+    \Gamma^{(a,b)} := \sum_{n=0}^{N-1} \sum_{m=0}^{M-1} (n\Delta f)^a\, (mT_S)^b\, E^*[n,m]\, \hat{X}[n,m], \qquad a, b \in \{0, 1, 2\},
+\end{equation}
+so that \(\langle \Phi_E, \tilde{\Phi}\rangle = \Gamma^{(0,0)}\), \(\langle \Phi_E, \tilde{\Psi}\rangle = \Gamma^{(1,0)}\), \(\langle \Phi_E, \tilde{\Omega}\rangle = \Gamma^{(0,1)}\). Using \(\bm{\Delta}^H \tilde{g}_k = \tilde{\alpha}^*\, \langle \Phi_E, \tilde{g}_k/\!\!\!\text{(its gain factor)}\rangle\) and the four first-derivative formulas above,
+\begin{align}
+    \bm{\Delta}^H \tilde{g}_{\tilde{\alpha}_R} &= \tilde{\alpha}^*\, \Gamma^{(0,0)}, &
+    \bm{\Delta}^H \tilde{g}_{\tilde{\alpha}_I} &= j\, \tilde{\alpha}^*\, \Gamma^{(0,0)}, &
+    \bm{\Delta}^H \tilde{g}_\tau &= -j2\pi\, |\tilde{\alpha}|^2\, \Gamma^{(1,0)}, &
+    \bm{\Delta}^H \tilde{g}_\nu &= j2\pi\, |\tilde{\alpha}|^2\, \Gamma^{(0,1)},
+\end{align}
+whose real parts give the bias-vector entries
+\begin{align}
+    b_{\tilde{\alpha}_R} &= \tfrac{2}{\sigma^2}\, \mathrm{Re}\{\tilde{\alpha}^*\, \Gamma^{(0,0)}\}, &
+    b_{\tilde{\alpha}_I} &= -\tfrac{2}{\sigma^2}\, \mathrm{Im}\{\tilde{\alpha}^*\, \Gamma^{(0,0)}\}, \\
+    b_\tau &= \tfrac{4\pi\, |\tilde{\alpha}|^2}{\sigma^2}\, \mathrm{Im}\{\Gamma^{(1,0)}\}, &
+    b_\nu &= -\tfrac{4\pi\, |\tilde{\alpha}|^2}{\sigma^2}\, \mathrm{Im}\{\Gamma^{(0,1)}\}.
+\end{align}
+
+\paragraph{Matrix \(\bm{B}\).} Combine via \(\bm{B} = \tilde{\bm{J}} + \bm{b}\bm{b}^T\): each entry \([\bm{B}]_{kl} = [\tilde{\bm{J}}]_{kl} + b_k b_l\). Writing this out for the four-dimensional parameter vector adds the rank-one outer product
+\begin{equation}
+    \bm{b}\bm{b}^T = \begin{bmatrix} b_{\tilde{\alpha}_R}^2 & b_{\tilde{\alpha}_R} b_{\tilde{\alpha}_I} & b_{\tilde{\alpha}_R} b_\tau & b_{\tilde{\alpha}_R} b_\nu \\
+        \cdot & b_{\tilde{\alpha}_I}^2 & b_{\tilde{\alpha}_I} b_\tau & b_{\tilde{\alpha}_I} b_\nu \\
+        \cdot & \cdot & b_\tau^2 & b_\tau b_\nu \\
+        \cdot & \cdot & \cdot & b_\nu^2 \end{bmatrix},
+\end{equation}
+to the symmetric \(\tilde{\bm{J}}\) of the previous block. The bias vector vanishes when \(E \equiv 0\) (perfect bit recovery, \(p = 0\)), reducing \(\bm{B} \to \tilde{\bm{J}}\) and hence to the FIM.
+
+\paragraph{Expected \(\bm{B}\) under i.i.d.\ unit-energy QPSK with BSC error rate \(p\).} With \(\mathrm{E}[E^*[n,m]\, \hat{X}[n,m]] = -2p\) independent of \((n,m)\) and \(|\hat{X}|^2 = 1\):
+\begin{equation}
+    \mathrm{E}\{\Gamma^{(a,b)}\} = -2p\, (\Delta f)^a\, T_S^b\, P_a\, Q_b, \qquad P_a := \sum_{n=0}^{N-1} n^a, \quad Q_b := \sum_{m=0}^{M-1} m^b.
+\end{equation}
+Because the \(\Gamma^{(a,b)}\) are real in expectation, \(\mathrm{E}\{\mathrm{Im}\,\Gamma^{(a,b)}\} = 0\) and the expected bias collapses to
+\begin{align}
+    \mathrm{E}\{b_{\tilde{\alpha}_R}\} &= -\tfrac{4p\, \tilde{\alpha}_R\, NM}{\sigma^2}, &
+    \mathrm{E}\{b_{\tilde{\alpha}_I}\} &= -\tfrac{4p\, \tilde{\alpha}_I\, NM}{\sigma^2}, &
+    \mathrm{E}\{b_\tau\} &= 0, &
+    \mathrm{E}\{b_\nu\} &= 0.
+\end{align}
+The variance of \(b_\tau, b_\nu\) over random data is nonzero, but the dominant bias contribution comes from the gain entries: bit-errors look like a real-valued attenuation of the gain estimate by a factor \((1-2p)\), and \(\bm{b}\) captures the linear-in-\(p\) leading term.
+
+\subsubsection{ICI Channel}
+
+For general \(I(n)\), the inner sums do not collapse and the bias vector picks up cross-bin data interactions. The \(\tilde{\bm{J}}\) entries mirror \texttt{ofdm\_fim.tex} \(\S\)3.1.2 (eqs.\ (39)--(48)) with \(X\) replaced by \(\hat{X}\):
+\begin{align}
+    [\tilde{\bm{J}}]_{\tilde{\alpha}_R, \tilde{\alpha}_R} &= [\tilde{\bm{J}}]_{\tilde{\alpha}_I, \tilde{\alpha}_I} = \tfrac{2}{\sigma^2}\, \langle \tilde{\Phi}, \tilde{\Phi}\rangle, &
+    [\tilde{\bm{J}}]_{\tilde{\alpha}_R, \tilde{\alpha}_I} &= 0, \\
+    [\tilde{\bm{J}}]_{\tau, \tau} &= \tfrac{8\pi^2 |\tilde{\alpha}|^2}{\sigma^2}\, \langle \tilde{\Psi}, \tilde{\Psi}\rangle, &
+    [\tilde{\bm{J}}]_{\nu, \nu} &= \tfrac{8\pi^2 |\tilde{\alpha}|^2}{\sigma^2}\, \langle \tilde{\Omega}, \tilde{\Omega}\rangle, \\
+    [\tilde{\bm{J}}]_{\tau, \nu} &= -\tfrac{8\pi^2 |\tilde{\alpha}|^2}{\sigma^2}\, \mathrm{Re}\{\langle \tilde{\Psi}, \tilde{\Omega}\rangle\}, &
+    [\tilde{\bm{J}}]_{\tilde{\alpha}_R, \tau} &= \tfrac{4\pi}{\sigma^2}\, \mathrm{Im}\{\tilde{\alpha}\, \langle \tilde{\Phi}, \tilde{\Psi}\rangle\}, \\
+    [\tilde{\bm{J}}]_{\tilde{\alpha}_R, \nu} &= -\tfrac{4\pi}{\sigma^2}\, \mathrm{Im}\{\tilde{\alpha}\, \langle \tilde{\Phi}, \tilde{\Omega}\rangle\}, &
+    [\tilde{\bm{J}}]_{\tilde{\alpha}_I, \tau} &= -\tfrac{4\pi}{\sigma^2}\, \mathrm{Re}\{\tilde{\alpha}\, \langle \tilde{\Phi}, \tilde{\Psi}\rangle\}, \\
+    [\tilde{\bm{J}}]_{\tilde{\alpha}_I, \nu} &= \tfrac{4\pi}{\sigma^2}\, \mathrm{Re}\{\tilde{\alpha}\, \langle \tilde{\Phi}, \tilde{\Omega}\rangle\}. & &
+\end{align}
+
+\paragraph{Bias vector.} The entries are obtained by replacing the first slot \(\tilde{\Phi}\) in the FIM-template inner products by \(\Phi_E\) and absorbing the outer gain factor \(\tilde{\alpha}\) (from \(\bm{\Delta} = \tilde{\alpha}\, \Phi_E\)):
+\begin{align}
+    b_{\tilde{\alpha}_R} &= \tfrac{2}{\sigma^2}\, \mathrm{Re}\{\tilde{\alpha}^*\, \langle \Phi_E, \tilde{\Phi}\rangle\}, &
+    b_{\tilde{\alpha}_I} &= -\tfrac{2}{\sigma^2}\, \mathrm{Im}\{\tilde{\alpha}^*\, \langle \Phi_E, \tilde{\Phi}\rangle\}, \\
+    b_\tau &= \tfrac{4\pi}{\sigma^2}\, \mathrm{Im}\{|\tilde{\alpha}|^2\, \langle \Phi_E, \tilde{\Psi}\rangle\} = \tfrac{4\pi\, |\tilde{\alpha}|^2}{\sigma^2}\, \mathrm{Im}\{\langle \Phi_E, \tilde{\Psi}\rangle\}, \\
+    b_\nu &= -\tfrac{4\pi}{\sigma^2}\, \mathrm{Im}\{|\tilde{\alpha}|^2\, \langle \Phi_E, \tilde{\Omega}\rangle\} = -\tfrac{4\pi\, |\tilde{\alpha}|^2}{\sigma^2}\, \mathrm{Im}\{\langle \Phi_E, \tilde{\Omega}\rangle\}.
+\end{align}
+
+\paragraph{Matrix \(\bm{B}\).} Combine \(\bm{B} = \tilde{\bm{J}} + \bm{b}\bm{b}^T\) as before; no further simplification is available without specializing the data model.
+
+\paragraph{Expected \(\bm{B}\) under i.i.d.\ unit-energy QPSK with BSC error rate \(p\).} Using \(\mathrm{E}[E^*[n',m]\, \hat{X}[n'',m']] = -2p\, \delta_{n',n''}\, \delta_{m,m'}\), the cross-bin products in \(\langle \Phi_E, \tilde{\Phi}\rangle\) etc.\ collapse onto the diagonal \(n'=n''\) just as for the FIM. Define the data-independent ICI sums of \texttt{ofdm\_fim.tex} \(\S\)3.1.2:
+\begin{equation}
+    \mathcal{S}_k := \sum_{n,n'} (n')^k\, |I(n'-n)|^2, \qquad \mathcal{T}_k := \sum_{n,n'} (n')^k\, I^*(n'-n)\, I'(n'-n).
+\end{equation}
+Carrying the \(-2p\) prefactor through the diagonal collapse,
+\begin{align}
+    \mathrm{E}\{\langle \Phi_E, \tilde{\Phi}\rangle\} &= -2p\, M\, \mathcal{S}_0, &
+    \mathrm{E}\{\langle \Phi_E, \tilde{\Psi}\rangle\} &= -2p\, M\, \Delta f\, \mathcal{S}_1, \\
+    \mathrm{E}\{\langle \Phi_E, \tilde{\Omega}\rangle\} &= -2p\, \left[ T_S\, \tfrac{M(M-1)}{2}\, \mathcal{S}_0 + M\, \mathcal{T}_0 \right]. & &
+\end{align}
+Substituting into the \(\bm{b}\)-entries yields
+\begin{align}
+    \mathrm{E}\{b_{\tilde{\alpha}_R}\} &= -\tfrac{4p\, M\, \mathcal{S}_0}{\sigma^2}\, \tilde{\alpha}_R, &
+    \mathrm{E}\{b_{\tilde{\alpha}_I}\} &= -\tfrac{4p\, M\, \mathcal{S}_0}{\sigma^2}\, \tilde{\alpha}_I, \\
+    \mathrm{E}\{b_\tau\} &= 0, &
+    \mathrm{E}\{b_\nu\} &= \tfrac{8\pi\, p\, |\tilde{\alpha}|^2\, M}{\sigma^2}\, \mathrm{Im}\{\mathcal{T}_0\},
+\end{align}
+where \(\mathrm{E}\{b_\tau\} = 0\) because \(\mathcal{S}_1\) is real, and \(\mathrm{E}\{b_\nu\}\) inherits a nonzero imaginary part from the generally complex ICI cross sum \(\mathcal{T}_0\). The limit \(I \to \delta\) sends \(\mathcal{T}_0 \to 0\) and recovers the no-ICI result above. Hence ICI introduces a small (\(O(p)\)) Doppler-direction bias absent in the no-ICI regime.
+
+\subsection{Multiple Target Case}
+
+For \(P > 1\), stack \(\bm{\eta} = [\bm{\eta}_1^T, \ldots, \bm{\eta}_P^T]^T\) with \(\bm{\eta}_p = [\tilde{\alpha}_{p,R}, \tilde{\alpha}_{p,I}, \tau_p, \nu_p]^T\) and partition both matrices into \(4 \times 4\) blocks. The mismatch is now \(\bm{\Delta} = \sum_p \tilde{\alpha}_p\, \Phi_{E,p}\), so the bias vector entries pick up sums over the source target:
+\begin{equation}
+    [\bm{b}]_{(p,k)} = \tfrac{2}{\sigma^2}\, \mathrm{Re}\left\{ \sum_{r=1}^{P} \tilde{\alpha}_r^*\, \langle \Phi_{E,r}, \tilde{g}_{p,k}\rangle \right\}.
+\end{equation}
+The matrix \(\tilde{\bm{J}}\) has the FIM block structure of \texttt{ofdm\_fim.tex} \(\S\)3.2, evaluated at \(\hat{X}\); the rank-one update \(\bm{b}\bm{b}^T\) couples all targets through the single mismatch direction.
+
+\subsubsection{No ICI Channel}
+
+The diagonal blocks \(\tilde{\bm{J}}_{p,p}\) reproduce the single-target no-ICI \(\tilde{\bm{J}}\) above. The off-diagonal blocks \(\tilde{\bm{J}}_{p,q}\) (\(p \neq q\)) follow from \texttt{ofdm\_fim.tex} \(\S\)3.2.1 with \(|X|^2 \to |\hat{X}|^2\) in the cross-target moment
+\begin{equation}
+    \hat{\Lambda}_{p,q}^{(a,b)} := \sum_{n=0}^{N-1} \sum_{m=0}^{M-1} (n\Delta f)^a\, (mT_S)^b\, |\hat{X}[n,m]|^2\, e^{-j2\pi n\Delta f\, \Delta\tau_{pq}}\, e^{j2\pi mT_S\, \Delta\nu_{pq}}, \quad \Delta\tau_{pq} := \tau_q - \tau_p,\ \Delta\nu_{pq} := \nu_q - \nu_p.
+\end{equation}
+For unit-energy QPSK \(\hat{X}\), \(|\hat{X}|^2 = 1\) and \(\hat{\Lambda}_{p,q}^{(a,b)}\) coincides with the \(\Lambda_{p,q}^{(a,b)}\) of \texttt{ofdm\_fim.tex}.
+
+The bias vector entries within target \(p\) read
+\begin{align}
+    b_{p, \tilde{\alpha}_R} &= \tfrac{2}{\sigma^2}\, \mathrm{Re}\!\left\{ \sum_r \tilde{\alpha}_r^*\, \Gamma_{r,p}^{(0,0)} \right\}, &
+    b_{p, \tilde{\alpha}_I} &= -\tfrac{2}{\sigma^2}\, \mathrm{Im}\!\left\{ \sum_r \tilde{\alpha}_r^*\, \Gamma_{r,p}^{(0,0)} \right\}, \\
+    b_{p, \tau} &= \tfrac{4\pi}{\sigma^2}\, \mathrm{Im}\!\left\{ \tilde{\alpha}_p\, \sum_r \tilde{\alpha}_r^*\, \Gamma_{r,p}^{(1,0)} \right\}, &
+    b_{p, \nu} &= -\tfrac{4\pi}{\sigma^2}\, \mathrm{Im}\!\left\{ \tilde{\alpha}_p\, \sum_r \tilde{\alpha}_r^*\, \Gamma_{r,p}^{(0,1)} \right\},
+\end{align}
+with the cross-target data moment
+\begin{equation}
+    \Gamma_{r,p}^{(a,b)} := \sum_{n,m} (n\Delta f)^a\, (mT_S)^b\, E^*[n,m]\, \hat{X}[n,m]\, e^{-j2\pi n\Delta f\, \Delta\tau_{rp}}\, e^{j2\pi mT_S\, \Delta\nu_{rp}}.
+\end{equation}
+For \(r = p\) the phase factors cancel and \(\Gamma_{p,p}^{(a,b)} = \Gamma^{(a,b)}\) of the single-target case. Matrix \(\bm{B}\) is formed block-wise as \(\bm{B}_{p,q} = \tilde{\bm{J}}_{p,q} + \bm{b}_p\, \bm{b}_q^T\), with \(\bm{b}_p \in \mathbb{R}^4\) the per-target bias.
+
+\subsubsection{ICI Channel}
+
+Diagonal blocks \(\tilde{\bm{J}}_{p,p}\) replicate the single-target ICI \(\tilde{\bm{J}}\). The off-diagonal blocks \(\tilde{\bm{J}}_{p,q}\), \(p \neq q\), reuse the ICI templates of \texttt{ofdm\_fim.tex} \(\S\)3.2.2 verbatim with all \(\Phi, \Psi, \Omega\) replaced by their tilde counterparts. The bias vector entries become
+\begin{align}
+    b_{p, \tilde{\alpha}_R} &= \tfrac{2}{\sigma^2}\, \mathrm{Re}\!\left\{ \sum_r \tilde{\alpha}_r^*\, \langle \Phi_{E,r}, \tilde{\Phi}_p \rangle \right\}, &
+    b_{p, \tilde{\alpha}_I} &= -\tfrac{2}{\sigma^2}\, \mathrm{Im}\!\left\{ \sum_r \tilde{\alpha}_r^*\, \langle \Phi_{E,r}, \tilde{\Phi}_p \rangle \right\}, \\
+    b_{p, \tau} &= \tfrac{4\pi}{\sigma^2}\, \mathrm{Im}\!\left\{ \tilde{\alpha}_p\, \sum_r \tilde{\alpha}_r^*\, \langle \Phi_{E,r}, \tilde{\Psi}_p \rangle \right\}, &
+    b_{p, \nu} &= -\tfrac{4\pi}{\sigma^2}\, \mathrm{Im}\!\left\{ \tilde{\alpha}_p\, \sum_r \tilde{\alpha}_r^*\, \langle \Phi_{E,r}, \tilde{\Omega}_p \rangle \right\}.
+\end{align}
+The block-form \(\bm{B}_{p,q} = \tilde{\bm{J}}_{p,q} + \bm{b}_p\bm{b}_q^T\) holds verbatim.
+
+\section{Matrix A}
+
+The Hessian-mean matrix is \(\bm{A} = -\tilde{\bm{J}} + \bm{A}_\Delta\), with \(\tilde{\bm{J}}\) exactly as in Section 1 and the new piece \(\bm{A}_\Delta\) collecting the second-order projections of the mismatch \(\bm{\Delta}\) onto \(\tilde{h}_{kl}\).
+
+\subsection{Single Target Case}
+
+Using \(\bm{\Delta} = \tilde{\alpha}\, \Phi_E\) and the Hessian table of the introduction,
+\begin{align}
+    [\bm{A}_\Delta]_{\tilde{\alpha}_R, \tilde{\alpha}_R} &= [\bm{A}_\Delta]_{\tilde{\alpha}_I, \tilde{\alpha}_I} = [\bm{A}_\Delta]_{\tilde{\alpha}_R, \tilde{\alpha}_I} = 0, \\
+    [\bm{A}_\Delta]_{\tilde{\alpha}_R, \tau} &= \tfrac{4\pi}{\sigma^2}\, \mathrm{Im}\!\left\{ \tilde{\alpha}^*\, \langle \Phi_E, \tilde{\Psi}\rangle \right\}, &
+    [\bm{A}_\Delta]_{\tilde{\alpha}_R, \nu} &= -\tfrac{4\pi}{\sigma^2}\, \mathrm{Im}\!\left\{ \tilde{\alpha}^*\, \langle \Phi_E, \tilde{\Omega}\rangle \right\}, \\
+    [\bm{A}_\Delta]_{\tilde{\alpha}_I, \tau} &= \tfrac{4\pi}{\sigma^2}\, \mathrm{Re}\!\left\{ \tilde{\alpha}^*\, \langle \Phi_E, \tilde{\Psi}\rangle \right\}, &
+    [\bm{A}_\Delta]_{\tilde{\alpha}_I, \nu} &= -\tfrac{4\pi}{\sigma^2}\, \mathrm{Re}\!\left\{ \tilde{\alpha}^*\, \langle \Phi_E, \tilde{\Omega}\rangle \right\}, \\
+    [\bm{A}_\Delta]_{\tau, \tau} &= -\tfrac{8\pi^2 |\tilde{\alpha}|^2}{\sigma^2}\, \mathrm{Re}\!\left\{ \langle \Phi_E, \tilde{\Xi}\rangle \right\}, &
+    [\bm{A}_\Delta]_{\nu, \nu} &= -\tfrac{8\pi^2 |\tilde{\alpha}|^2}{\sigma^2}\, \mathrm{Re}\!\left\{ \langle \Phi_E, \tilde{\Theta}\rangle \right\}, \\
+    [\bm{A}_\Delta]_{\tau, \nu} &= \tfrac{8\pi^2 |\tilde{\alpha}|^2}{\sigma^2}\, \mathrm{Re}\!\left\{ \langle \Phi_E, \tilde{\Omega}_1\rangle \right\}. & &
+\end{align}
+The derivation mirrors that of the bias vector: \(\bm{\Delta}^H \tilde{h}_{kl} = \tilde{\alpha}^*\, \langle \Phi_E, \tilde{h}_{kl}/\text{(gain factor)} \rangle\), and the same \(\Re/\Im\) splits apply (note the sign flip for the \(\tilde{\alpha}_I\)-rows versus the \(\bm{b}\)-vector entries, because the Hessian factors \((-j2\pi, j2\pi, 2\pi, -2\pi, -4\pi^2, 4\pi^2)\) differ in phase from the corresponding first-derivative factors).
+
+\subsubsection{No ICI Channel}
+
+The collapse \(\tilde{\Xi} = (n\Delta f)^2 \tilde{\Phi}\), \(\tilde{\Omega}_1 = (n\Delta f)(mT_S)\tilde{\Phi}\), \(\tilde{\Theta} = (mT_S)^2 \tilde{\Phi}\) turns the inner products into data moments of the form
+\begin{equation}
+    \langle \Phi_E, \tilde{\Phi}\, \kappa\rangle = \sum_{n,m} \kappa[n,m]\, E^*[n,m]\, \hat{X}[n,m] = \Gamma^{(a,b)} \text{ for } \kappa = (n\Delta f)^a (mT_S)^b.
+\end{equation}
+Substituting:
+\begin{align}
+    [\bm{A}_\Delta]_{\tilde{\alpha}_R, \tau} &= \tfrac{4\pi}{\sigma^2}\, \mathrm{Im}\{\tilde{\alpha}^*\, \Gamma^{(1,0)}\}, &
+    [\bm{A}_\Delta]_{\tilde{\alpha}_R, \nu} &= -\tfrac{4\pi}{\sigma^2}\, \mathrm{Im}\{\tilde{\alpha}^*\, \Gamma^{(0,1)}\}, \\
+    [\bm{A}_\Delta]_{\tilde{\alpha}_I, \tau} &= \tfrac{4\pi}{\sigma^2}\, \mathrm{Re}\{\tilde{\alpha}^*\, \Gamma^{(1,0)}\}, &
+    [\bm{A}_\Delta]_{\tilde{\alpha}_I, \nu} &= -\tfrac{4\pi}{\sigma^2}\, \mathrm{Re}\{\tilde{\alpha}^*\, \Gamma^{(0,1)}\}, \\
+    [\bm{A}_\Delta]_{\tau, \tau} &= -\tfrac{8\pi^2 |\tilde{\alpha}|^2}{\sigma^2}\, \mathrm{Re}\{\Gamma^{(2,0)}\}, &
+    [\bm{A}_\Delta]_{\nu, \nu} &= -\tfrac{8\pi^2 |\tilde{\alpha}|^2}{\sigma^2}\, \mathrm{Re}\{\Gamma^{(0,2)}\}, \\
+    [\bm{A}_\Delta]_{\tau, \nu} &= \tfrac{8\pi^2 |\tilde{\alpha}|^2}{\sigma^2}\, \mathrm{Re}\{\Gamma^{(1,1)}\}. & &
+\end{align}
+The full matrix is \(\bm{A} = -\tilde{\bm{J}} + \bm{A}_\Delta\) with \(\tilde{\bm{J}}\) given above. Setting \(E = 0\) (no bit errors) drives \(\bm{A}_\Delta \to 0\) and \(\bm{A} \to -\tilde{\bm{J}} = -\bm{J}\), so the MCRB \(\bm{A}^{-1}\bm{B}\bm{A}^{-T} \to \bm{J}^{-1}\) recovers the CRB.
+
+\paragraph{Expected \(\bm{A}\) under i.i.d.\ QPSK with BSC error rate \(p\).} Using \(\mathrm{E}\{\Gamma^{(a,b)}\} = -2p\, (\Delta f)^a T_S^b P_a Q_b\) (real),
+\begin{align}
+    \mathrm{E}\{[\bm{A}_\Delta]_{\tilde{\alpha}_R, \tau}\} &= 0, &
+    \mathrm{E}\{[\bm{A}_\Delta]_{\tilde{\alpha}_R, \nu}\} &= 0, \\
+    \mathrm{E}\{[\bm{A}_\Delta]_{\tilde{\alpha}_I, \tau}\} &= -\tfrac{8\pi\, p\, \tilde{\alpha}_R\, \Delta f\, M\, P_1}{\sigma^2}, &
+    \mathrm{E}\{[\bm{A}_\Delta]_{\tilde{\alpha}_I, \nu}\} &= \tfrac{8\pi\, p\, \tilde{\alpha}_R\, T_S\, N\, Q_1}{\sigma^2}, \\
+    \mathrm{E}\{[\bm{A}_\Delta]_{\tau, \tau}\} &= \tfrac{16\pi^2\, p\, |\tilde{\alpha}|^2\, (\Delta f)^2\, M\, P_2}{\sigma^2}, &
+    \mathrm{E}\{[\bm{A}_\Delta]_{\nu, \nu}\} &= \tfrac{16\pi^2\, p\, |\tilde{\alpha}|^2\, T_S^2\, N\, Q_2}{\sigma^2}, \\
+    \mathrm{E}\{[\bm{A}_\Delta]_{\tau, \nu}\} &= -\tfrac{16\pi^2\, p\, |\tilde{\alpha}|^2\, \Delta f\, T_S\, P_1\, Q_1}{\sigma^2}. & &
+\end{align}
+The \(\mathrm{Im}\,\Gamma\)-driven entries vanish in expectation because \(\Gamma^{(a,b)}\) is real on average; only the \(\mathrm{Re}\)-rows survive. Subtracting from \(-\mathrm{E}\{\tilde{\bm{J}}\}\) (the latter being just the FIM under perfect data, independent of \(p\)) gives
+\begin{equation}
+    \mathrm{E}\{[\bm{A}]_{\tau,\tau}\} = -(1-2p)\, [\bm{J}]_{\tau, \tau}, \qquad \mathrm{E}\{[\bm{A}]_{\nu,\nu}\} = -(1-2p)\, [\bm{J}]_{\nu, \nu}, \qquad \mathrm{E}\{[\bm{A}]_{\tau,\nu}\} = -(1-2p)\, [\bm{J}]_{\tau, \nu}.
+\end{equation}
+The \(\tau, \nu\) sub-block of the expected mean Hessian is simply the no-error block scaled by \(-(1-2p)\) — bit errors shrink the curvature in the delay--Doppler directions linearly, which together with the unchanged \(\tilde{\bm{J}}\) drives the MCRB inflation \((\bm{A}^{-1}\bm{B}\bm{A}^{-T} \propto 1/(1-2p)^2)\) at first order in \(p\).
+
+\subsubsection{ICI Channel}
+
+The entries of \(\bm{A}_\Delta\) listed at the start of this subsection apply verbatim; no further data-domain simplification is available for fixed \(\hat{X}\). Under i.i.d.\ unit-energy QPSK with BSC error rate \(p\), define the compound ICI moments
+\begin{align}
+    \mathcal{U} &:= \sum_{n,n'} |I'(n'-n)|^2, &
+    \mathcal{W}_0 &:= \tfrac{T_S M(M-1)}{2}\, \mathcal{S}_0 + M\, \mathcal{T}_0, \\
+    \mathcal{W}_1 &:= \tfrac{T_S M(M-1)}{2}\, \mathcal{S}_1 + M\, \mathcal{T}_1, &
+    \mathcal{V} &:= \tfrac{T_S^2 M(M-1)(2M-1)}{6}\, \mathcal{S}_0 + T_S M(M-1)\, \mathrm{Re}\{\mathcal{T}_0\} + M\, \mathcal{U}.
+\end{align}
+Then the inner products simplify via the diagonal collapse:
+\begin{align}
+    \mathrm{E}\{\langle \Phi_E, \tilde{\Psi}\rangle\}     &= -2p\, M\, \Delta f\, \mathcal{S}_1, &
+    \mathrm{E}\{\langle \Phi_E, \tilde{\Omega}\rangle\}   &= -2p\, \mathcal{W}_0, \\
+    \mathrm{E}\{\langle \Phi_E, \tilde{\Xi}\rangle\}      &= -2p\, M\, (\Delta f)^2\, \mathcal{S}_2, &
+    \mathrm{E}\{\langle \Phi_E, \tilde{\Theta}\rangle\}   &= -2p\, \mathcal{V}, \\
+    \mathrm{E}\{\langle \Phi_E, \tilde{\Omega}_1\rangle\} &= -2p\, \Delta f\, \mathcal{W}_1. & &
+\end{align}
+Substituting:
+\begin{align}
+    \mathrm{E}\{[\bm{A}_\Delta]_{\tilde{\alpha}_R, \tau}\} &= 0, &
+    \mathrm{E}\{[\bm{A}_\Delta]_{\tilde{\alpha}_R, \nu}\} &= \tfrac{8\pi\, p}{\sigma^2}\, \mathrm{Im}\{\tilde{\alpha}^*\, \mathcal{W}_0\}, \\
+    \mathrm{E}\{[\bm{A}_\Delta]_{\tilde{\alpha}_I, \tau}\} &= -\tfrac{8\pi\, p\, \tilde{\alpha}_R\, \Delta f\, M\, \mathcal{S}_1}{\sigma^2}, &
+    \mathrm{E}\{[\bm{A}_\Delta]_{\tilde{\alpha}_I, \nu}\} &= \tfrac{8\pi\, p}{\sigma^2}\, \mathrm{Re}\{\tilde{\alpha}^*\, \mathcal{W}_0\}, \\
+    \mathrm{E}\{[\bm{A}_\Delta]_{\tau, \tau}\} &= \tfrac{16\pi^2\, p\, |\tilde{\alpha}|^2\, M\, (\Delta f)^2}{\sigma^2}\, \mathcal{S}_2, &
+    \mathrm{E}\{[\bm{A}_\Delta]_{\nu, \nu}\} &= \tfrac{16\pi^2\, p\, |\tilde{\alpha}|^2}{\sigma^2}\, \mathcal{V}, \\
+    \mathrm{E}\{[\bm{A}_\Delta]_{\tau, \nu}\} &= -\tfrac{16\pi^2\, p\, |\tilde{\alpha}|^2\, \Delta f}{\sigma^2}\, \mathrm{Re}\{\mathcal{W}_1\}. & &
+\end{align}
+Compared with the expected ICI FIM (\texttt{ofdm\_fim.tex} eqs.\ (49)--(57)), the scaling identity
+\begin{equation}
+    \mathrm{E}\{[\bm{A}_\Delta]_{kl}\} = 2p\, \mathrm{E}\{[\bm{J}]_{kl}\} \quad \text{holds for } (k,l) \in \{(\tau,\tau), (\nu,\nu), (\tau,\nu), (\tilde{\alpha}_I, \tau)\},
+\end{equation}
+giving \(\mathrm{E}\{[\bm{A}]_{kl}\} = -(1-2p)\, \mathrm{E}\{[\bm{J}]_{kl}\}\) on this four-entry set. The gain--Doppler rows \([\bm{A}_\Delta]_{\tilde{\alpha}_R,\nu}, [\bm{A}_\Delta]_{\tilde{\alpha}_I,\nu}\) carry \(\mathrm{Im/Re}\{\tilde{\alpha}^*\,\mathcal{W}_0\}\) while the FIM uses \(\mathrm{Im/Re}\{\tilde{\alpha}\,\mathcal{W}_0\}\); the two coincide only when \(\mathcal{W}_0\) is real (no-ICI limit, \(\mathcal{T}_0 \to 0\)), so the simple \(2p\) scaling breaks once \(\mathcal{T}_0\) is generically complex. The remaining entries (gain--gain block) are unaffected because \(\tilde{h}\) vanishes there.
+
+\subsection{Multiple Target Case}
+
+For \(P > 1\), the Hessian entries vanish between different targets (\(\partial^2 \tilde{\mu} / \partial \eta_{p,k} \partial \eta_{q,l} = 0\) for \(p \neq q\)), so the cross-target structure of \(\bm{A}_\Delta\) is block-diagonal in the \emph{first} index (the target index of \(\tilde{h}\)) but the contractions \(\bm{\Delta}^H \tilde{h}_{p,kl}\) still sum the mismatch over all targets:
+\begin{equation}
+    [\bm{A}_\Delta]_{(p,k),(q,l)} = \delta_{p,q}\, \tfrac{2}{\sigma^2}\, \mathrm{Re}\!\left\{ \sum_{r=1}^{P} \tilde{\alpha}_r^*\, \langle \Phi_{E,r}, \tilde{h}_{p, kl} \rangle \right\}.
+\end{equation}
+The off-diagonal blocks \(\bm{A}_{p,q}\) (\(p \neq q\)) thus collapse to \(\bm{A}_{p,q} = -\tilde{\bm{J}}_{p,q}\), i.e.\ the FIM cross-target coupling carries through unchanged in \(\bm{A}\) (up to the overall sign), while the diagonal blocks \(\bm{A}_{p,p} = -\tilde{\bm{J}}_{p,p} + \bm{A}_{\Delta, p,p}\) pick up the mismatch correction.
+
+\subsubsection{No ICI Channel}
+
+The intra-target block \(\bm{A}_{\Delta, p,p}\) takes the same form as the single-target no-ICI \(\bm{A}_\Delta\), with each \(\Gamma^{(a,b)}\) replaced by the cross-target sum \(\sum_r \tilde{\alpha}_r^*\, \Gamma_{r,p}^{(a,b)}\) (and \(\tilde{\alpha}^*\) by \(1\), since the \(\tilde{\alpha}_p^*\) factor is absorbed into the cross sum). Define for brevity
+\begin{equation}
+    \Sigma_p^{(a,b)} := \sum_{r=1}^{P} \tilde{\alpha}_r^*\, \Gamma_{r,p}^{(a,b)},
+\end{equation}
+so that \(\Sigma_p^{(a,b)}\big|_{P=1} = \tilde{\alpha}^*\, \Gamma^{(a,b)}\). Then
+\begin{align}
+    [\bm{A}_{\Delta, p,p}]_{\tilde{\alpha}_R, \tau} &= \tfrac{4\pi\, \Delta f}{\sigma^2}\, \mathrm{Im}\{\Sigma_p^{(1,0)}\}, &
+    [\bm{A}_{\Delta, p,p}]_{\tilde{\alpha}_R, \nu} &= -\tfrac{4\pi\, T_S}{\sigma^2}\, \mathrm{Im}\{\Sigma_p^{(0,1)}\}, \\
+    [\bm{A}_{\Delta, p,p}]_{\tilde{\alpha}_I, \tau} &= \tfrac{4\pi\, \Delta f}{\sigma^2}\, \mathrm{Re}\{\Sigma_p^{(1,0)}\}, &
+    [\bm{A}_{\Delta, p,p}]_{\tilde{\alpha}_I, \nu} &= -\tfrac{4\pi\, T_S}{\sigma^2}\, \mathrm{Re}\{\Sigma_p^{(0,1)}\}, \\
+    [\bm{A}_{\Delta, p,p}]_{\tau, \tau} &= -\tfrac{8\pi^2 (\Delta f)^2}{\sigma^2}\, \mathrm{Re}\{\tilde{\alpha}_p\, \Sigma_p^{(2,0)}\}, &
+    [\bm{A}_{\Delta, p,p}]_{\nu, \nu} &= -\tfrac{8\pi^2 T_S^2}{\sigma^2}\, \mathrm{Re}\{\tilde{\alpha}_p\, \Sigma_p^{(0,2)}\}, \\
+    [\bm{A}_{\Delta, p,p}]_{\tau, \nu} &= \tfrac{8\pi^2 \Delta f\, T_S}{\sigma^2}\, \mathrm{Re}\{\tilde{\alpha}_p\, \Sigma_p^{(1,1)}\}. & &
+\end{align}
+For \(r = p\) the phase factors in \(\Gamma_{r,p}\) cancel and \(\Sigma_p^{(a,b)}\) inherits a real diagonal term \(\tilde{\alpha}_p^*\, \Gamma^{(a,b)}\); the off-diagonal-target contributions \(r \neq p\) carry the standard cross-target phase \(e^{-j2\pi n\Delta f\, \Delta\tau_{rp}}\, e^{j2\pi mT_S\, \Delta\nu_{rp}}\) and quantify how mismatch generated on a non-target subspace leaks into the second-order moments referenced to target \(p\).
+
+\subsubsection{ICI Channel}
+
+The diagonal-block \(\bm{A}_{\Delta, p, p}\) entries follow the single-target ICI template with each inner product replaced by \(\sum_r \tilde{\alpha}_r^*\, \langle \Phi_{E,r}, \cdot_p\rangle\):
+\begin{align}
+    [\bm{A}_{\Delta, p,p}]_{\tilde{\alpha}_R, \tau} &= \tfrac{4\pi}{\sigma^2}\, \mathrm{Im}\!\left\{ \sum_r \tilde{\alpha}_r^*\, \langle \Phi_{E,r}, \tilde{\Psi}_p\rangle \right\}, &
+    [\bm{A}_{\Delta, p,p}]_{\tilde{\alpha}_R, \nu} &= -\tfrac{4\pi}{\sigma^2}\, \mathrm{Im}\!\left\{ \sum_r \tilde{\alpha}_r^*\, \langle \Phi_{E,r}, \tilde{\Omega}_p\rangle \right\}, \\
+    [\bm{A}_{\Delta, p,p}]_{\tilde{\alpha}_I, \tau} &= \tfrac{4\pi}{\sigma^2}\, \mathrm{Re}\!\left\{ \sum_r \tilde{\alpha}_r^*\, \langle \Phi_{E,r}, \tilde{\Psi}_p\rangle \right\}, &
+    [\bm{A}_{\Delta, p,p}]_{\tilde{\alpha}_I, \nu} &= -\tfrac{4\pi}{\sigma^2}\, \mathrm{Re}\!\left\{ \sum_r \tilde{\alpha}_r^*\, \langle \Phi_{E,r}, \tilde{\Omega}_p\rangle \right\}, \\
+    [\bm{A}_{\Delta, p,p}]_{\tau, \tau} &= -\tfrac{8\pi^2\, \tilde{\alpha}_p}{\sigma^2}\, \mathrm{Re}\!\left\{ \sum_r \tilde{\alpha}_r^*\, \langle \Phi_{E,r}, \tilde{\Xi}_p\rangle \right\}, &
+    [\bm{A}_{\Delta, p,p}]_{\nu, \nu} &= -\tfrac{8\pi^2\, \tilde{\alpha}_p}{\sigma^2}\, \mathrm{Re}\!\left\{ \sum_r \tilde{\alpha}_r^*\, \langle \Phi_{E,r}, \tilde{\Theta}_p\rangle \right\}, \\
+    [\bm{A}_{\Delta, p,p}]_{\tau, \nu} &= \tfrac{8\pi^2\, \tilde{\alpha}_p}{\sigma^2}\, \mathrm{Re}\!\left\{ \sum_r \tilde{\alpha}_r^*\, \langle \Phi_{E,r}, \tilde{\Omega}_{1,p}\rangle \right\}. & &
+\end{align}
+The matrix \(\bm{A}\) follows by block-diagonal addition of \(\bm{A}_{\Delta, p,p}\) to \(-\tilde{\bm{J}}\), with the off-diagonal blocks \(\bm{A}_{p,q} = -\tilde{\bm{J}}_{p,q}\) carried over from the ICI multi-target FIM unchanged. Under i.i.d.\ QPSK with BSC error rate \(p_e\) (renaming to avoid clash with the target index), the diagonal-collapse identities of \(\S\)2.1.2 extend across targets via the additional Dirichlet-type \(F_a\) factors of \texttt{ofdm\_fim.tex} \(\S\)3.2.1, and each \(\bm{A}_\Delta\)-entry inherits a global \(-2p_e\) factor analogous to the single-target case.
+
+\paragraph{Reduction to the matched case.} As in \(\S\)2, setting \(E \equiv 0\) (no bit errors, \(p = 0\)) sends \(\bm{A}_\Delta \to 0\), \(\bm{b} \to \bm{0}\), and \(\bm{A} \to -\tilde{\bm{J}} = -\bm{J}\), \(\bm{B} \to \tilde{\bm{J}} = \bm{J}\), so the Misspecified CRB \(\bm{A}^{-1}\bm{B}\bm{A}^{-T}\) collapses to the standard CRB \(\bm{J}^{-1}\) of \texttt{ofdm\_fim.tex} in every regime considered above.
+
+\end{document}

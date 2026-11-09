@@ -1,0 +1,13 @@
+eva_ber_mp_ici.m ile eva_ber_mp.m aynı sonucu üretmeli.
+İlkinde channel_dd_ici.m ikincisinde channel.m kullanıldı. Bunlar da aslında aynı fonksiyon.
+Büyük ölçüde benzer sonuçlar veriyorlar. Şimdilik aynı gibi düşünülebilir.
+
+eva_ber.m daha eski. parameter estimation yapıp öyle channel estimationn yapıyor.
+yeni olanlarda parameter estimation yapmadan channel estimation/data demodulation yapıyoruz.
+
+eva_crb.m eski. Sadece delay için CRB hesaplıyor. 9 path varsayıyor.
+getFIM_OTDM_ICI.m kullanılmış.
+
+eva_mcrb.m çok eski. ne olduğunu bilmiyorum
+
+

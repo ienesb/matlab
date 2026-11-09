@@ -1,0 +1,812 @@
+\documentclass[11pt,a4paper]{article}
+
+\usepackage[margin=1in]{geometry}
+\usepackage{amsmath,amssymb,amsfonts,mathtools}
+\usepackage{bm}
+\usepackage{hyperref}
+
+\title{OTFS Input--Output Relations}
+\author{OTFS/OFDM Research Project}
+\date{\today}
+
+\newcommand{\deltaf}{\Delta f}
+\newcommand{\CN}{\mathcal{CN}}
+
+\newcommand{\Deltaf}{\Delta f}
+\newcommand{\bmmu}{\bm{\mu}}
+\newcommand{\bmtildemu}{\bm{\tilde{\mu}}}
+\newcommand{\bmeta}{\bm{\eta}}
+\newcommand{\bmetabar}{\bm{\bar{\eta}}}
+\newcommand{\bmetahat}{\bm{\hat{\eta}}}
+\newcommand{\bmy}{\bm{y}}
+\newcommand{\bmY}{\bm{Y}}
+\newcommand{\bmX}{\bm{X}}
+\newcommand{\bmXhat}{\bm{\hat{X}}}
+\newcommand{\bmH}{\bm{H}}
+\newcommand{\bmg}{\bm{g}}
+\newcommand{\alphabar}{\bar{\alpha}}
+\newcommand{\taubar}{\bar{\tau}}
+\newcommand{\nubar}{\bar{\nu}}
+
+\begin{document}
+\maketitle
+
+%% ===================================================================
+\section{Notation and System Parameters}
+%% ===================================================================
+
+We use $N$ for the number of subcarriers and $M$ for the number of
+OFDM symbols (time slots) within one OTFS frame. In the TF domain,
+$n=0,\dots,N-1$ indexes subcarriers (frequency axis) and
+$m=0,\dots,M-1$ indexes symbols (time axis). The TF grid is
+\begin{equation}
+  \Lambda = \bigl\{(n\deltaf,\, mT_s)\bigr\},
+  \quad n=0,\dots,N-1,\quad m=0,\dots,M-1,
+\end{equation}
+where $\deltaf$ is the subcarrier spacing, $T = 1/\deltaf$ is the
+symbol duration, and $T_s = T + T_{\mathrm{cp}}$ is the total symbol
+period (with $T_{\mathrm{cp}}=0$ in our simulation, so $T_s = T$).
+The OTFS frame has duration $T_f = MT_s$ and bandwidth
+$B = N\deltaf$.
+
+The delay--Doppler (DD) information grid is
+\begin{equation}
+  \Gamma = \left\{\left(\frac{k}{N\deltaf},\;\frac{l}{MT_s}\right)\right\},
+  \quad k=0,\dots,N-1,\quad l=0,\dots,M-1,
+\end{equation}
+with delay resolution $1/(N\deltaf)$ and Doppler resolution $1/(MT_s)$.
+Here $k$ indexes the delay axis (corresponding to subcarriers) and $l$
+indexes the Doppler axis (corresponding to symbols).
+A set of $NM$ information symbols $x[k,l]$, drawn from a modulation
+alphabet $\mathcal{A}$ (e.g.\ 4-QAM), is arranged on $\Gamma$.
+
+%% ===================================================================
+\section{OTFS Modulation (DD $\to$ TF $\to$ Time)}
+%% ===================================================================
+
+\subsection{Inverse Symplectic Finite Fourier Transform (ISFFT)}
+
+The DD-domain symbols are first mapped to the TF grid via the ISFFT:
+\begin{equation}
+  X[n,m] = \frac{1}{\sqrt{N}}\sum_{k=0}^{N-1}
+  \frac{1}{\sqrt{M}}\sum_{l=0}^{M-1}
+  x[k,l]\,e^{j2\pi\!\left(-\frac{nk}{N}+\frac{ml}{M}\right)},
+  \label{eq:isfft}
+\end{equation}
+for $n=0,\dots,N-1$ (subcarrier index) and $m=0,\dots,M-1$ (symbol
+index). The first sum is an $N$-point FFT along the delay axis
+(mapping delay bins $k$ to subcarriers $n$), and the second is an
+$M$-point IFFT along the Doppler axis (mapping Doppler bins $l$ to
+time slots $m$).
+
+\subsection{Heisenberg Transform}
+
+A time--frequency modulator maps the TF samples $X[n,m]$ onto the
+continuous transmit waveform via the Heisenberg transform:
+\begin{equation}
+  s(t) = \sum_{m=0}^{M-1}\sum_{n=0}^{N-1}
+  X[n,m]\,g_{\mathrm{tx}}(t-mT_s)\,e^{j2\pi n\deltaf(t-mT_s)},
+  \label{eq:heisenberg}
+\end{equation}
+where $g_{\mathrm{tx}}(t)$ is the transmit pulse. Here $m$ selects the
+time slot and $n$ selects the subcarrier. For a given symbol index $m$,
+the inner sum over $n$ is the standard OFDM IFFT that modulates $N$
+subcarriers; the outer sum over $m$ concatenates $M$ such OFDM symbols
+in time. With $M=1$, the Heisenberg transform reduces to a single OFDM
+symbol.
+
+%% ===================================================================
+\section{Channel}
+%% ===================================================================
+
+The transmitted signal $s(t)$ propagates through a time-varying
+multipath channel with impulse response
+\begin{equation}
+  h(\tau,\nu) = \sum_{p=1}^{P} \alpha_p\,\delta(\tau-\tau_p)\,\delta(\nu-\nu_p),
+  \label{eq:channel_dd}
+\end{equation}
+where $P$ is the number of paths and $h_p$, $\tau_p$, $\nu_p$ denote
+the complex gain, delay, and Doppler shift of the $p$-th path.
+The received signal is
+\begin{align}
+  r(t) &= \iint h(\tau,\nu)\,s(t-\tau)\,e^{j2\pi\nu(t-\tau)}\,d\tau\,d\nu
+  \;+\; v(t)\\
+  &= \sum_{p=1}^{P} \alpha_p\,s(t-\tau_p)\,e^{j2\pi\nu_p(t-\tau_p)} + v(t),
+  \label{eq:rx_cont}
+\end{align}
+where $v(t)$ is additive white Gaussian noise.
+
+%% ===================================================================
+\section{OTFS Demodulation (Time $\to$ TF $\to$ DD)}
+%% ===================================================================
+
+\subsection{Wigner Transform}
+
+At the receiver, a matched filter with pulse $g_{\mathrm{rx}}(t)$
+followed by sampling yields the TF-domain received samples
+\begin{equation}
+  Y[n,m] = \int g_{\mathrm{rx}}^{*}(t-mT_s)\,r(t)\,
+  e^{-j2\pi n\deltaf(t-mT_s)}\,dt,
+  \label{eq:wigner}
+\end{equation}
+where $n$ is the subcarrier index and $m$ the symbol index, consistent
+with the transmitter convention.
+
+\subsection{Symplectic Finite Fourier Transform (SFFT)}
+
+The DD-domain received symbols are obtained by applying the SFFT to
+$Y[n,m]$:
+\begin{equation}
+  y[k,l] = \frac{1}{\sqrt{NM}}\sum_{n=0}^{N-1}
+  \sum_{m=0}^{M-1}
+  Y[n,m]\,e^{j2\pi\!\left(\frac{nk}{N}-\frac{ml}{M}\right)}.
+  \label{eq:sfft}
+\end{equation}
+The first sum is an $N$-point IFFT along the subcarrier axis
+(frequency $\to$ delay), and the second is an $M$-point FFT along
+the symbol axis (time $\to$ Doppler).
+
+%% ===================================================================
+\section{TF-Domain Input-Output Relation}
+\label{sec:tf_io}
+%% ===================================================================
+
+Assuming that rectangular pulses are used at both the transmitter and receiver, and ignoring the cyclic prefix, the bi-orthogonality condition is satisfied and the TF-domain input--output relation is free of inter-symbol interference (ISI) and inter-carrier interference (ICI). In this ideal case, the received TF samples are simply
+
+\begin{equation}
+  Y[n,m] = \sum_{p=1}^{P} X[n,m]H[n,m]  + Z[n,m],
+  \label{eq:tf_io_ideal}
+\end{equation}
+where $H[n,m]$ is 
+\begin{equation}
+  H[n,m] = \sum_{p=1}^{P} \alpha_p\,e^{-j2\pi n\deltaf\tau_p}\,e^{j2\pi T_s m\nu_p}
+  \label{eq:tf_channel}
+\end{equation}
+
+Under ideal rectangular pulses that satisfy the bi-orthogonality
+condition, the TF-domain input--output relation including
+inter-carrier interference (ICI) is
+\begin{equation}
+  Y[n,m] = \sum_{i=1}^{P} h_i
+  \sum_{n'=0}^{N-1} I_{n-n'}(\nu_i)\;
+  X[n',m]\;
+  e^{-j2\pi\deltaf n'\tau_i}\;
+  e^{j2\pi T_s m\nu_i}
+  \;+\; Z[n,m],
+  \label{eq:tf_io}
+\end{equation}
+where $Z[n,m]\sim\CN(0,\sigma^2)$ is AWGN, and
+$I_k(\nu)$ is the ICI coefficient
+\begin{equation}
+  I_k(\nu) = \frac{e^{j2\pi\nu T}-1}{j2\pi(k+\nu T)}.
+  \label{eq:ici_coeff}
+\end{equation}
+At $k + \nu T = 0$ (the singularity), L'H\^opital's rule gives
+$I_0(\nu)|_{\nu T\to 0} = 1$. For small Doppler ($\nu T \ll 1$),
+$I_k(\nu)$ is sharply peaked at $k=0$ and the ICI is weak; as the
+Doppler--bandwidth product grows, significant energy leaks to
+neighbouring subcarriers.
+
+%% ===================================================================
+\section{DD-Domain Input--Output Relation}
+\label{sec:dd_io}
+%% ===================================================================
+
+\subsection{Integer Doppler Case}
+Ignoring ISI/ICI, when the time delay and Doppler shifts are integer multiples of the DD Delay and Doppler resolution, i.e.\ $\tau_p = \frac{k_p}{N\deltaf}$, and $\nu_p = \frac{l_p}{MT_s}$ with $k_p$, and $l_p$ are integers, the DD-domain input--output relation simplifies to
+\begin{align}
+  y[k,l] &= \frac{1}{\sqrt{NM}}\sum_{n=0}^{N-1}\sum_{m=0}^{M-1}
+  Y[n,m]\,e^{j2\pi\!\left(\frac{nk}{N}-\frac{ml}{M}\right)}\\
+  &= \frac{1}{\sqrt{NM}}\sum_{n=0}^{N-1}\sum_{m=0}^{M-1}\sum_{p=1}^{P} \alpha_p X\!\bigl[n, m \bigr] e^{-j2\pi n\deltaf\tau_p} e^{j2\pi T_s m\nu_p}e^{j2\pi\!\left(\frac{nk}{N}-\frac{ml}{M}\right)} \\
+  &= \frac{1}{\sqrt{NM}}\sum_{n=0}^{N-1}\sum_{m=0}^{M-1}\sum_{p=1}^{P} \alpha_p X\!\bigl[n, m \bigr] e^{-j2\pi n\frac{k_p}{N}} e^{j2\pi m\frac{l_p}{M}}e^{j2\pi\!\left(\frac{nk}{N}-\frac{ml}{M}\right)} \\
+  &= \sum_{p=1}^{P} \alpha_p x\!\bigl[\left[k-k_p\right]_N, \left[l-l_p\right]_M \bigr]
+\end{align}
+
+where $[\cdot]_N$ and $[\cdot]_M$ denote modulo $N$ and modulo $M$
+respectively, $k_{\tau_i} = \operatorname{round}(\tau_i N\deltaf)$ is
+the integer delay tap, and $h_i' = h_i\,e^{-j2\pi l_{\nu_i}\tau_i}$.
+Each path circularly shifts the transmitted symbols by the delay and
+Doppler taps.
+
+\subsection{Fractional Doppler Case}
+
+In practice the Doppler shifts are not confined to the DD grid. With
+$\nu_i = \frac{\beta_i + \kappa_{\nu_i}}{MT_s}$ where
+$\beta_i\in\mathbb{Z}$ and $-\tfrac{1}{2}<\kappa_{\nu_i}\le\tfrac{1}{2}$
+is the fractional Doppler, the input--output relation
+becomes~\cite{raviteja_tvt2019,raviteja_wcnc2018}
+\begin{equation}
+  y[k,l] = \sum_{i=1}^{P}\sum_{q=-E_i}^{E_i}
+  h_i'\;
+  \mathcal{G}\!\left(\frac{l-l'}{MT_s},\nu_i\right)
+  x\!\bigl[\!\left[k-k_{\tau_i}\right]_N,\;
+            \left[l-\beta_i+q\right]_M\bigr]
+  \;+\; z[k,l],
+  \label{eq:dd_fractional}
+\end{equation}
+where $l' = l-\beta_i+q$, $E_i$ is the number of significant
+neighbouring Doppler taps retained for path $i$, and
+\begin{equation}
+  \mathcal{G}\!\left(\frac{l-l'}{MT_s},\nu_i\right)
+  = \frac{e^{j2\pi(l-l'-\beta_i-\kappa_{\nu_i})}-1}
+         {e^{j\frac{2\pi}{M}(l-l'-\beta_i-\kappa_{\nu_i})}-1}
+  \label{eq:G_frac}
+\end{equation}
+is the sampled version of the Dirichlet sinc function, whose magnitude
+is
+\begin{equation}
+  \left|\frac{1}{M}\mathcal{G}\!\left(\frac{l-l'}{MT_s},\nu_i\right)\right|
+  \;\ge\;
+  \left|\mathrm{sinc}\!\bigl(\pi((l-l'-\beta_i)-\kappa_{\nu_i})\bigr)\right|.
+\end{equation}
+This is a two-sided decreasing function that peaks at
+$l' = [l-\beta_i]_M$. The side lobes decay as
+$1/\bigl(\pi(l-l'-\beta_i)\bigr)$, so only a few terms around the
+peak need to be kept ($E_i \ll M$, e.g.\ $E_i = 5$ for $M=128$).
+Setting $\kappa_{\nu_i}=0$ (integer Doppler) reduces
+Eq.~\eqref{eq:dd_fractional} to Eq.~\eqref{eq:dd_integer}, since
+$\mathcal{G}$ becomes $M$ at $q=0$ and vanishes elsewhere.
+
+\subsection{Derivation}
+\label{sec:dd_derivation}
+
+Both Eq.~\eqref{eq:dd_integer} and Eq.~\eqref{eq:dd_fractional}
+follow from applying the SFFT in Eq.~\eqref{eq:sfft} to the TF
+relation in Eq.~\eqref{eq:tf_io} and substituting the ISFFT in
+Eq.~\eqref{eq:isfft} for $X[n',m]$. The $(n,m)$ summations then
+factor, so the delay and Doppler axes can be handled independently:
+\begin{equation}
+  y[k,l] = \frac{1}{NM}\sum_{i=1}^{P} h_i
+  \sum_{k',l'} x[k',l']\;
+  \mathcal{N}_i(k,k')\;\mathcal{M}_i(l,l') \;+\; z[k,l],
+  \label{eq:dd_nm_split}
+\end{equation}
+where, using the integer-delay assumption
+$k_{\tau_i}=\tau_i N\deltaf\in\mathbb{Z}$ so that
+$e^{-j2\pi\deltaf n'\tau_i} = e^{-j2\pi n' k_{\tau_i}/N}$,
+\begin{align}
+  \mathcal{N}_i(k,k') &= \sum_{n,n'=0}^{N-1}
+    I_{n-n'}(\nu_i)\,
+    e^{\,j2\pi n'(k'-k_{\tau_i})/N}\,
+    e^{-j2\pi nk/N},
+    \label{eq:N_sum}\\[4pt]
+  \mathcal{M}_i(l,l') &= \sum_{m=0}^{M-1}
+    e^{\,j2\pi m\,(l-l'+\nu_i MT_s)/M}.
+    \label{eq:M_sum}
+\end{align}
+
+\paragraph{Delay axis.}
+Changing variable to $p = n-n'$ in Eq.~\eqref{eq:N_sum} and
+factoring,
+\begin{equation}
+  \mathcal{N}_i(k,k') =
+    \Bigl[\sum_{n'=0}^{N-1}
+      e^{\,j2\pi n'(k'-k_{\tau_i}-k)/N}\Bigr]
+    \Bigl[\sum_{p} I_p(\nu_i)\,e^{-j2\pi pk/N}\Bigr]
+    = N\,\delta_{k'\equiv[k-k_{\tau_i}]_N}\cdot\Phi_i(k).
+\end{equation}
+The first bracket pins the transmit delay bin to
+$k'=[k-k_{\tau_i}]_N$, producing the circular delay shift common to
+both the integer and fractional cases. The second bracket
+$\Phi_i(k)$ arises from the ICI kernel $I_p(\nu_i)$ and contributes
+only a phase that is absorbed into the effective path gain
+$h_i' = h_i\,e^{-j2\pi\nu_i\tau_i}$ under the bi-orthogonal pulse
+assumption.
+
+\paragraph{Doppler axis.}
+With the integer--fractional decomposition
+$\nu_i MT_s = \beta_i + \kappa_{\nu_i}$, the geometric series in
+Eq.~\eqref{eq:M_sum} evaluates to
+\begin{equation}
+  \mathcal{M}_i(l,l') =
+  \frac{e^{\,j2\pi(l-l'+\beta_i+\kappa_{\nu_i})}-1}
+       {e^{\,j(2\pi/M)(l-l'+\beta_i+\kappa_{\nu_i})}-1}.
+  \label{eq:M_closed}
+\end{equation}
+
+\emph{Integer Doppler ($\kappa_{\nu_i}=0$).}
+The exponent $l-l'+\beta_i$ is an integer, so
+Eq.~\eqref{eq:M_closed} reduces to the orthogonality relation
+\begin{equation}
+  \mathcal{M}_i(l,l')
+  = M\,\mathbb{1}\!\left[l'\equiv[l-l_{\nu_i}]_M\right],
+  \qquad l_{\nu_i}:=\beta_i.
+\end{equation}
+Substituting both Kronecker deltas into
+Eq.~\eqref{eq:dd_nm_split} collapses the joint sum to a single term
+per path, reproducing Eq.~\eqref{eq:dd_integer}.
+
+\emph{Fractional Doppler ($\kappa_{\nu_i}\ne 0$).}
+Now $\mathcal{M}_i(l,l')$ is the sampled Dirichlet sinc: peaked
+near $l'\approx[l-\beta_i]_M$ with side lobes decaying as
+$1/(\pi(l-l'-\beta_i))$. Reindexing $l' = [l-\beta_i+q]_M$ makes
+the exponent argument equal to $q+\kappa_{\nu_i}$, so that
+$\mathcal{M}_i(l,l')$ becomes exactly the kernel
+$\mathcal{G}\!\bigl((l-l')/(MT_s),\,\nu_i\bigr)$ in
+Eq.~\eqref{eq:G_frac}. Truncating $|q|\le E_i$ to the significant
+neighbourhood yields Eq.~\eqref{eq:dd_fractional}.
+
+Setting $\kappa_{\nu_i}\to 0$ shrinks $\mathcal{G}$ back to
+$M\,\delta_{q,0}$, so Eq.~\eqref{eq:dd_fractional} collapses into
+Eq.~\eqref{eq:dd_integer} and the fractional relation is confirmed
+as the strict generalization of the integer case.
+
+\subsection{Vectorized Form}
+
+Stacking all $NM$ symbols column-wise,
+$\mathbf{x} = \mathrm{vec}\bigl(x[k,l]\bigr) \in \mathbb{C}^{NM}$,
+the DD-domain relation can be written compactly as
+\begin{equation}
+  \mathbf{y} = \mathbf{H}\mathbf{x} + \mathbf{z},
+  \label{eq:dd_vec}
+\end{equation}
+where $\mathbf{H}\in\mathbb{C}^{NM\times NM}$ is the effective DD
+channel matrix. Due to the mod-$N$, mod-$M$ structure, each row and
+column of $\mathbf{H}$ has at most $S = \sum_{i=1}^{P}(2E_i+1)$
+non-zero entries, making $\mathbf{H}$ highly sparse. Moreover,
+$\mathbf{H}$ is diagonally dominant, which enables efficient
+message-passing detection.
+
+%% ===================================================================
+\section{Embedded Pilot Arrangement and Channel Estimation}
+\label{sec:pilot}
+%% ===================================================================
+
+Following~\cite{raviteja_tvt2019}, a single pilot symbol $x_p$ with
+pilot SNR $\mathrm{SNR}_p = |x_p|^2/\sigma^2$ is placed at DD
+location $(k_p,l_p)$, and the surrounding region is filled with guard
+(zero) symbols. In the fractional Doppler case with full guard symbols,
+the guard region spans
+\begin{equation}
+  k_p - k_\tau \;\le\; k \;\le\; k_p + k_\tau, \qquad
+  0 \;\le\; l \;\le\; M-1,
+\end{equation}
+where $k_\tau$ is the maximum delay tap. The data symbols $x_d[k,l]$
+occupy the remaining positions.
+
+At the receiver, the symbols in the pilot response region
+$k \in [k_p, k_p+k_\tau]$ are used for channel estimation. Using the
+input--output relation in Eq.~\eqref{eq:dd_fractional}, the received
+symbols for channel estimation are
+\begin{equation}
+  y[k,l] = \hat{b}[k-k_p]\,
+  \tilde{h}[k-k_p,\,l-l_p|_M]\,x_p \;+\; v[k,l],
+  \label{eq:ce_rx}
+\end{equation}
+for $k \in [k_p, k_p+k_\tau]$ and $l \in [0,M-1]$, where
+\begin{equation}
+  \hat{b}[k-k_p] =
+  \begin{cases}
+    1, & \text{if } \displaystyle\sum_{l'=-l_\nu}^{l_\nu}
+         b[k-k_p,l'] \ge 1, \\
+    0, & \text{otherwise},
+  \end{cases}
+\end{equation}
+is the path indicator and
+\begin{equation}
+  \tilde{h}[k-k_p,\,l-l_p|_M]
+  = \sum_{l'=-l_\nu}^{l_\nu}
+  b[k-k_p,l']\,\bar{h}[k-k_p,l',l'+l-l_p|_M]
+\end{equation}
+is the effective path gain from the pilot to the received symbol. The
+threshold-based channel estimation algorithm proceeds as follows:
+\begin{enumerate}
+  \item For $k\in[k_p, k_p+k_\tau]$, $l\in[0,M-1]$: if
+    $|y[k,l]| \ge \mathcal{T}$, set
+    $\hat{b}[k-k_p]=1$ and
+    $\hat{\tilde{h}}[k-k_p,\,l-l_p|_M] = y[k,l]/x_p$.
+    Otherwise, set $\hat{b}[k-k_p]=0$.
+  \item The threshold is chosen as
+    $\mathcal{T} = 3/\sqrt{\mathrm{SNR}_p}$.
+\end{enumerate}
+The estimated channel triplets
+$\{(\Delta k_s,\,\Delta l_s,\,\hat{\tilde{h}}_s)\}$ are then fed to
+the message-passing detector.
+
+%% ===================================================================
+\section{Data Detection via Message Passing}
+\label{sec:mp}
+%% ===================================================================
+
+From the vectorized relation $\mathbf{y}=\mathbf{H}\mathbf{x}+\mathbf{z}$,
+the MAP detection rule is
+\begin{equation}
+  \hat{x}_c = \arg\max_{a_j\in\mathcal{A}}
+  \prod_{e\in\mathcal{J}_c}
+  \Pr\!\left(y_e \,\middle|\, x_c = a_j,\,\mathbf{H}\right),
+\end{equation}
+where $\mathcal{J}_c$ is the set of observation nodes connected to
+variable node $c$. The MP detector approximates this by iterating
+over the sparse factor graph of $\mathbf{H}$:
+
+\paragraph{Step 1 (Initialization).}
+Set iteration index $t=0$; initialize the symbol pmf uniformly:
+$\mathrm{p}_{cd}^{(0)}(a_j) = 1/|\mathcal{A}|$.
+
+\paragraph{Step 2 (Observation $\to$ variable messages).}
+For each observation node $y_d$, the aggregate interference mean and
+variance are
+\begin{align}
+  \mu_d &= \sum_{e\in\mathcal{I}_d} x_e\,H_{d,e}
+  + \sum_{\substack{e\in\mathcal{I}_d\\e\ne c}} x_e\,H_{d,e},
+  \label{eq:mp_mean}\\
+  (\sigma_{dc}^{(t)})^2 &=
+  \sum_{\substack{e\in\mathcal{I}_d\\e\ne c}}
+  |H_{d,e}|^2\bigl|\mathrm{E}[|x_e|^2] - |\mu_e|^2\bigr|
+  + \sigma^2.
+  \label{eq:mp_var}
+\end{align}
+The message from observation $y_d$ to variable $x_c$ is
+\begin{equation}
+  \Pr\!\left(y_d\,\middle|\,x_c=a_j,\,\mathbf{H}\right)
+  \;\propto\;
+  \exp\!\left(
+  -\frac{\bigl|y_d - \mu_{dc}^{(t)} - H_{d,c}\,a_j\bigr|^2}
+        {(\sigma_{dc}^{(t)})^2}\right).
+\end{equation}
+
+\paragraph{Step 3 (Variable $\to$ observation messages).}
+The updated pmf is computed and damped:
+\begin{equation}
+  \mathrm{p}_{cd}^{(t+1)}(a_j)
+  = \Delta\;\tilde{\mathrm{p}}_{cd}^{(t+1)}(a_j)
+  + (1-\Delta)\;\mathrm{p}_{cd}^{(t)}(a_j),
+\end{equation}
+where $\Delta\in(0,1]$ is the damping factor and
+$\tilde{\mathrm{p}}$ is the raw posterior from Step~2.
+
+\paragraph{Steps 4--5.} Repeat Steps 2--3 until convergence or a
+maximum number of iterations. The hard decision is
+\begin{equation}
+  \hat{x}_c = \arg\max_{a_j\in\mathcal{A}}\;
+  p_c(a_j), \qquad
+  p_c(a_j) = \prod_{d\in\mathcal{J}_c}
+  \Pr\!\left(y_d\,\middle|\,x_c=a_j,\,\mathbf{H}\right).
+\end{equation}
+
+\section{Misspecified Cram\'er--Rao Bound (MCRB)}
+\label{sec:mcrb}
+
+When the receiver uses detected symbols $\bmXhat$ in place of the true
+transmitted symbols $\bmX$, the resulting estimator operates under a
+misspecified model. The MCRB provides a lower bound on the MSE of any
+estimator that is consistent under the assumed (misspecified)
+model. The MCRB is given by
+\begin{equation}
+  \mathrm{MCRB}(\bmeta) = \bm{A}^{-1}(\bmetabar)\,
+  \bm{B}(\bmetabar)\,\bm{A}^{-1}(\bmetabar)
+  + (\bmeta - \bmetabar)(\bmeta - \bmetabar)^{\mathsf T},
+  \label{eq:mcrb}
+\end{equation}
+where $\bmeta$ is the true parameter vector, $\bmetabar$ is the
+pseudo-true parameter (defined below), and
+\begin{align}
+  [\bm{A}(\bmeta)]_{i,j} &= \mathbb{E}_{p}\!\left\{
+    \frac{\partial^{2}}{\partial\eta_i\,\partial\eta_j}
+    \log\tilde{p}(\bmy|\bmeta)\right\},
+  \label{eq:A_def}\\[4pt]
+  [\bm{B}(\bmeta)]_{i,j} &= \mathbb{E}_{p}\!\left\{
+    \frac{\partial}{\partial\eta_i}\log\tilde{p}(\bmy|\bmeta)\;
+    \frac{\partial}{\partial\eta_j}\log\tilde{p}(\bmy|\bmeta)\right\}.
+  \label{eq:B_def}
+\end{align}
+Here $p$ denotes the true distribution of the observations and
+$\tilde{p}$ the assumed (misspecified) distribution.
+
+\subsection{Signal Model and Parameter Vector}
+
+The TF-domain observation is
+$\bmy = \mathrm{vec}(\bmY) \in \mathbb{C}^{NM}$. Under the true
+model,
+\begin{equation}
+  \bmy = \bmmu(\bmeta,\bmX) + \bm{z},
+  \qquad \bm{z}\sim\CN(\bm{0},\sigma^2\bm{I}),
+\end{equation}
+where $\bmmu(\bmeta,\bmX)$ is obtained by applying the full ICI
+channel in Eq.~\eqref{eq:tf_io} to the true symbols $\bmX$ with the
+true channel parameters $\bmeta$. Under the misspecified model, the
+receiver assumes
+\begin{equation}
+  \tilde{p}(\bmy|\bmeta)
+  = \CN\!\bigl(\bmy;\;\bmtildemu(\bmeta,\bmXhat),\;\sigma^2\bm{I}\bigr),
+\end{equation}
+where $\bmtildemu(\bmeta,\bmXhat)$ applies the same ICI channel but
+with the detected symbols $\bmXhat$.
+
+For $P$ paths, the parameter vector is
+\begin{equation}
+  \bmeta = \bigl[\underbrace{\alpha_1^{R},\,\alpha_1^{I},\,
+  \nu_1,\,\tau_1}_{\text{path 1}},\;\dots,\;
+  \underbrace{\alpha_P^{R},\,\alpha_P^{I},\,
+  \nu_P,\,\tau_P}_{\text{path }P}\bigr]^{\mathsf T}
+  \in\mathbb{R}^{4P},
+  \label{eq:eta_def}
+\end{equation}
+where $\alpha_i^{R} = \mathrm{Re}(\alpha_i)$ and
+$\alpha_i^{I} = \mathrm{Im}(\alpha_i)$.
+
+\subsection{Pseudo-True Parameters}
+
+The pseudo-true parameter $\bmetabar$ minimizes the KL divergence
+between the true and assumed models, which is equivalent to
+\begin{equation}
+  \bmetabar = \arg\min_{\bmeta}\;
+  \bigl\|\bmtildemu(\bmeta,\bmXhat)
+  - \bmmu(\bmeta_{\mathrm{gt}},\bmX)\bigr\|^{2}.
+  \label{eq:pt}
+\end{equation}
+This is solved via Levenberg--Marquardt on the real/imaginary stacked
+residual
+$\bm{r}(\bmeta) = [\mathrm{Re}\{\bmtildemu-\bmmu_{\mathrm{gt}}\};\;
+\mathrm{Im}\{\bmtildemu-\bmmu_{\mathrm{gt}}\}]$, initialized from
+the ground-truth parameters.
+
+\subsection{Log-Likelihood Derivatives}
+
+The assumed log-likelihood (up to constants) is
+\begin{equation}
+  \log\tilde{p}(\bmy|\bmeta)
+  = -\frac{1}{\sigma^2}
+  \bigl\|\bmy - \bmtildemu(\bmeta)\bigr\|^{2}.
+\end{equation}
+Define the Jacobian matrix $\bm{G}\in\mathbb{C}^{NM\times 4P}$ with
+columns
+\begin{equation}
+  \bmg_i = \frac{\partial\bmtildemu}{\partial\eta_i},
+\end{equation}
+and the Hessian matrices
+$\bm{\mathcal{H}}_{ij} = \frac{\partial^2\bmtildemu}
+{\partial\eta_i\,\partial\eta_j} \in \mathbb{C}^{NM}$. Then:
+\begin{align}
+  \frac{\partial}{\partial\eta_i}\log\tilde{p}
+  &= \frac{2}{\sigma^2}\,\mathrm{Re}\!\bigl\{
+    \bmg_i^{\mathsf H}(\bmy - \bmtildemu)\bigr\},
+  \label{eq:score}\\[4pt]
+  \frac{\partial^2}{\partial\eta_i\,\partial\eta_j}\log\tilde{p}
+  &= -\frac{2}{\sigma^2}\,\mathrm{Re}\!\bigl\{
+    \bmg_i^{\mathsf H}\bmg_j\bigr\}
+  + \frac{2}{\sigma^2}\,\mathrm{Re}\!\bigl\{
+    \bm{\mathcal{H}}_{ij}^{\mathsf H}(\bmy - \bmtildemu)\bigr\}.
+  \label{eq:hessian_logp}
+\end{align}
+
+\subsection{Derivation of the A Matrix}
+
+Taking the expectation of Eq.~\eqref{eq:hessian_logp} under the true
+model $p$, where
+$\mathbb{E}_p[\bmy] = \bmmu_{\mathrm{gt}}$, define the mismatch
+residual
+\begin{equation}
+  \bm{\Delta} = \bmmu_{\mathrm{gt}} - \bmtildemu(\bmetabar).
+\end{equation}
+Then
+\begin{equation}
+  \boxed{
+  [\bm{A}]_{ij}
+  = -\frac{2}{\sigma^2}\,\mathrm{Re}\!\bigl\{
+    \bmg_i^{\mathsf H}\bmg_j\bigr\}
+  + \frac{2}{\sigma^2}\,\mathrm{Re}\!\bigl\{
+    \bm{\mathcal{H}}_{ij}^{\mathsf H}\bm{\Delta}\bigr\},}
+  \label{eq:A_result}
+\end{equation}
+or in matrix form,
+\begin{equation}
+  \bm{A} = -\bm{J} + \bm{A}_{\Delta},
+\end{equation}
+where $\bm{J} = \frac{2}{\sigma^2}\mathrm{Re}\{\bm{G}^{\mathsf H}\bm{G}\}$
+is the pseudo-Fisher information and
+$[\bm{A}_\Delta]_{ij} =
+\frac{2}{\sigma^2}\mathrm{Re}\{\bm{\mathcal{H}}_{ij}^{\mathsf H}\bm{\Delta}\}$.
+
+\subsection{Derivation of the B Matrix}
+
+From Eq.~\eqref{eq:score}, define
+$s_i = \bmg_i^{\mathsf H}(\bmy - \bmtildemu)$ so that
+$\frac{\partial}{\partial\eta_i}\log\tilde{p}
+= \frac{2}{\sigma^2}\mathrm{Re}\{s_i\}$. Under the true model,
+$\bmy - \bmtildemu(\bmetabar) = \bm{\Delta} + \bm{z}$ with
+$\bm{z}\sim\CN(\bm{0},\sigma^2\bm{I})$, so
+\begin{equation}
+  s_i = \bmg_i^{\mathsf H}\bm{\Delta}
+  + \bmg_i^{\mathsf H}\bm{z}.
+\end{equation}
+Using $\mathbb{E}[\mathrm{Re}\{a\}\mathrm{Re}\{b\}]
+= \tfrac{1}{2}\mathrm{Re}\{\mathbb{E}[ab^{*}]\}
++ \tfrac{1}{2}\mathrm{Re}\{\mathbb{E}[ab]\}$
+and the fact that $\mathbb{E}[\bm{z}\bm{z}^{\mathsf H}]=\sigma^2\bm{I}$,
+$\mathbb{E}[\bm{z}\bm{z}^{\mathsf T}]=\bm{0}$ (circular symmetry):
+\begin{align}
+  \mathbb{E}_p[\mathrm{Re}\{s_i\}\mathrm{Re}\{s_j\}]
+  &= \mathrm{Re}\{\bmg_i^{\mathsf H}\bm{\Delta}\}\,
+     \mathrm{Re}\{\bmg_j^{\mathsf H}\bm{\Delta}\}
+  + \frac{\sigma^2}{2}\mathrm{Re}\{
+    \bmg_i^{\mathsf H}\bmg_j\}.
+\end{align}
+Therefore, defining
+$\bm{b} = \frac{2}{\sigma^2}\mathrm{Re}\{\bm{G}^{\mathsf H}\bm{\Delta}\}
+\in\mathbb{R}^{4P}$:
+\begin{equation}
+  \boxed{
+  \bm{B}
+  = \frac{4}{\sigma^4}\Bigl[
+    \mathrm{Re}\{\bm{G}^{\mathsf H}\bm{\Delta}\}\,
+    \mathrm{Re}\{\bm{G}^{\mathsf H}\bm{\Delta}\}^{\mathsf T}
+    + \frac{\sigma^2}{2}\mathrm{Re}\{\bm{G}^{\mathsf H}\bm{G}\}
+    \Bigr]
+  = \bm{J} + \bm{b}\bm{b}^{\mathsf T}.}
+  \label{eq:B_result}
+\end{equation}
+
+\subsection{DD-Domain Signal Model for MCRB}
+
+We express the misspecified mean directly in the delay--Doppler domain.
+For path~$i$ with continuous delay $\tau_i$ and Doppler $\nu_i$,
+define the integer and fractional decompositions
+\begin{equation}
+  k_i = \bigl\lfloor\tau_i N\deltaf\bigr\rceil,\qquad
+  \nu_i M T_s = \beta_i + \kappa_i, \quad
+  \beta_i\in\mathbb{Z},\;\;|\kappa_i|\le\tfrac{1}{2},
+\end{equation}
+and the Doppler spreading function (sampled Dirichlet kernel)
+\begin{equation}
+  \mathcal{G}_q(\kappa)
+  = \frac{e^{j2\pi(q-\kappa)}-1}
+         {M\!\left(e^{j\frac{2\pi}{M}(q-\kappa)}-1\right)},
+  \label{eq:G_kernel}
+\end{equation}
+which peaks at $q=0$ when $\kappa\to 0$ and has value
+$|\mathcal{G}_0(0)|=1$. The misspecified DD-domain mean from path $i$
+at bin $(k,l)$ is
+\begin{equation}
+  \tilde{\mu}_i[k,l]
+  = \alpha_i\,\psi_i
+  \sum_{q=-E}^{E}\mathcal{G}_q(\kappa_i)\;
+  \hat{x}\!\bigl[\bigl[k-k_i\bigr]_N,\;
+                  \bigl[l-\beta_i+q\bigr]_M\bigr],
+  \label{eq:mu_dd}
+\end{equation}
+where the phase factor
+\begin{equation}
+  \psi_i = e^{-j2\pi\nu_i\tau_i}
+\end{equation}
+couples the delay and Doppler of each path, and $E$ is the number of
+significant Doppler side-lobe terms retained ($E\ll M$).
+
+Define the shorthand sums
+\begin{align}
+  S_i[k,l]   &= \textstyle\sum_{q=-E}^{E}
+    \mathcal{G}_q(\kappa_i)\;
+    \hat{x}\!\bigl[[k\!-\!k_i]_N,[l\!-\!\beta_i\!+\!q]_M\bigr],
+    \label{eq:S}\\[2pt]
+  S_i'[k,l]  &= \textstyle\sum_{q=-E}^{E}
+    \mathcal{G}_q'(\kappa_i)\;
+    \hat{x}\!\bigl[[k\!-\!k_i]_N,[l\!-\!\beta_i\!+\!q]_M\bigr],
+    \label{eq:Sp}\\[2pt]
+  S_i''[k,l] &= \textstyle\sum_{q=-E}^{E}
+    \mathcal{G}_q''(\kappa_i)\;
+    \hat{x}\!\bigl[[k\!-\!k_i]_N,[l\!-\!\beta_i\!+\!q]_M\bigr],
+    \label{eq:Spp}
+\end{align}
+where $\mathcal{G}_q'(\kappa)=\partial\mathcal{G}_q/\partial\kappa$
+and $\mathcal{G}_q''(\kappa)=\partial^2\mathcal{G}_q/\partial\kappa^2$
+are obtained by differentiating Eq.~\eqref{eq:G_kernel}. The total
+misspecified mean is
+$\tilde{\mu}[k,l]=\sum_{i=1}^{P}\tilde{\mu}_i[k,l]$.
+
+\paragraph{Domain equivalence.}
+The SFFT in Eq.~\eqref{eq:sfft} is a unitary transform, so
+$\|\bmy-\bmtildemu\|^2$ is identical whether evaluated in TF or DD
+domain. The matrices $\bm{A}$, $\bm{B}$, and $\bm{J}$ are therefore
+domain-independent; only the representation of the Jacobian columns
+and Hessian elements changes.
+
+\subsection{Jacobian Columns for OTFS (DD Domain)}
+
+From Eq.~\eqref{eq:mu_dd}, the continuous parameters enter through:
+(i)~$\alpha_i$ linearly, (ii)~$\nu_i$ via both the phase $\psi_i$ and
+the fractional Doppler $\kappa_i = \nu_i MT_s - \beta_i$ inside
+$\mathcal{G}_q$, and (iii)~$\tau_i$ via the phase $\psi_i$ only
+(the integer tap $k_i$ is constant under small perturbations). The
+four Jacobian columns for path $i$ are:
+\begin{align}
+  \frac{\partial\tilde{\mu}[k,l]}{\partial\alpha_i^{R}}
+  &= \psi_i\,S_i[k,l]
+  \;\eqqcolon\; g_0[k,l],
+  \label{eq:g0}\\[4pt]
+  \frac{\partial\tilde{\mu}[k,l]}{\partial\alpha_i^{I}}
+  &= j\,g_0[k,l],
+  \label{eq:g1}\\[4pt]
+  \frac{\partial\tilde{\mu}[k,l]}{\partial\nu_i}
+  &= \alpha_i\psi_i\Bigl[
+    -j2\pi\tau_i\;S_i[k,l]
+    \;+\; MT_s\;S_i'[k,l]\Bigr],
+  \label{eq:g2}\\[4pt]
+  \frac{\partial\tilde{\mu}[k,l]}{\partial\tau_i}
+  &= \alpha_i\,(-j2\pi\nu_i)\,\psi_i\;S_i[k,l],
+  \label{eq:g3}
+\end{align}
+where in Eq.~\eqref{eq:g2} the first term arises from
+$\partial\psi_i/\partial\nu_i = -j2\pi\tau_i\,\psi_i$ and the second
+from
+$\partial\mathcal{G}_q/\partial\nu_i = MT_s\,\mathcal{G}_q'(\kappa_i)$
+(chain rule via $\partial\kappa_i/\partial\nu_i = MT_s$), and in
+Eq.~\eqref{eq:g3} only the phase contributes since $\mathcal{G}_q$
+does not depend on $\tau_i$.
+
+\subsection{Second Derivatives (Hessian Elements, DD Domain)}
+
+Second derivatives with respect to $\alpha_i^R\alpha_i^R$,
+$\alpha_i^R\alpha_i^I$, and $\alpha_i^I\alpha_i^I$ are all zero since
+$\tilde\mu$ is linear in $\alpha_i$. The non-zero blocks for path $i$
+are (suppressing $(k,l)$ indices):
+\begin{align}
+  \frac{\partial^2\tilde{\mu}}{\partial\alpha_i^R\,\partial\nu_i}
+  &= \psi_i\bigl[-j2\pi\tau_i\,S_i + MT_s\,S_i'\bigr],
+  \\[4pt]
+  \frac{\partial^2\tilde{\mu}}{\partial\alpha_i^R\,\partial\tau_i}
+  &= (-j2\pi\nu_i)\,\psi_i\,S_i,
+  \\[4pt]
+  \frac{\partial^2\tilde{\mu}}{\partial\nu_i^2}
+  &= \alpha_i\psi_i\Bigl[
+    -(2\pi\tau_i)^2\,S_i
+    - j4\pi\tau_i MT_s\,S_i'
+    + (MT_s)^2\,S_i''\Bigr],
+  \\[4pt]
+  \frac{\partial^2\tilde{\mu}}{\partial\tau_i^2}
+  &= \alpha_i\,(-j2\pi\nu_i)^2\,\psi_i\,S_i
+  = -\alpha_i(2\pi\nu_i)^2\psi_i\,S_i,
+  \\[4pt]
+  \frac{\partial^2\tilde{\mu}}{\partial\nu_i\,\partial\tau_i}
+  &= \alpha_i\psi_i\Bigl[
+    -j2\pi\,S_i
+    -(2\pi)^2\nu_i\tau_i\,S_i
+    -j2\pi\nu_i MT_s\,S_i'\Bigr].
+\end{align}
+The $\alpha_i^I$ cross-derivatives follow by the factor of $j$:
+$\partial^2\tilde{\mu}/\partial\alpha_i^I\partial\nu_i
+= j\,\partial^2\tilde{\mu}/\partial\alpha_i^R\partial\nu_i$ and
+similarly for $\tau_i$.
+
+\subsection{Summary}
+
+For each Monte Carlo realization:
+\begin{enumerate}
+  \item Compute the true mean $\bmmu_{\mathrm{gt}}$ using the full ICI
+    channel with true symbols $\bmX$ and true parameters
+    $\bmeta_{\mathrm{gt}}$.
+  \item Find the pseudo-true parameters $\bmetabar$ by solving
+    Eq.~\eqref{eq:pt}.
+  \item Compute the mismatch residual
+    $\bm{\Delta} = \bmmu_{\mathrm{gt}} - \bmtildemu(\bmetabar)$.
+  \item Build the Jacobian $\bm{G}$ from
+    Eqs.~\eqref{eq:g0}--\eqref{eq:g3} and the Hessian elements, all
+    evaluated at $\bmetabar$ with detected symbols $\bmXhat$.
+  \item Assemble
+    $\bm{A} = -\bm{J} + \bm{A}_\Delta$ and
+    $\bm{B} = \bm{J} + \bm{b}\bm{b}^{\mathsf T}$.
+  \item The MCRB including the bias of the pseudo-true parameters is
+    \begin{equation}
+      \mathrm{MCRB}
+      = \bm{A}^{-1}\bm{B}\,\bm{A}^{-1}
+      + (\bmeta_{\mathrm{gt}} - \bmetabar)
+        (\bmeta_{\mathrm{gt}} - \bmetabar)^{\mathsf T}.
+    \end{equation}
+\end{enumerate}
+When $\bmXhat = \bmX$ (genie/CSI case), $\bmetabar = \bmeta_{\mathrm{gt}}$,
+$\bm{\Delta}=\bm{0}$, and the MCRB reduces to the standard CRB:
+$\mathrm{CRB} = \bm{J}^{-1}$.
+%% ===================================================================
+\begin{thebibliography}{9}
+\bibitem{raviteja_tvt2019}
+P.~Raviteja, K.~T.~Phan, Y.~Hong, and E.~Viterbo,
+``Embedded pilot-aided channel estimation for OTFS in delay--Doppler
+channels,'' \emph{IEEE Trans.\ Veh.\ Technol.}, vol.~68, no.~5,
+pp.~4906--4917, May 2019.
+
+\bibitem{raviteja_wcnc2018}
+P.~Raviteja, K.~T.~Phan, Q.~Jin, Y.~Hong, and E.~Viterbo,
+``Low-complexity iterative detection for orthogonal time frequency
+space modulation,'' \emph{Proc.\ IEEE WCNC}, Apr.\ 2018.
+\end{thebibliography}
+
+\end{document}

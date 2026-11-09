@@ -1,0 +1,203 @@
+\documentclass[12pt]{article}
+\usepackage{amsmath, amssymb, mathtools}
+\usepackage{geometry}
+\geometry{margin=1in}
+
+\title{OTFS I/O Equations}
+\author{}
+\date{}
+
+\begin{document}
+\maketitle
+
+%% ============================================================
+%%  Transform Relationships
+%% ============================================================
+\section*{Transform Relationships}
+
+\[
+  \text{DD} \xrightarrow{\text{ISFFT}} \text{FT},
+  \qquad
+  k,\ell \;\xrightarrow[\displaystyle\text{FFT}]{\displaystyle\text{IFFT}}\; n,m
+\]
+
+\paragraph{ISFFT:}
+\[
+  X[n,m] = \frac{1}{\sqrt{NM}}
+    \sum_{k=0}^{N-1}\sum_{\ell=0}^{M-1}
+    x[k,\ell]\;
+    e^{\,j2\pi\!\left(\frac{m\ell}{M}-\frac{nk}{N}\right)}
+\]
+
+\paragraph{SFFT:}
+\[
+  x[k,\ell] = \frac{1}{\sqrt{NM}}
+    \sum_{n=0}^{N-1}\sum_{m=0}^{M-1}
+    X[n,m]\;
+    e^{-j2\pi\!\left(\frac{m\ell}{M}-\frac{nk}{N}\right)}
+\]
+
+%% ============================================================
+%%  Channel Model
+%% ============================================================
+\section*{Channel Model}
+
+\[
+  h(\tau,\nu) = \sum_{p=0}^{P}\alpha_p\,
+    \delta(\tau-\tau_p)\,\delta(\nu-\nu_p)
+\]
+
+%% ============================================================
+%%  No ISI / ICI, Rectangular Pulses
+%% ============================================================
+\section*{No ISI/ICI, Rectangular Pulses}
+
+\[
+  Y[n,m] = X[n,m]\,H[n,m] + Z[n,m],
+\]
+where
+\[
+  H[n,m] = \sum_{p=0}^{P}\alpha_p\,
+    e^{\,-j2\pi n\Delta f\tau_p}\,
+    e^{\,j2\pi m T_s\nu_p},
+\]
+and $Z[n,m]\sim\mathcal{CN}(0,\sigma^2)$, with i.i.d.\ entries.
+
+\subsection*{SFFT Output}
+
+\begin{align}
+  y[k,\ell]
+  &= \frac{1}{\sqrt{NM}}
+    \sum_{n=0}^{N-1}\sum_{m=0}^{M-1}
+    Y[n,m]\;e^{-j2\pi\!\left(\frac{m\ell}{M}-\frac{nk}{N}\right)}
+  \nonumber\\[6pt]
+  &= \frac{1}{\sqrt{NM}}
+    \sum_{n}\sum_{m}\sum_{p}
+    \alpha_p\,X[n,m]\;
+    e^{-j2\pi n\Delta f\tau_p}\;
+    e^{\,j2\pi m T_s\nu_p}\;
+    e^{-j2\pi\!\left(\frac{m\ell}{M}-\frac{nk}{N}\right)}
+\end{align}
+
+%% ============================================================
+%%  Integer Delay & Doppler
+%% ============================================================
+\section*{Integer Delay \& Doppler}
+
+\[
+  \tau_p = \frac{k_p}{M T_s},
+  \qquad
+  \nu_p  = \frac{\ell_p}{N\Delta f}
+\]
+
+\begin{align}
+  y[k,\ell]
+  &= \frac{1}{\sqrt{NM}}
+     \sum_{n}\sum_{m}\sum_{p}
+     \alpha_p\,X[n,m]\;
+     e^{-j2\pi n\frac{k_p}{N}}\;
+     e^{\,j2\pi m\frac{\ell_p}{M}}\;
+     e^{-j2\pi\!\left(\frac{m\ell}{M}-\frac{nk}{N}\right)}
+\end{align}
+
+\begin{equation}
+  \boxed{y[k,\ell] = \sum_{p=0}^{P}\alpha_p\;
+    x\!\left[(k-k_p)_N,\;(\ell-\ell_p)_M\right]}
+\end{equation}
+
+%% ============================================================
+%%  Fractional Delay & Doppler
+%% ============================================================
+\section*{Fractional Delay \& Doppler}
+
+\[
+  \tau_p = \frac{k_p+\beta_p}{N\Delta f},
+  \qquad
+  \nu_p  = \frac{\ell_p+\delta_p}{M T_s},
+  \qquad
+  -\tfrac{1}{2}<\beta_p,\,\delta_p<\tfrac{1}{2}
+\]
+
+\begin{align}
+  y[k,\ell]
+  &=\frac{1}{NM}\sum_{p}\alpha_p
+    \sum_{n,m}\sum_{k'\ell'}
+    x[k',\ell']\;
+    e^{\,j2\pi\!\left(\frac{m\ell'}{M}-\frac{nk'}{N}\right)}
+    e^{-j2\pi\frac{(k_p+\beta_p)\,n}{N}}\;
+    e^{\,j2\pi m\frac{(\ell_p+\delta_p)}{M}}\;
+    e^{-j2\pi\!\left(\frac{m\ell}{M}-\frac{nk}{N}\right)}
+  \nonumber\\[6pt]
+  % &=\sum_{p}\alpha_p\sum_{k'\ell'}x[k',\ell']
+  %   \sum_{n,m}
+  %   e^{-j2\pi\!\left(
+  %     \dfrac{m(\ell-\ell'-\ell_p-\beta_p)}{M}
+  %     -\dfrac{n(k-k'-k_p-\delta_p)}{N}
+  %   \right)}
+  % \nonumber\\[6pt]
+  % &=\sum_p\alpha_p\!\sum_{k'\ell'}\!x[k',\ell']
+  %   \left(\frac{1-e^{\,j2\pi\delta_p}}
+  %              {1-e^{-j2\pi\frac{(\ell-\ell'-\ell_p-\beta_p)}{M}}}\right)
+  %   \!\!
+  %   \left(\frac{1-e^{\,j2\pi(\ell-\ell''-\ell_p-\beta_p)}}
+  %              {1-e^{-j2\pi\frac{(\ell-\ell''-\ell_p)}{N}}}\right)
+  % \nonumber\\[-2pt]
+  % &\hspace{8cm}
+  %   k''=k'+k_p,\quad\ell''=\ell'+\ell_p
+  % \nonumber\\[6pt]
+  % &=\sum_p\alpha_p\!\sum_{k''\ell''}\!
+  %   x\!\left[(k''\!-k_p)_N,(\ell''\!-\ell_p)_M\right]
+  %   \!\left(\frac{1-e^{\,j2\pi\delta_p}}
+  %              {1-e^{-j2\pi\frac{(\ell-\ell''-\delta_p)}{M}}}\right)
+  %   \!\!
+  %   \left(\frac{1-e^{-j2\pi\beta_p}}
+  %              {1-e^{-j2\pi\frac{(\ell-\ell''-\beta_p)}{N}}}\right)
+\end{align}
+
+%% ============================================================
+%%  Page 2 — ICI Case (No ISI)
+%% ============================================================
+\newpage
+\section*{Assuming ICI (No ISI)}
+
+\begin{align}
+  Y[n,m]
+  &= \sum_{p=0}^{P-1}\alpha_p
+     \sum_{n'=0}^{N-1}
+     X[n',m]\;
+     e^{\,-j2\pi n'\Delta f\tau_p}\;
+     e^{\,j2\pi m T_s\nu_p}\;
+     I_p(n'-n)
+\end{align}
+
+\begin{align}
+  y[k,\ell]
+  &= \frac{1}{\sqrt{NM}}
+     \sum_{m=0}^{M-1}\sum_{n=0}^{N-1}
+     Y[n,m]\;e^{-j2\pi\!\left(\frac{m\ell}{M}-\frac{nk}{N}\right)}
+  \nonumber\\[6pt]
+  &= \frac{1}{\sqrt{NM}}
+     \sum_{m=0}^{M-1}\sum_{n=0}^{N-1}
+     \sum_{p=0}^{P-1}\sum_{n'=0}^{N-1}
+     \alpha_p\,X[n',m]\;
+     e^{\,-j2\pi n'\Delta f\tau_p}\;
+     e^{\,j2\pi m T_s\nu_p}\;
+     I_p(n'-n)\;
+     e^{-j2\pi\!\left(\frac{m\ell}{M}-\frac{nk}{N}\right)}
+  \nonumber\\[6pt]
+  &= \frac{1}{MN}
+     \sum_{m}\sum_{p}\alpha_p
+     \sum_{n'}\sum_{k'\ell'}
+     x[k',\ell']\;
+     e^{\,j2\pi\!\left(\frac{m\ell'}{M}-\frac{n'k'}{N}\right)}
+     e^{\,-j2\pi n'\Delta f\tau_p}\;
+     e^{\,j2\pi m T_s\nu_p}
+  \nonumber\\
+  &\hspace{5cm}
+     \times\;
+     I_p(n'-n)\;
+     e^{-j2\pi\!\left(\frac{m\ell}{M}-\frac{nk}{N}\right)}
+     + z[k,\ell]
+\end{align}
+
+\end{document}

@@ -1,0 +1,294 @@
+\documentclass[11pt]{article}
+
+\usepackage{amsmath,amssymb,bm}
+\usepackage{hyperref}
+\usepackage{svg}
+\usepackage[a4paper,margin=1in]{geometry}
+
+\title{OFDM FIM and CRB Calculations}
+\author{}
+\date{}
+
+\begin{document}
+\maketitle
+OFDM io equation given as (ofdm\_io.tex)
+\begin{equation}
+    Y[n,m]
+= \sum_{p=0}^{P-1} \tilde{\alpha}_p
+  \sum_{n'=0}^{N-1} X[n',m]\,
+  e^{-j2\pi n'\Delta f\, \tau_p}\,
+  e^{j2\pi mT_S\, \nu_p}\,
+  I_p(n'-n) + Z[n,m]
+\end{equation}
+where, for the ICI channel,
+\begin{equation}
+    I_p(n)
+ = \frac{e^{j2\pi \nu_p T} - 1}{j2\pi(n\Delta f + \nu_p)}.
+\end{equation}
+For the no-ICI channel (perfectly orthogonal subcarriers, no Doppler-induced leakage between subcarriers), this reduces to the Kronecker delta
+\begin{equation}
+    I_p(n) = \delta[n] = \begin{cases} 1, & n = 0, \\ 0, & n \neq 0, \end{cases}
+\end{equation}
+which is independent of \(\nu_p\), so \(I_p'(n) = 0\) in that case.
+
+\(Y[n,m]\) is complex gaussian with variance \(\sigma^2\) and mean
+\begin{equation}
+    \mu[n,m]
+= \sum_{p=0}^{P-1} \tilde{\alpha}_p
+  \sum_{n'=0}^{N-1} X[n',m]\,
+  e^{-j2\pi n'\Delta f\, \tau_p}\,
+  e^{j2\pi mT_S\, \nu_p}\,
+  I_p(n'-n)
+\end{equation}
+The first derivatives of \(\mu[n,m]\) with respect to \(\tilde{\alpha}_p\), \(\tau_p\), and \(\nu_p\) are given by
+\begin{align}
+    \frac{\partial \mu[n,m]}{\partial \tilde{\alpha}_{p,R}} &= \sum_{n'=0}^{N-1} X[n',m]\, e^{-j2\pi n'\Delta f\, \tau_p}\, e^{j2\pi mT_S\, \nu_p}\, I_p(n'-n) \\
+    \frac{\partial \mu[n,m]}{\partial \tilde{\alpha}_{p,I}} &= j\sum_{n'=0}^{N-1} X[n',m]\, e^{-j2\pi n'\Delta f\, \tau_p}\, e^{j2\pi mT_S\, \nu_p}\, I_p(n'-n) \\
+    \frac{\partial \mu[n,m]}{\partial \tau_p} &= -j2\pi \tilde{\alpha}_p \sum_{n'=0}^{N-1} X[n',m]\, n'\Delta f\, e^{-j2\pi n'\Delta f\, \tau_p}\, e^{j2\pi mT_S\, \nu_p}\, I_p(n'-n) \\
+    \frac{\partial \mu[n,m]}{\partial \nu_p} &= j2\pi \tilde{\alpha}_p \sum_{n'=0}^{N-1} X[n',m]\, e^{-j2\pi n'\Delta f\, \tau_p}\, e^{j2\pi mT_S\, \nu_p}\, \left( mT_S I_p(n'-n) + I_p'(n'-n) \right)
+\end{align}
+where \(I_p'(n)\) is the derivative of \(I_p(n)\) with respect to \(\nu_p\):
+\begin{equation}    
+    I_p'(n) = \frac{T e^{j2\pi \nu_p T}}{j2\pi(n\Delta f + \nu_p)} - \frac{e^{j2\pi \nu_p T} - 1}{(j2\pi(n\Delta f + \nu_p))^2}
+\end{equation}
+
+\section{FIM}
+FIM formula given as (fim.tex):
+\begin{equation}
+[\bm{J}(\bm{\eta})]_{k,l} = \frac{2}{\sigma^2} \text{Re}\left\{ \left(\frac{\partial \bm{\mu}(\bm{\eta})}{\partial \eta_k}\right)^H \frac{\partial \bm{\mu}(\bm{\eta})}{\partial \eta_l} \right\}
+\end{equation}
+
+\subsection{Single Target Case}
+
+For the single target case (\(P=1\)) we drop the target index and write \(\tilde{\alpha}, \tau, \nu, I\) for \(\tilde{\alpha}_1, \tau_1, \nu_1, I_1\). The parameter vector is \(\bm{\eta} = [\tilde{\alpha}_R, \tilde{\alpha}_I, \tau, \nu]^T\). We derive the FIM separately for the no-ICI and ICI channel models.
+
+\subsubsection{No ICI Channel}
+
+With \(I(n'-n) = \delta[n'-n]\), the inner sum collapses to a single term,
+\begin{equation}
+    \sum_{n'=0}^{N-1} X[n',m]\, e^{-j2\pi n'\Delta f\, \tau}\, e^{j2\pi mT_S\, \nu}\, I(n'-n) = X[n,m]\, e^{-j2\pi n\Delta f\, \tau}\, e^{j2\pi mT_S\, \nu},
+\end{equation}
+and \(I'(n) = 0\). Substituting into the derivative expressions of equations (5)--(8) gives
+\begin{align}
+    \frac{\partial \mu[n,m]}{\partial \tilde{\alpha}_{R}} &= X[n,m]\, e^{-j2\pi n\Delta f\, \tau}\, e^{j2\pi mT_S\, \nu}, \\
+    \frac{\partial \mu[n,m]}{\partial \tilde{\alpha}_{I}} &= j\, X[n,m]\, e^{-j2\pi n\Delta f\, \tau}\, e^{j2\pi mT_S\, \nu}, \\
+    \frac{\partial \mu[n,m]}{\partial \tau} &= -j2\pi \tilde{\alpha}\, n\Delta f\, X[n,m]\, e^{-j2\pi n\Delta f\, \tau}\, e^{j2\pi mT_S\, \nu}, \\
+    \frac{\partial \mu[n,m]}{\partial \nu} &= j2\pi \tilde{\alpha}\, mT_S\, X[n,m]\, e^{-j2\pi n\Delta f\, \tau}\, e^{j2\pi mT_S\, \nu}.
+\end{align}
+The cross products of these derivatives are all proportional to \(|X[n,m]|^2\), making the inner sums \(\sum_{n,m}(\cdot)\) real. The FIM entries simplify to
+\begin{align}
+    [\bm{J}(\bm{\eta})]_{\tilde{\alpha}_{R}, \tilde{\alpha}_{R}} &= [\bm{J}(\bm{\eta})]_{\tilde{\alpha}_{I}, \tilde{\alpha}_{I}} = \frac{2}{\sigma^2} \sum_{n=0}^{N-1} \sum_{m=0}^{M-1} |X[n,m]|^2, \\
+    [\bm{J}(\bm{\eta})]_{\tilde{\alpha}_{R}, \tilde{\alpha}_{I}} &= 0, \\
+    [\bm{J}(\bm{\eta})]_{\tau, \tau} &= \frac{8\pi^2 |\tilde{\alpha}|^2}{\sigma^2} \sum_{n=0}^{N-1} \sum_{m=0}^{M-1} (n\Delta f)^2\, |X[n,m]|^2, \\
+    [\bm{J}(\bm{\eta})]_{\nu, \nu} &= \frac{8\pi^2 |\tilde{\alpha}|^2}{\sigma^2} \sum_{n=0}^{N-1} \sum_{m=0}^{M-1} (mT_S)^2\, |X[n,m]|^2, \\
+    [\bm{J}(\bm{\eta})]_{\tau, \nu} &= -\frac{8\pi^2 |\tilde{\alpha}|^2}{\sigma^2} \sum_{n=0}^{N-1} \sum_{m=0}^{M-1} n\Delta f \cdot mT_S\, |X[n,m]|^2, \\
+    [\bm{J}(\bm{\eta})]_{\tilde{\alpha}_{R}, \tau} &= \frac{4\pi\, \tilde{\alpha}_I}{\sigma^2} \sum_{n=0}^{N-1} \sum_{m=0}^{M-1} n\Delta f\, |X[n,m]|^2, \\
+    [\bm{J}(\bm{\eta})]_{\tilde{\alpha}_{R}, \nu} &= -\frac{4\pi\, \tilde{\alpha}_I}{\sigma^2} \sum_{n=0}^{N-1} \sum_{m=0}^{M-1} mT_S\, |X[n,m]|^2, \\
+    [\bm{J}(\bm{\eta})]_{\tilde{\alpha}_{I}, \tau} &= -\frac{4\pi\, \tilde{\alpha}_R}{\sigma^2} \sum_{n=0}^{N-1} \sum_{m=0}^{M-1} n\Delta f\, |X[n,m]|^2, \\
+    [\bm{J}(\bm{\eta})]_{\tilde{\alpha}_{I}, \nu} &= \frac{4\pi\, \tilde{\alpha}_R}{\sigma^2} \sum_{n=0}^{N-1} \sum_{m=0}^{M-1} mT_S\, |X[n,m]|^2.
+\end{align}
+The remaining off-diagonal entries follow from symmetry, \([\bm{J}(\bm{\eta})]_{l,k} = [\bm{J}(\bm{\eta})]_{k,l}\).
+
+\paragraph{Unit-energy QPSK symbols.} For unit-energy QPSK, \(|X[n,m]|^2 = 1\) for all \(n,m\), so the sums in the FIM entries reduce to the closed-form arithmetic-series identities
+\begin{equation}
+    \sum_{k=0}^{K-1} 1 = K, \qquad \sum_{k=0}^{K-1} k = \frac{K(K-1)}{2}, \qquad \sum_{k=0}^{K-1} k^2 = \frac{K(K-1)(2K-1)}{6}.
+\end{equation}
+Substituting yields
+\begin{align}
+    [\bm{J}(\bm{\eta})]_{\tilde{\alpha}_{R}, \tilde{\alpha}_{R}} &= [\bm{J}(\bm{\eta})]_{\tilde{\alpha}_{I}, \tilde{\alpha}_{I}} = \frac{2 N M}{\sigma^2}, \\
+    [\bm{J}(\bm{\eta})]_{\tilde{\alpha}_{R}, \tilde{\alpha}_{I}} &= 0, \\
+    [\bm{J}(\bm{\eta})]_{\tau, \tau} &= \frac{4\pi^2 |\tilde{\alpha}|^2 (\Delta f)^2\, M N (N-1)(2N-1)}{3\sigma^2}, \\
+    [\bm{J}(\bm{\eta})]_{\nu, \nu} &= \frac{4\pi^2 |\tilde{\alpha}|^2 T_S^2\, N M (M-1)(2M-1)}{3\sigma^2}, \\
+    [\bm{J}(\bm{\eta})]_{\tau, \nu} &= -\frac{2\pi^2 |\tilde{\alpha}|^2 \Delta f\, T_S\, N(N-1)\, M(M-1)}{\sigma^2}, \\
+    [\bm{J}(\bm{\eta})]_{\tilde{\alpha}_{R}, \tau} &= \frac{2\pi\, \tilde{\alpha}_I\, \Delta f\, M N (N-1)}{\sigma^2}, \\
+    [\bm{J}(\bm{\eta})]_{\tilde{\alpha}_{R}, \nu} &= -\frac{2\pi\, \tilde{\alpha}_I\, T_S\, N M (M-1)}{\sigma^2}, \\
+    [\bm{J}(\bm{\eta})]_{\tilde{\alpha}_{I}, \tau} &= -\frac{2\pi\, \tilde{\alpha}_R\, \Delta f\, M N (N-1)}{\sigma^2}, \\
+    [\bm{J}(\bm{\eta})]_{\tilde{\alpha}_{I}, \nu} &= \frac{2\pi\, \tilde{\alpha}_R\, T_S\, N M (M-1)}{\sigma^2}.
+\end{align}
+The FIM is now fully determined by the OFDM grid parameters \((N, M, \Delta f, T_S)\), the noise variance \(\sigma^2\), and the complex gain \(\tilde{\alpha}\); the random QPSK data drops out entirely.
+
+\subsubsection{ICI Channel}
+
+With the general \(I(n)\) from equation (2), the inner sums over \(n'\) do not collapse and the FIM entries are
+\begin{align}
+    [\bm{J}(\bm{\eta})]_{\tilde{\alpha}_{R}, \tilde{\alpha}_{R}} &= \frac{2}{\sigma^2} \sum_{n=0}^{N-1} \sum_{m=0}^{M-1} \left| \sum_{n'=0}^{N-1} X[n',m]\, e^{-j2\pi n'\Delta f\, \tau}\, e^{j2\pi mT_S\, \nu}\, I(n'-n) \right|^2 \\
+    [\bm{J}(\bm{\eta})]_{\tilde{\alpha}_{I}, \tilde{\alpha}_{I}} &= [\bm{J}(\bm{\eta})]_{\tilde{\alpha}_{R}, \tilde{\alpha}_{R}} \\
+    [\bm{J}(\bm{\eta})]_{\tilde{\alpha}_{R}, \tilde{\alpha}_{I}} &= 0 \\
+    [\bm{J}(\bm{\eta})]_{\tau, \tau} &= \frac{8\pi^2 |\tilde{\alpha}|^2}{\sigma^2} \sum_{n=0}^{N-1} \sum_{m=0}^{M-1} \left| \sum_{n'=0}^{N-1} X[n',m]\, n'\Delta f\, e^{-j2\pi n'\Delta f\, \tau}\, e^{j2\pi mT_S\, \nu}\, I(n'-n) \right|^2 \\
+    [\bm{J}(\bm{\eta})]_{\nu, \nu} &= \frac{8\pi^2 |\tilde{\alpha}|^2}{\sigma^2} \sum_{n=0}^{N-1} \sum_{m=0}^{M-1} \left| \sum_{n'=0}^{N-1} X[n',m]\, e^{-j2\pi n'\Delta f\, \tau}\, e^{j2\pi mT_S\, \nu}\, ( mT_S I(n'-n) + I'(n'-n) ) \right|^2 \\
+    [\bm{J}(\bm{\eta})]_{\tau, \nu} &= -\frac{8\pi^2 |\tilde{\alpha}|^2}{\sigma^2} \sum_{n=0}^{N-1} \sum_{m=0}^{M-1} \text{Re}\left\{ \left( \sum_{n'=0}^{N-1} X[n',m]\, n'\Delta f\, e^{-j2\pi n'\Delta f\, \tau}\, e^{j2\pi mT_S\, \nu}\, I(n'-n) \right)^* \left( \sum_{n'=0}^{N-1} X[n',m]\, e^{-j2\pi n'\Delta f\, \tau}\, e^{j2\pi mT_S\, \nu}\, ( mT_S I(n'-n) + I'(n'-n) ) \right) \right\} \\
+    [\bm{J}(\bm{\eta})]_{\tilde{\alpha}_{R}, \tau} &= \frac{4\pi}{\sigma^2} \text{Im}\left\{ \tilde{\alpha} \sum_{n=0}^{N-1} \sum_{m=0}^{M-1} \left( \sum_{n'=0}^{N-1} X[n',m]\, e^{-j2\pi n'\Delta f\, \tau}\, e^{j2\pi mT_S\, \nu}\, I(n'-n) \right)^* \left( \sum_{n'=0}^{N-1} X[n',m]\, n'\Delta f\, e^{-j2\pi n'\Delta f\, \tau}\, e^{j2\pi mT_S\, \nu}\, I(n'-n) \right) \right\} \\
+    [\bm{J}(\bm{\eta})]_{\tilde{\alpha}_{R}, \nu} &= -\frac{4\pi}{\sigma^2} \text{Im}\left\{ \tilde{\alpha} \sum_{n=0}^{N-1} \sum_{m=0}^{M-1} \left( \sum_{n'=0}^{N-1} X[n',m]\, e^{-j2\pi n'\Delta f\, \tau}\, e^{j2\pi mT_S\, \nu}\, I(n'-n) \right)^* \left( \sum_{n'=0}^{N-1} X[n',m]\, e^{-j2\pi n'\Delta f\, \tau}\, e^{j2\pi mT_S\, \nu}\, ( mT_S I(n'-n) + I'(n'-n) ) \right) \right\} \\
+    [\bm{J}(\bm{\eta})]_{\tilde{\alpha}_{I}, \tau} &= -\frac{4\pi}{\sigma^2} \text{Re}\left\{ \tilde{\alpha} \sum_{n=0}^{N-1} \sum_{m=0}^{M-1} \left( \sum_{n'=0}^{N-1} X[n',m]\, e^{-j2\pi n'\Delta f\, \tau}\, e^{j2\pi mT_S\, \nu}\, I(n'-n) \right)^* \left( \sum_{n'=0}^{N-1} X[n',m]\, n'\Delta f\, e^{-j2\pi n'\Delta f\, \tau}\, e^{j2\pi mT_S\, \nu}\, I(n'-n) \right) \right\} \\
+    [\bm{J}(\bm{\eta})]_{\tilde{\alpha}_{I}, \nu} &= \frac{4\pi}{\sigma^2} \text{Re}\left\{ \tilde{\alpha} \sum_{n=0}^{N-1} \sum_{m=0}^{M-1} \left( \sum_{n'=0}^{N-1} X[n',m]\, e^{-j2\pi n'\Delta f\, \tau}\, e^{j2\pi mT_S\, \nu}\, I(n'-n) \right)^* \left( \sum_{n'=0}^{N-1} X[n',m]\, e^{-j2\pi n'\Delta f\, \tau}\, e^{j2\pi mT_S\, \nu}\, ( mT_S I(n'-n) + I'(n'-n) ) \right) \right\}
+\end{align}
+The remaining off-diagonal entries follow from symmetry, \([\bm{J}(\bm{\eta})]_{l,k} = [\bm{J}(\bm{\eta})]_{k,l}\).
+
+\paragraph{Expected FIM for i.i.d. unit-energy QPSK symbols.} Model the data symbols as i.i.d.\ unit-energy QPSK with zero mean, so that
+\begin{equation}
+    \mathrm{E}[X[n',m]\, X^*[n'',m']] = \delta_{n',n''}\, \delta_{m,m'}, \qquad \mathrm{E}[X[n',m]\, X[n'',m']] = 0.
+\end{equation}
+The squared/cross inner sums over \((n',n'')\) collapse onto the diagonal \(n'=n''\) in expectation, the phase factors \(e^{-j2\pi(n'-n'')\Delta f\,\tau}\) reduce to unity, and the data drops out of the cross-bin terms. Define the data-independent sums
+\begin{align}
+    \mathcal{S}_k &:= \sum_{n=0}^{N-1} \sum_{n'=0}^{N-1} (n')^k\, |I(n'-n)|^2, \qquad k = 0, 1, 2, \\
+    \mathcal{T}_k &:= \sum_{n=0}^{N-1} \sum_{n'=0}^{N-1} (n')^k\, I^*(n'-n)\, I'(n'-n), \qquad k = 0, 1, \\
+    \mathcal{U}   &:= \sum_{n=0}^{N-1} \sum_{n'=0}^{N-1} |I'(n'-n)|^2,
+\end{align}
+where \(\mathcal{S}_k\) and \(\mathcal{U}\) are real while \(\mathcal{T}_k\) is generally complex. The expected FIM entries are
+\begin{align}
+    \mathrm{E}\{[\bm{J}(\bm{\eta})]_{\tilde{\alpha}_{R}, \tilde{\alpha}_{R}}\} &= \mathrm{E}\{[\bm{J}(\bm{\eta})]_{\tilde{\alpha}_{I}, \tilde{\alpha}_{I}}\} = \frac{2M}{\sigma^2}\, \mathcal{S}_0, \\
+    \mathrm{E}\{[\bm{J}(\bm{\eta})]_{\tilde{\alpha}_{R}, \tilde{\alpha}_{I}}\} &= 0, \\
+    \mathrm{E}\{[\bm{J}(\bm{\eta})]_{\tau, \tau}\} &= \frac{8\pi^2 |\tilde{\alpha}|^2 M (\Delta f)^2}{\sigma^2}\, \mathcal{S}_2, \\
+    \mathrm{E}\{[\bm{J}(\bm{\eta})]_{\nu, \nu}\} &= \frac{8\pi^2 |\tilde{\alpha}|^2}{\sigma^2} \left[ \frac{T_S^2 M(M-1)(2M-1)}{6}\, \mathcal{S}_0 + T_S M(M-1)\, \text{Re}\{\mathcal{T}_0\} + M\, \mathcal{U} \right], \\
+    \mathrm{E}\{[\bm{J}(\bm{\eta})]_{\tau, \nu}\} &= -\frac{8\pi^2 |\tilde{\alpha}|^2 \Delta f}{\sigma^2} \left[ \frac{T_S M(M-1)}{2}\, \mathcal{S}_1 + M\, \text{Re}\{\mathcal{T}_1\} \right], \\
+    \mathrm{E}\{[\bm{J}(\bm{\eta})]_{\tilde{\alpha}_{R}, \tau}\} &= \frac{4\pi\, \tilde{\alpha}_I\, M \Delta f}{\sigma^2}\, \mathcal{S}_1, \\
+    \mathrm{E}\{[\bm{J}(\bm{\eta})]_{\tilde{\alpha}_{R}, \nu}\} &= -\frac{4\pi}{\sigma^2}\, \text{Im}\left\{ \tilde{\alpha} \left[ \frac{T_S M(M-1)}{2}\, \mathcal{S}_0 + M\, \mathcal{T}_0 \right] \right\}, \\
+    \mathrm{E}\{[\bm{J}(\bm{\eta})]_{\tilde{\alpha}_{I}, \tau}\} &= -\frac{4\pi\, \tilde{\alpha}_R\, M \Delta f}{\sigma^2}\, \mathcal{S}_1, \\
+    \mathrm{E}\{[\bm{J}(\bm{\eta})]_{\tilde{\alpha}_{I}, \nu}\} &= \frac{4\pi}{\sigma^2}\, \text{Re}\left\{ \tilde{\alpha} \left[ \frac{T_S M(M-1)}{2}\, \mathcal{S}_0 + M\, \mathcal{T}_0 \right] \right\}.
+\end{align}
+Setting \(I(n) = \delta[n]\) gives \(\mathcal{S}_k = \sum_{n=0}^{N-1} n^k\), \(\mathcal{T}_k = 0\), and \(\mathcal{U} = 0\), which recovers the no-ICI QPSK expressions of the previous subsubsection. Note that \(\mathcal{S}_k\), \(\mathcal{T}_k\), and \(\mathcal{U}\) depend on the true Doppler \(\nu\) through \(I\) and \(I'\), but no longer on \(\tau\) (its phase factors cancel pairwise) nor on the random data realization.
+
+\subsubsection{Comparison: No ICI vs.\ ICI}
+
+We contrast the two single-target FIM expressions of Sections~3.1.1 and~3.1.2 under unit-energy QPSK signaling. Write \(P_a := \sum_{n=0}^{N-1} n^a\) and \(Q_b := \sum_{m=0}^{M-1} m^b\) for the elementary power sums, with the standard closed forms \(P_0 = N\), \(P_1 = N(N-1)/2\), \(P_2 = N(N-1)(2N-1)/6\), and analogously for \(Q_b\).
+
+\paragraph{Data dependence.} The no-ICI FIM is data-deterministic: \(|X[n,m]|^2 = 1\) alone is enough to eliminate the symbols, because the inner sum collapses to a single term and no cross-bin products appear. The ICI FIM is the \emph{expected} FIM over i.i.d.\ QPSK symbols; cross-bin products \(X[n',m]\, X^*[n'',m]\) with \(n' \neq n''\) survive in the integrand and only vanish on average. A specific QPSK realization yields a random FIM whose mean matches the ICI expressions.
+
+\paragraph{Parameter dependence.} Neither FIM depends on the true delay \(\tau\) — the \(\tau\)-phase factors cancel pairwise in both cases. The Doppler dependence differs: the no-ICI FIM is \emph{independent} of the true \(\nu\) (so the CRB is operating-point-free), whereas the ICI FIM depends on \(\nu\) through \(I\) and \(I'\); this is the only mechanism by which \(\nu\) enters the FIM (the \(e^{j2\pi mT_S\nu}\) phases drop out as before).
+
+\paragraph{Limit \(I \to \delta\).} Setting \(I(n) = \delta[n]\) and \(I'(n) = 0\) gives \(\mathcal{S}_a \to P_a\), \(\mathcal{T}_a \to 0\), and \(\mathcal{U} \to 0\), recovering the no-ICI form entry by entry.
+
+\paragraph{Entry-by-entry comparison.} The 10 distinct entries of the \(4\times 4\) FIM (using symmetry) compare as follows:
+\begin{center}
+\resizebox{\textwidth}{!}{$
+\renewcommand{\arraystretch}{2.4}
+\begin{array}{l|c|c}
+\hline
+\text{FIM entry} & \text{No ICI} & \text{ICI (expected)} \\
+\hline
+J_{\tilde{\alpha}_{R}, \tilde{\alpha}_{R}} = J_{\tilde{\alpha}_{I}, \tilde{\alpha}_{I}} & \dfrac{2\, N M}{\sigma^2} & \dfrac{2 M\, \mathcal{S}_0}{\sigma^2} \\
+J_{\tilde{\alpha}_{R}, \tilde{\alpha}_{I}} & 0 & 0 \\
+J_{\tau, \tau} & \dfrac{8\pi^2 |\tilde{\alpha}|^2 M (\Delta f)^2\, P_2}{\sigma^2} & \dfrac{8\pi^2 |\tilde{\alpha}|^2 M (\Delta f)^2\, \mathcal{S}_2}{\sigma^2} \\
+J_{\nu, \nu} & \dfrac{8\pi^2 |\tilde{\alpha}|^2 N T_S^2\, Q_2}{\sigma^2} & \dfrac{8\pi^2 |\tilde{\alpha}|^2}{\sigma^2}\!\left[T_S^2 Q_2\, \mathcal{S}_0 + 2 T_S Q_1\, \text{Re}\{\mathcal{T}_0\} + M\, \mathcal{U}\right] \\
+J_{\tau, \nu} & -\dfrac{8\pi^2 |\tilde{\alpha}|^2 \Delta f\, T_S\, P_1 Q_1}{\sigma^2} & -\dfrac{8\pi^2 |\tilde{\alpha}|^2 \Delta f}{\sigma^2}\!\left[T_S Q_1\, \mathcal{S}_1 + M\, \text{Re}\{\mathcal{T}_1\}\right] \\
+J_{\tilde{\alpha}_{R}, \tau} & \dfrac{4\pi\, \tilde{\alpha}_I\, M \Delta f\, P_1}{\sigma^2} & \dfrac{4\pi\, \tilde{\alpha}_I\, M \Delta f\, \mathcal{S}_1}{\sigma^2} \\
+J_{\tilde{\alpha}_{R}, \nu} & -\dfrac{4\pi\, \tilde{\alpha}_I\, N T_S\, Q_1}{\sigma^2} & -\dfrac{4\pi}{\sigma^2}\, \text{Im}\!\left\{\tilde{\alpha}\!\left[T_S Q_1\, \mathcal{S}_0 + M\, \mathcal{T}_0\right]\right\} \\
+J_{\tilde{\alpha}_{I}, \tau} & -\dfrac{4\pi\, \tilde{\alpha}_R\, M \Delta f\, P_1}{\sigma^2} & -\dfrac{4\pi\, \tilde{\alpha}_R\, M \Delta f\, \mathcal{S}_1}{\sigma^2} \\
+J_{\tilde{\alpha}_{I}, \nu} & \dfrac{4\pi\, \tilde{\alpha}_R\, N T_S\, Q_1}{\sigma^2} & \dfrac{4\pi}{\sigma^2}\, \text{Re}\!\left\{\tilde{\alpha}\!\left[T_S Q_1\, \mathcal{S}_0 + M\, \mathcal{T}_0\right]\right\} \\
+\hline
+\end{array}
+$}
+\end{center}
+
+\paragraph{Interpretation of the ICI ``extras''.} Two patterns emerge:
+\begin{itemize}
+    \item \emph{Entries with no \(\nu\)-derivative} — namely \(J_{\tilde{\alpha}_R \tilde{\alpha}_R}\), \(J_{\tau\tau}\), \(J_{\tilde{\alpha}_R \tau}\), \(J_{\tilde{\alpha}_I \tau}\) — differ from the no-ICI form by the single substitution \(P_a \to \mathcal{S}_a\). The kernel \(I(n)\) does not appear separately; it only \emph{smears} the discrete index-\(n'\) moments \(\sum_{n'} (n')^a\) into \(\sum_{n,n'} (n')^a |I(n'-n)|^2\). When \(|I|^2\) is highly concentrated at the origin, \(\mathcal{S}_a \approx N \sum_l |I(l)|^2 \cdot \) (some weighting), and the entries scale similarly to their no-ICI counterparts.
+    \item \emph{Entries with a \(\nu\)-derivative} — namely \(J_{\nu\nu}\), \(J_{\tau\nu}\), \(J_{\tilde{\alpha}_R \nu}\), \(J_{\tilde{\alpha}_I \nu}\) — pick up additional terms in \(\mathcal{T}_a\) and \(\mathcal{U}\) that have no analog in the no-ICI form. These reflect the fact that \(I\) itself depends on \(\nu\), so differentiating with respect to \(\nu\) excites both the symbol-time phase rotation (already present without ICI) and a per-subcarrier kernel response visible only when \(I \neq \delta\). Because \(\mathcal{T}_0\) and \(\mathcal{T}_1\) are generically complex, the gain--Doppler cross terms in the ICI case mix \(\tilde{\alpha}_R\) and \(\tilde{\alpha}_I\) through the \(\text{Im}\{\tilde{\alpha}\,(\cdot)\}\) and \(\text{Re}\{\tilde{\alpha}\,(\cdot)\}\) wrappers, rather than picking out one of them cleanly as in the no-ICI case.
+\end{itemize}
+
+\paragraph{Asymptotic scaling.} For large \((N, M)\): \(P_a, Q_a, \mathcal{S}_a \sim N^{a+1}, M^{a+1}, N^{a+1}\) respectively, while \(\mathcal{T}_a \sim N^{a+1}\) and \(\mathcal{U} \sim N\). Substituting, \(J_{\tilde{\alpha}\tilde{\alpha}} \sim NM\), \(J_{\tau\tau} \sim N^3 M\), and \(J_{\nu\nu} \sim N M^3\) in both regimes — the dominant grid scaling is unchanged by ICI. The ICI signature is in the constants (through the shape of \(I\)) and in the lower-order \(\mathcal{T}_a, \mathcal{U}\) corrections that become non-negligible at modest \(M\) or when the operating \(\nu T\) is large enough to spread \(I\) noticeably across subcarriers.
+
+\subsection{Multiple Target Case}
+
+For \(P>1\), stack the parameter vector as \(\bm{\eta} = [\bm{\eta}_1^T, \ldots, \bm{\eta}_P^T]^T\) with \(\bm{\eta}_p = [\tilde{\alpha}_{p,R}, \tilde{\alpha}_{p,I}, \tau_p, \nu_p]^T\). The FIM has the block form
+\begin{equation}
+    \bm{J}(\bm{\eta}) = \begin{bmatrix} \bm{J}_{1,1} & \cdots & \bm{J}_{1,P} \\ \vdots & \ddots & \vdots \\ \bm{J}_{P,1} & \cdots & \bm{J}_{P,P} \end{bmatrix}, \qquad \bm{J}_{q,p} = \bm{J}_{p,q}^T,
+\end{equation}
+where each block \(\bm{J}_{p,q} \in \mathbb{R}^{4\times 4}\) collects the FIM entries between the four parameters of target \(p\) and those of target \(q\).
+
+To compress notation, define the per-target inner sums
+\begin{align}
+    \Phi_p[n,m]   &:= \sum_{n'=0}^{N-1} X[n',m]\, e^{-j2\pi n'\Delta f\, \tau_p}\, e^{j2\pi mT_S\, \nu_p}\, I_p(n'-n), \\
+    \Psi_p[n,m]   &:= \sum_{n'=0}^{N-1} X[n',m]\, n'\Delta f\, e^{-j2\pi n'\Delta f\, \tau_p}\, e^{j2\pi mT_S\, \nu_p}\, I_p(n'-n), \\
+    \Omega_p[n,m] &:= \sum_{n'=0}^{N-1} X[n',m]\, e^{-j2\pi n'\Delta f\, \tau_p}\, e^{j2\pi mT_S\, \nu_p}\, \left( mT_S I_p(n'-n) + I_p'(n'-n) \right),
+\end{align}
+and the bilinear pairing
+\begin{equation}
+    \langle f, g \rangle := \sum_{n=0}^{N-1} \sum_{m=0}^{M-1} f^*[n,m]\, g[n,m].
+\end{equation}
+With this notation the derivatives become \(\partial \mu / \partial \tilde{\alpha}_{p,R} = \Phi_p\), \(\partial \mu / \partial \tilde{\alpha}_{p,I} = j\Phi_p\), \(\partial \mu / \partial \tau_p = -j2\pi \tilde{\alpha}_p\, \Psi_p\), and \(\partial \mu / \partial \nu_p = j2\pi \tilde{\alpha}_p\, \Omega_p\). We treat the no-ICI and ICI specializations separately below.
+
+\subsubsection{No ICI Channel}
+
+With \(I_p(n) = \delta[n]\) and \(I_p'(n) = 0\) for every target \(p\), the inner \(n'\)-sums collapse and the shorthand quantities become
+\begin{align}
+    \Phi_p[n,m]   &= X[n,m]\, e^{-j2\pi n\Delta f\, \tau_p}\, e^{j2\pi mT_S\, \nu_p}, \\
+    \Psi_p[n,m]   &= n\Delta f \cdot \Phi_p[n,m], \\
+    \Omega_p[n,m] &= mT_S \cdot \Phi_p[n,m].
+\end{align}
+Thus every inner product between two of \(\{\Phi_p, \Psi_p, \Omega_p\}\) reduces to a weighted sum of \(\Phi_p^*[n,m]\, \Phi_q[n,m]\). Define the cross-target moments
+\begin{equation}
+    \Lambda_{p,q}^{(a,b)} := \sum_{n=0}^{N-1} \sum_{m=0}^{M-1} (n\Delta f)^a\, (mT_S)^b\, |X[n,m]|^2\, e^{-j2\pi n\Delta f\, \Delta\tau_{pq}}\, e^{j2\pi mT_S\, \Delta\nu_{pq}}, \qquad a, b \in \{0, 1, 2\},
+\end{equation}
+where \(\Delta\tau_{pq} := \tau_q - \tau_p\) and \(\Delta\nu_{pq} := \nu_q - \nu_p\). Then
+\begin{align}
+    \langle \Phi_p, \Phi_q \rangle &= \Lambda_{p,q}^{(0,0)}, &
+    \langle \Phi_p, \Psi_q \rangle &= \langle \Psi_p, \Phi_q \rangle = \Lambda_{p,q}^{(1,0)}, &
+    \langle \Phi_p, \Omega_q \rangle &= \langle \Omega_p, \Phi_q \rangle = \Lambda_{p,q}^{(0,1)}, \\
+    \langle \Psi_p, \Psi_q \rangle &= \Lambda_{p,q}^{(2,0)}, &
+    \langle \Omega_p, \Omega_q \rangle &= \Lambda_{p,q}^{(0,2)}, &
+    \langle \Psi_p, \Omega_q \rangle &= \langle \Omega_p, \Psi_q \rangle = \Lambda_{p,q}^{(1,1)},
+\end{align}
+with the conjugate symmetry \(\Lambda_{q,p}^{(a,b)} = \overline{\Lambda_{p,q}^{(a,b)}}\). Substituting these into the general off-diagonal-block formulas (which we list explicitly under \emph{ICI Channel} below), the off-diagonal blocks \(\bm{J}_{p,q}\) (\(p \neq q\)) reduce to
+\begin{align}
+    [\bm{J}_{p,q}]_{\tilde{\alpha}_R,\tilde{\alpha}_R} &= [\bm{J}_{p,q}]_{\tilde{\alpha}_I,\tilde{\alpha}_I} = \tfrac{2}{\sigma^2}\, \text{Re}\{ \Lambda_{p,q}^{(0,0)} \}, \\
+    [\bm{J}_{p,q}]_{\tilde{\alpha}_R,\tilde{\alpha}_I} &= -\tfrac{2}{\sigma^2}\, \text{Im}\{ \Lambda_{p,q}^{(0,0)} \}, &
+    [\bm{J}_{p,q}]_{\tilde{\alpha}_I,\tilde{\alpha}_R} &= \tfrac{2}{\sigma^2}\, \text{Im}\{ \Lambda_{p,q}^{(0,0)} \}, \\
+    [\bm{J}_{p,q}]_{\tilde{\alpha}_R,\tau} &= \tfrac{4\pi}{\sigma^2}\, \text{Im}\{ \tilde{\alpha}_q\, \Lambda_{p,q}^{(1,0)} \}, &
+    [\bm{J}_{p,q}]_{\tilde{\alpha}_R,\nu} &= -\tfrac{4\pi}{\sigma^2}\, \text{Im}\{ \tilde{\alpha}_q\, \Lambda_{p,q}^{(0,1)} \}, \\
+    [\bm{J}_{p,q}]_{\tilde{\alpha}_I,\tau} &= -\tfrac{4\pi}{\sigma^2}\, \text{Re}\{ \tilde{\alpha}_q\, \Lambda_{p,q}^{(1,0)} \}, &
+    [\bm{J}_{p,q}]_{\tilde{\alpha}_I,\nu} &= \tfrac{4\pi}{\sigma^2}\, \text{Re}\{ \tilde{\alpha}_q\, \Lambda_{p,q}^{(0,1)} \}, \\
+    [\bm{J}_{p,q}]_{\tau,\tilde{\alpha}_R} &= -\tfrac{4\pi}{\sigma^2}\, \text{Im}\{ \tilde{\alpha}_p^*\, \Lambda_{p,q}^{(1,0)} \}, &
+    [\bm{J}_{p,q}]_{\tau,\tilde{\alpha}_I} &= -\tfrac{4\pi}{\sigma^2}\, \text{Re}\{ \tilde{\alpha}_p^*\, \Lambda_{p,q}^{(1,0)} \}, \\
+    [\bm{J}_{p,q}]_{\nu,\tilde{\alpha}_R} &= \tfrac{4\pi}{\sigma^2}\, \text{Im}\{ \tilde{\alpha}_p^*\, \Lambda_{p,q}^{(0,1)} \}, &
+    [\bm{J}_{p,q}]_{\nu,\tilde{\alpha}_I} &= \tfrac{4\pi}{\sigma^2}\, \text{Re}\{ \tilde{\alpha}_p^*\, \Lambda_{p,q}^{(0,1)} \}, \\
+    [\bm{J}_{p,q}]_{\tau,\tau} &= \tfrac{8\pi^2}{\sigma^2}\, \text{Re}\{ \tilde{\alpha}_p^* \tilde{\alpha}_q\, \Lambda_{p,q}^{(2,0)} \}, &
+    [\bm{J}_{p,q}]_{\nu,\nu} &= \tfrac{8\pi^2}{\sigma^2}\, \text{Re}\{ \tilde{\alpha}_p^* \tilde{\alpha}_q\, \Lambda_{p,q}^{(0,2)} \}, \\
+    [\bm{J}_{p,q}]_{\tau,\nu} &= [\bm{J}_{p,q}]_{\nu,\tau} = -\tfrac{8\pi^2}{\sigma^2}\, \text{Re}\{ \tilde{\alpha}_p^* \tilde{\alpha}_q\, \Lambda_{p,q}^{(1,1)} \}.
+\end{align}
+For the diagonal block \(\bm{J}_{p,p}\) the phase factors disappear (\(\Delta\tau_{pp}=\Delta\nu_{pp}=0\)), \(\Lambda_{p,p}^{(a,b)} = \sum_{n,m}(n\Delta f)^a(mT_S)^b|X[n,m]|^2\) is real, and the block reduces to the single-target no-ICI FIM of Section~3.1.1.
+
+\paragraph{Unit-energy QPSK symbols.} With \(|X[n,m]|^2 = 1\), the cross-target moment factorizes into a product of one-dimensional Dirichlet-type sums:
+\begin{equation}
+    \Lambda_{p,q}^{(a,b)} = (\Delta f)^a\, (T_S)^b\, F_a\!\left(-\Delta f\, \Delta\tau_{pq},\, N\right)\, F_b\!\left(T_S\, \Delta\nu_{pq},\, M\right), \qquad F_a(z, K) := \sum_{k=0}^{K-1} k^a\, e^{j2\pi k z}.
+\end{equation}
+The zeroth-order term has the closed form \(F_0(z, K) = (1 - e^{j2\pi K z})/(1 - e^{j2\pi z})\) for \(z \not\equiv 0 \pmod 1\), with \(F_0(0, K) = K\); the higher orders follow from \(F_1(z,K) = \tfrac{1}{j2\pi}\, \partial F_0 / \partial z\) and \(F_2(z,K) = \tfrac{1}{(j2\pi)^2}\, \partial^2 F_0 / \partial z^2\). The off-diagonal blocks now depend only on the inter-target separations \((\Delta\tau_{pq}, \Delta\nu_{pq})\), the OFDM grid \((N, M, \Delta f, T_S)\), and the complex gains \(\tilde{\alpha}_p, \tilde{\alpha}_q\). Taking the limit \(\Delta\tau_{pq}, \Delta\nu_{pq} \to 0\) gives \(F_a(0,K) = \sum_{k=0}^{K-1} k^a\), recovering the single-target QPSK closed form of Section~3.1.1.
+
+\subsubsection{ICI Channel}
+
+The diagonal blocks \(\bm{J}_{p,p}\) coincide with the single-target FIM of Section~3.1.2 with all quantities indexed by \(p\); in shorthand the nontrivial entries are
+\begin{align}
+    [\bm{J}_{p,p}]_{\tilde{\alpha}_R,\tilde{\alpha}_R} &= [\bm{J}_{p,p}]_{\tilde{\alpha}_I,\tilde{\alpha}_I} = \tfrac{2}{\sigma^2}\, \langle \Phi_p,\Phi_p \rangle, &
+    [\bm{J}_{p,p}]_{\tilde{\alpha}_R,\tilde{\alpha}_I} &= 0, \\
+    [\bm{J}_{p,p}]_{\tau,\tau} &= \tfrac{8\pi^2 |\tilde{\alpha}_p|^2}{\sigma^2}\, \langle \Psi_p,\Psi_p \rangle, &
+    [\bm{J}_{p,p}]_{\nu,\nu} &= \tfrac{8\pi^2 |\tilde{\alpha}_p|^2}{\sigma^2}\, \langle \Omega_p,\Omega_p \rangle, \\
+    [\bm{J}_{p,p}]_{\tau,\nu} &= -\tfrac{8\pi^2 |\tilde{\alpha}_p|^2}{\sigma^2}\, \text{Re}\{ \langle \Psi_p,\Omega_p \rangle \}, &
+    [\bm{J}_{p,p}]_{\tilde{\alpha}_R,\tau} &= \tfrac{4\pi}{\sigma^2}\, \text{Im}\{ \tilde{\alpha}_p \langle \Phi_p,\Psi_p \rangle \}, \\
+    [\bm{J}_{p,p}]_{\tilde{\alpha}_R,\nu} &= -\tfrac{4\pi}{\sigma^2}\, \text{Im}\{ \tilde{\alpha}_p \langle \Phi_p,\Omega_p \rangle \}, &
+    [\bm{J}_{p,p}]_{\tilde{\alpha}_I,\tau} &= -\tfrac{4\pi}{\sigma^2}\, \text{Re}\{ \tilde{\alpha}_p \langle \Phi_p,\Psi_p \rangle \}, \\
+    [\bm{J}_{p,p}]_{\tilde{\alpha}_I,\nu} &= \tfrac{4\pi}{\sigma^2}\, \text{Re}\{ \tilde{\alpha}_p \langle \Phi_p,\Omega_p \rangle \}. & &
+\end{align}
+
+The off-diagonal blocks \(\bm{J}_{p,q}\) with \(p \neq q\) capture the cross-target coupling and are not generally symmetric. Their 16 entries follow from \([\bm{J}_{p,q}]_{a,b} = \tfrac{2}{\sigma^2}\, \text{Re}\{ \langle \partial \mu / \partial \eta_{p,a},\ \partial \mu / \partial \eta_{q,b} \rangle \}\), giving
+\begin{align}
+    [\bm{J}_{p,q}]_{\tilde{\alpha}_R,\tilde{\alpha}_R} &= \tfrac{2}{\sigma^2}\, \text{Re}\{ \langle \Phi_p,\Phi_q \rangle \}, &
+    [\bm{J}_{p,q}]_{\tilde{\alpha}_I,\tilde{\alpha}_I} &= \tfrac{2}{\sigma^2}\, \text{Re}\{ \langle \Phi_p,\Phi_q \rangle \}, \\
+    [\bm{J}_{p,q}]_{\tilde{\alpha}_R,\tilde{\alpha}_I} &= -\tfrac{2}{\sigma^2}\, \text{Im}\{ \langle \Phi_p,\Phi_q \rangle \}, &
+    [\bm{J}_{p,q}]_{\tilde{\alpha}_I,\tilde{\alpha}_R} &= \tfrac{2}{\sigma^2}\, \text{Im}\{ \langle \Phi_p,\Phi_q \rangle \}, \\
+    [\bm{J}_{p,q}]_{\tilde{\alpha}_R,\tau} &= \tfrac{4\pi}{\sigma^2}\, \text{Im}\{ \tilde{\alpha}_q \langle \Phi_p,\Psi_q \rangle \}, &
+    [\bm{J}_{p,q}]_{\tilde{\alpha}_R,\nu} &= -\tfrac{4\pi}{\sigma^2}\, \text{Im}\{ \tilde{\alpha}_q \langle \Phi_p,\Omega_q \rangle \}, \\
+    [\bm{J}_{p,q}]_{\tilde{\alpha}_I,\tau} &= -\tfrac{4\pi}{\sigma^2}\, \text{Re}\{ \tilde{\alpha}_q \langle \Phi_p,\Psi_q \rangle \}, &
+    [\bm{J}_{p,q}]_{\tilde{\alpha}_I,\nu} &= \tfrac{4\pi}{\sigma^2}\, \text{Re}\{ \tilde{\alpha}_q \langle \Phi_p,\Omega_q \rangle \}, \\
+    [\bm{J}_{p,q}]_{\tau,\tilde{\alpha}_R} &= -\tfrac{4\pi}{\sigma^2}\, \text{Im}\{ \tilde{\alpha}_p^* \langle \Psi_p,\Phi_q \rangle \}, &
+    [\bm{J}_{p,q}]_{\tau,\tilde{\alpha}_I} &= -\tfrac{4\pi}{\sigma^2}\, \text{Re}\{ \tilde{\alpha}_p^* \langle \Psi_p,\Phi_q \rangle \}, \\
+    [\bm{J}_{p,q}]_{\nu,\tilde{\alpha}_R} &= \tfrac{4\pi}{\sigma^2}\, \text{Im}\{ \tilde{\alpha}_p^* \langle \Omega_p,\Phi_q \rangle \}, &
+    [\bm{J}_{p,q}]_{\nu,\tilde{\alpha}_I} &= \tfrac{4\pi}{\sigma^2}\, \text{Re}\{ \tilde{\alpha}_p^* \langle \Omega_p,\Phi_q \rangle \}, \\
+    [\bm{J}_{p,q}]_{\tau,\tau} &= \tfrac{8\pi^2}{\sigma^2}\, \text{Re}\{ \tilde{\alpha}_p^* \tilde{\alpha}_q\, \langle \Psi_p,\Psi_q \rangle \}, &
+    [\bm{J}_{p,q}]_{\nu,\nu} &= \tfrac{8\pi^2}{\sigma^2}\, \text{Re}\{ \tilde{\alpha}_p^* \tilde{\alpha}_q\, \langle \Omega_p,\Omega_q \rangle \}, \\
+    [\bm{J}_{p,q}]_{\tau,\nu} &= -\tfrac{8\pi^2}{\sigma^2}\, \text{Re}\{ \tilde{\alpha}_p^* \tilde{\alpha}_q\, \langle \Psi_p,\Omega_q \rangle \}, &
+    [\bm{J}_{p,q}]_{\nu,\tau} &= -\tfrac{8\pi^2}{\sigma^2}\, \text{Re}\{ \tilde{\alpha}_p^* \tilde{\alpha}_q\, \langle \Omega_p,\Psi_q \rangle \}.
+\end{align}
+Note that \(p=q\) recovers the diagonal block above (the imaginary-part entries vanish because \(\langle \Phi_p,\Phi_p \rangle\) is real), and the block transpose relation \(\bm{J}_{q,p} = \bm{J}_{p,q}^T\) is consistent with \(\langle f,g \rangle = \overline{\langle g,f \rangle}\).
+
+
+\end{document}

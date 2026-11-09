@@ -1,0 +1,59 @@
+\documentclass[11pt]{article}
+
+\usepackage{amsmath,amssymb,bm}
+\usepackage{hyperref}
+\usepackage{svg}
+\usepackage[a4paper,margin=1in]{geometry}
+
+\title{FIM and CRB Calculations}
+\author{}
+\date{}
+
+\begin{document}
+\maketitle
+Consider a vector \(\bm{y}\) is complex gaussian and has mean \(\bm{\mu}(\bm{\eta})\) and variance \(\sigma^2\bm{I}\)
+
+The pdf of \(\bm{y}\) is given by:
+\begin{equation}
+p(\bm{y}; \bm{\eta}) = \frac{1}{(\pi \sigma^2)^N} \exp\left(-\frac{1}{\sigma^2} \|\bm{y} - \bm{\mu}(\bm{\eta})\|^2\right)
+\end{equation}
+The log-likelihood function is:
+\begin{equation}
+\ln p(\bm{y}; \bm{\eta}) = -N \ln(\pi \sigma^2) - \frac{1}{\sigma^2} \|\bm{y} - \bm{\mu}(\bm{\eta})\|^2
+\end{equation}
+To compute the Fisher Information Matrix (FIM), we need to calculate the partial derivative of the log-likelihood function with respect to each parameter \(\eta_k\):
+\begin{equation}
+\frac{\partial \ln p(\bm{y}; \bm{\eta})}{\partial \eta_k} = \frac{2}{\sigma^2} \text{Re}\left\{ (\bm{y} - \bm{\mu}(\bm{\eta}))^H \frac{\partial \bm{\mu}(\bm{\eta})}{\partial \eta_k} \right\}
+\end{equation}
+The \((k,l)\)-th entry of the FIM is then given by the expected value of the product of the partial derivatives:
+\begin{equation}
+[\bm{J}(\bm{\eta})]_{k,l} = \mathbb{E}\left[ \frac{\partial \ln p(\bm{y}; \bm{\eta})}{\partial \eta_k} \frac{\partial \ln p(\bm{y}; \bm{\eta})}{\partial \eta_l} \right]
+\end{equation}
+To evaluate the expectation, substitute the score from equation~(3) into equation~(4). Let \(\bm{z} = \bm{y} - \bm{\mu}(\bm{\eta})\), \(\bm{s}_k = \partial \bm{\mu}(\bm{\eta}) / \partial \eta_k\), and \(\bm{s}_l = \partial \bm{\mu}(\bm{\eta}) / \partial \eta_l\). Then:
+\begin{equation}
+[\bm{J}(\bm{\eta})]_{k,l} = \frac{4}{\sigma^4} \, \mathbb{E}\!\left[ \text{Re}\{\bm{z}^H \bm{s}_k\} \, \text{Re}\{\bm{z}^H \bm{s}_l\} \right]
+\end{equation}
+Using the identity \(\text{Re}(a)\,\text{Re}(b) = \tfrac{1}{4}(a + a^*)(b + b^*)\), the expectation expands as:
+\begin{equation}
+\mathbb{E}\!\left[\text{Re}\{\bm{z}^H \bm{s}_k\} \, \text{Re}\{\bm{z}^H \bm{s}_l\}\right]
+= \tfrac{1}{4}\Big(\mathbb{E}[ab] + \mathbb{E}[ab^*] + \mathbb{E}[a^*b] + \mathbb{E}[a^*b^*]\Big)
+\end{equation}
+where \(a = \bm{z}^H \bm{s}_k\) and \(b = \bm{z}^H \bm{s}_l\). Since \(\bm{z} \sim \mathcal{CN}(\bm{0}, \sigma^2 \bm{I})\) is circularly symmetric, \(\mathbb{E}[\bm{z}\bm{z}^T] = \bm{0}\) and \(\mathbb{E}[\bm{z}\bm{z}^H] = \sigma^2 \bm{I}\), giving:
+\begin{equation}
+\mathbb{E}[ab] = \mathbb{E}[a^*b^*] = 0, \qquad \mathbb{E}[ab^*] = \sigma^2 \bm{s}_l^H \bm{s}_k, \qquad \mathbb{E}[a^*b] = \sigma^2 \bm{s}_k^H \bm{s}_l
+\end{equation}
+Combining these yields:
+\begin{equation}
+\mathbb{E}\!\left[\text{Re}\{\bm{z}^H \bm{s}_k\} \, \text{Re}\{\bm{z}^H \bm{s}_l\}\right]
+= \frac{\sigma^2}{2} \, \text{Re}\{\bm{s}_k^H \bm{s}_l\}
+\end{equation}
+Substituting back, we obtain the final expression for the FIM:
+\begin{equation}
+[\bm{J}(\bm{\eta})]_{k,l} = \frac{2}{\sigma^2} \text{Re}\left\{ \left(\frac{\partial \bm{\mu}(\bm{\eta})}{\partial \eta_k}\right)^H \frac{\partial \bm{\mu}(\bm{\eta})}{\partial \eta_l} \right\}
+\end{equation}
+Finally, the Cramér-Rao Bound (CRB) for an unbiased estimator of \(\bm{\eta}\) is given by the inverse of the FIM:
+\begin{equation}
+\text{CRB}(\bm{\eta}) = \bm{J}(\bm{\eta})^{-1}
+\end{equation}
+
+\end{document}

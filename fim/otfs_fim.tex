@@ -1,0 +1,792 @@
+\documentclass[11pt]{article}
+
+\usepackage{amsmath,amssymb,bm}
+\usepackage{hyperref}
+\usepackage{svg}
+\usepackage[a4paper,margin=1in]{geometry}
+
+\title{OTFS FIM and CRB Calculations}
+\author{}
+\date{}
+
+\begin{document}
+\maketitle
+
+The two-step OTFS I/O equation given as (otfs\_io.tex) is, in the
+delay--Doppler domain,
+\begin{equation}
+    y[l',k'] = \frac{1}{NM}\sum_{p=0}^{P-1} \tilde{\alpha}_p
+               \sum_{l=0}^{N-1}\sum_{k=0}^{M-1} x[l,k]\,
+               A_p(l'-l)\, B_p(k-k') + \tilde{Z}[l',k'],
+\label{eq:OTFS_IO}
+\end{equation}
+with the delay and Doppler kernels
+\begin{equation}
+    A_p(d) = \sum_{n=0}^{N-1} e^{\,j2\pi n\bigl[\tfrac{d}{N} - \Delta f\,\tau_p\bigr]},
+    \qquad
+    B_p(d) = \sum_{m=0}^{M-1} e^{\,j2\pi m\bigl[\tfrac{d}{M} + T_S\,\nu_p\bigr]}.
+\end{equation}
+The information symbols \(x[l,k]\) lie on an \(N\times M\) delay--Doppler grid
+and the OFDM modulator is assumed cyclic-prefix matched to the channel
+delay spread and Doppler limited (no OFDM-side ICI), as in the
+simplified \(Y[n,m]\) of otfs\_io.tex. Since the SFFT is unitary, the
+delay--Doppler noise \(\tilde{Z}[l',k']\) is i.i.d.\ complex Gaussian with
+the same per-bin variance \(\sigma^2\) as the underlying time-frequency
+noise. The observation \(y[l',k']\) is therefore complex Gaussian with
+mean
+\begin{equation}
+    \mu[l',k'] = \frac{1}{NM}\sum_{p=0}^{P-1} \tilde{\alpha}_p
+                 \sum_{l=0}^{N-1}\sum_{k=0}^{M-1} x[l,k]\,
+                 A_p(l'-l)\, B_p(k-k').
+\end{equation}
+
+\subsection*{Derivatives of the mean}
+
+Define the first-moment kernels
+\begin{equation}
+    A_p'(d) := \sum_{n=0}^{N-1} n\, e^{\,j2\pi n\bigl[\tfrac{d}{N} - \Delta f\,\tau_p\bigr]},
+    \qquad
+    B_p'(d) := \sum_{m=0}^{M-1} m\, e^{\,j2\pi m\bigl[\tfrac{d}{M} + T_S\,\nu_p\bigr]},
+\end{equation}
+so that
+\(\partial A_p/\partial \tau_p = -j2\pi\Delta f\, A_p'(d)\) and
+\(\partial B_p/\partial \nu_p =  j2\pi T_S\, B_p'(d)\). The first derivatives
+of \(\mu[l',k']\) with respect to \((\tilde{\alpha}_p,\tau_p,\nu_p)\) are
+\begin{align}
+    \frac{\partial \mu[l',k']}{\partial \tilde{\alpha}_{p,R}} &=
+        \phantom{j}\frac{1}{NM}\sum_{l,k} x[l,k]\, A_p(l'-l)\, B_p(k-k'), \\
+    \frac{\partial \mu[l',k']}{\partial \tilde{\alpha}_{p,I}} &=
+        j\,\frac{1}{NM}\sum_{l,k} x[l,k]\, A_p(l'-l)\, B_p(k-k'), \\
+    \frac{\partial \mu[l',k']}{\partial \tau_p} &=
+        -j2\pi\Delta f\, \tilde{\alpha}_p\,
+        \frac{1}{NM}\sum_{l,k} x[l,k]\, A_p'(l'-l)\, B_p(k-k'), \\
+    \frac{\partial \mu[l',k']}{\partial \nu_p} &=
+        \phantom{-}j2\pi T_S\, \tilde{\alpha}_p\,
+        \frac{1}{NM}\sum_{l,k} x[l,k]\, A_p(l'-l)\, B_p'(k-k').
+\end{align}
+It is convenient to introduce the per-target shorthand
+\begin{align}
+    \Phi_p[l',k']   &:= \frac{1}{NM}\sum_{l,k} x[l,k]\, A_p(l'-l)\, B_p(k-k'), \\
+    \Psi_p[l',k']   &:= \frac{1}{NM}\sum_{l,k} x[l,k]\, A_p'(l'-l)\, B_p(k-k'), \\
+    \Omega_p[l',k'] &:= \frac{1}{NM}\sum_{l,k} x[l,k]\, A_p(l'-l)\, B_p'(k-k'),
+\end{align}
+and the bilinear pairing
+\begin{equation}
+    \langle f, g \rangle := \sum_{l'=0}^{N-1}\sum_{k'=0}^{M-1} f^*[l',k']\, g[l',k'].
+\end{equation}
+With this notation
+\(\partial \mu / \partial \tilde{\alpha}_{p,R} = \Phi_p\),
+\(\partial \mu / \partial \tilde{\alpha}_{p,I} = j\Phi_p\),
+\(\partial \mu / \partial \tau_p = -j2\pi\Delta f\, \tilde{\alpha}_p\,\Psi_p\),
+\(\partial \mu / \partial \nu_p =  j2\pi T_S\,\tilde{\alpha}_p\,\Omega_p\).
+Compared with the OFDM mean of ofdm\_fim.tex, the kernels \(A_p,B_p\)
+play the role that the ICI kernel \(I_p(n'-n)\) plays there, and the
+ISFFT/SFFT pair replaces the per-symbol OFDM modulator at both ends.
+
+\section{FIM}
+FIM formula given as (fim.tex):
+\begin{equation}
+    [\bm{J}(\bm{\eta})]_{k,l} = \frac{2}{\sigma^2}\,
+    \text{Re}\!\left\{ \left(\frac{\partial \bm{\mu}(\bm{\eta})}{\partial \eta_k}\right)^H
+    \frac{\partial \bm{\mu}(\bm{\eta})}{\partial \eta_l} \right\}.
+\end{equation}
+
+\subsection{Single Target Case}
+
+For \(P=1\) we drop the target index and write
+\(\tilde{\alpha},\tau,\nu\) for the single-target parameters. The
+parameter vector is
+\(\bm{\eta} = [\tilde{\alpha}_R, \tilde{\alpha}_I, \tau, \nu]^T\). We
+derive the FIM separately for the no-ICI and ICI OFDM-side channel
+models, mirroring Section~3.1 of ofdm\_fim.tex.
+
+\subsubsection{No OFDM-side ICI}
+
+With the OFDM-side kernel \(I_p(n'-n) \approx T\,\delta[n'-n]\), the
+delay--Doppler I/O equation reduces to~\eqref{eq:OTFS_IO} with the
+Dirichlet kernels \(A_p,B_p\) of the previous section, and we write
+\(A,A',B,B',\Phi,\Psi,\Omega\) for the single-target shorthand.
+Direct substitution of the four derivatives into the FIM formula gives
+\begin{align}
+    [\bm{J}(\bm{\eta})]_{\tilde{\alpha}_R, \tilde{\alpha}_R} &=
+        [\bm{J}(\bm{\eta})]_{\tilde{\alpha}_I, \tilde{\alpha}_I} =
+        \tfrac{2}{\sigma^2}\,\langle \Phi,\Phi\rangle, \\
+    [\bm{J}(\bm{\eta})]_{\tilde{\alpha}_R, \tilde{\alpha}_I} &= 0, \\
+    [\bm{J}(\bm{\eta})]_{\tau,\tau} &=
+        \tfrac{8\pi^2 (\Delta f)^2 |\tilde{\alpha}|^2}{\sigma^2}\,
+        \langle \Psi,\Psi\rangle, \\
+    [\bm{J}(\bm{\eta})]_{\nu,\nu} &=
+        \tfrac{8\pi^2 T_S^2 |\tilde{\alpha}|^2}{\sigma^2}\,
+        \langle \Omega,\Omega\rangle, \\
+    [\bm{J}(\bm{\eta})]_{\tau,\nu} &=
+        -\tfrac{8\pi^2 \Delta f\, T_S\, |\tilde{\alpha}|^2}{\sigma^2}\,
+        \text{Re}\{\langle \Psi,\Omega\rangle\}, \\
+    [\bm{J}(\bm{\eta})]_{\tilde{\alpha}_R, \tau} &=
+        \phantom{-}\tfrac{4\pi\Delta f}{\sigma^2}\,
+        \text{Im}\{ \tilde{\alpha}\,\langle \Phi,\Psi\rangle \}, \\
+    [\bm{J}(\bm{\eta})]_{\tilde{\alpha}_R, \nu} &=
+        -\tfrac{4\pi T_S}{\sigma^2}\,
+        \text{Im}\{ \tilde{\alpha}\,\langle \Phi,\Omega\rangle \}, \\
+    [\bm{J}(\bm{\eta})]_{\tilde{\alpha}_I, \tau} &=
+        -\tfrac{4\pi\Delta f}{\sigma^2}\,
+        \text{Re}\{ \tilde{\alpha}\,\langle \Phi,\Psi\rangle \}, \\
+    [\bm{J}(\bm{\eta})]_{\tilde{\alpha}_I, \nu} &=
+        \phantom{-}\tfrac{4\pi T_S}{\sigma^2}\,
+        \text{Re}\{ \tilde{\alpha}\,\langle \Phi,\Omega\rangle \}.
+\end{align}
+The remaining entries follow from the symmetry \([\bm{J}]_{l,k} = [\bm{J}]_{k,l}\).
+Unlike the OFDM no-ICI case, the inner sums in \(\Phi,\Psi,\Omega\) do
+\emph{not} collapse to a single term: the Dirichlet kernels \(A,B\) carry
+energy at every delay/Doppler lag, so cross-bin products
+\(x[l,k]\,x^*[l'',k'']\) with \((l,k)\neq(l'',k'')\) survive in
+\(|\Phi[l',k']|^2\). A specific QPSK realization therefore produces a random
+FIM, exactly as in the OFDM ICI case.
+
+\paragraph{Expected FIM for i.i.d.\ unit-energy QPSK symbols.} Model the
+delay--Doppler data as i.i.d.\ unit-energy QPSK with zero mean,
+\begin{equation}
+    \mathrm{E}\{x[l,k]\, x^*[l'',k'']\} = \delta_{l,l''}\,\delta_{k,k''},
+    \qquad \mathrm{E}\{x[l,k]\, x[l'',k'']\} = 0.
+\end{equation}
+The double cross-sum in any of the inner products
+\(\langle \cdot,\cdot \rangle\) collapses onto the diagonal
+\((l,k) = (l'',k'')\) in expectation. Define the data-independent
+lag-summed kernel moments
+\begin{equation}
+    \mathcal{A}_{a,b} := \sum_{l,l'=0}^{N-1}
+        \bigl(A^{(a)}(l'-l)\bigr)^*\, A^{(b)}(l'-l), \qquad
+    \mathcal{B}_{a,b} := \sum_{k,k'=0}^{M-1}
+        \bigl(B^{(a)}(k-k')\bigr)^*\, B^{(b)}(k-k'),
+\end{equation}
+where \(A^{(0)} := A\), \(A^{(1)} := A'\) (and similarly for \(B\)).
+A short calculation using the Bartlett identity
+\(\sum_{d=-(N-1)}^{N-1} (N-|d|)\,e^{j2\pi q d/N} = |D_N(q)|^2 = N^2\,\delta[q]\)
+(valid for integer \(q \in \{-(N-1),\dots,N-1\}\)) collapses the
+\(\tau\)-dependent and \(\nu\)-dependent phase factors and gives the
+\emph{data-independent} closed forms
+\begin{equation}
+    \mathcal{A}_{a,b} = N^2 \sum_{n=0}^{N-1} n^{a+b}, \qquad
+    \mathcal{B}_{a,b} = M^2 \sum_{m=0}^{M-1} m^{a+b}.
+\label{eq:OTFS_AB_QPSK}
+\end{equation}
+In particular \(\mathcal{A}_{a,b}\) and \(\mathcal{B}_{a,b}\) are real and
+depend neither on the true delay/Doppler \((\tau,\nu)\) nor on the random
+QPSK realization. With
+\(P_a := \sum_{n=0}^{N-1} n^a\) and \(Q_b := \sum_{m=0}^{M-1} m^b\) (so
+\(P_0 = N\), \(P_1 = N(N-1)/2\), \(P_2 = N(N-1)(2N-1)/6\), analogously
+for \(Q_b\)), the expected inner products become
+\begin{align}
+    \mathrm{E}\{\langle \Phi,\Phi\rangle\} &= \tfrac{1}{(NM)^2}\,
+        \mathcal{A}_{0,0}\,\mathcal{B}_{0,0} = NM, &
+    \mathrm{E}\{\langle \Phi,\Psi\rangle\} &= \tfrac{M P_1}{1}, \\
+    \mathrm{E}\{\langle \Phi,\Omega\rangle\} &= N Q_1, &
+    \mathrm{E}\{\langle \Psi,\Psi\rangle\} &= M P_2, \\
+    \mathrm{E}\{\langle \Omega,\Omega\rangle\} &= N Q_2, &
+    \mathrm{E}\{\langle \Psi,\Omega\rangle\} &= P_1 Q_1,
+\end{align}
+all real. Substituting yields the expected FIM
+\begin{align}
+    \mathrm{E}\{[\bm{J}(\bm{\eta})]_{\tilde{\alpha}_R, \tilde{\alpha}_R}\} &=
+        \mathrm{E}\{[\bm{J}(\bm{\eta})]_{\tilde{\alpha}_I, \tilde{\alpha}_I}\} =
+        \tfrac{2 N M}{\sigma^2}, \\
+    \mathrm{E}\{[\bm{J}(\bm{\eta})]_{\tilde{\alpha}_R, \tilde{\alpha}_I}\} &= 0, \\
+    \mathrm{E}\{[\bm{J}(\bm{\eta})]_{\tau,\tau}\} &=
+        \tfrac{4\pi^2 |\tilde{\alpha}|^2 (\Delta f)^2\, M N(N-1)(2N-1)}{3\sigma^2}, \\
+    \mathrm{E}\{[\bm{J}(\bm{\eta})]_{\nu,\nu}\} &=
+        \tfrac{4\pi^2 |\tilde{\alpha}|^2 T_S^2\, N M(M-1)(2M-1)}{3\sigma^2}, \\
+    \mathrm{E}\{[\bm{J}(\bm{\eta})]_{\tau,\nu}\} &=
+        -\tfrac{2\pi^2 |\tilde{\alpha}|^2 \Delta f\, T_S\, N(N-1)\, M(M-1)}{\sigma^2}, \\
+    \mathrm{E}\{[\bm{J}(\bm{\eta})]_{\tilde{\alpha}_R, \tau}\} &=
+        \phantom{-}\tfrac{2\pi\,\tilde{\alpha}_I\,\Delta f\, M N(N-1)}{\sigma^2}, \\
+    \mathrm{E}\{[\bm{J}(\bm{\eta})]_{\tilde{\alpha}_R, \nu}\} &=
+        -\tfrac{2\pi\,\tilde{\alpha}_I\, T_S\, N M(M-1)}{\sigma^2}, \\
+    \mathrm{E}\{[\bm{J}(\bm{\eta})]_{\tilde{\alpha}_I, \tau}\} &=
+        -\tfrac{2\pi\,\tilde{\alpha}_R\,\Delta f\, M N(N-1)}{\sigma^2}, \\
+    \mathrm{E}\{[\bm{J}(\bm{\eta})]_{\tilde{\alpha}_I, \nu}\} &=
+        \phantom{-}\tfrac{2\pi\,\tilde{\alpha}_R\, T_S\, N M(M-1)}{\sigma^2}.
+\end{align}
+
+\paragraph{Equivalence with OFDM (no-ICI, QPSK).} The expected OTFS FIM
+above coincides \emph{entry by entry} with the OFDM no-ICI QPSK FIM of
+ofdm\_fim.tex (equations~(28)--(36)). The intuition is that the ISFFT
+and SFFT are unitary transforms; for i.i.d.\ unit-energy data the
+information content of the observation does not depend on whether the
+symbols are placed in the time--frequency grid (OFDM) or in the
+delay--Doppler grid (OTFS). The Dirichlet-kernel leakage in
+\eqref{eq:OTFS_IO} is the mirror image of the ICI leakage in OFDM, but
+when the data is i.i.d.\ unit-energy the lag-summed moments
+\(\mathcal{A}_{a,b}\) and \(\mathcal{B}_{a,b}\) collapse to the
+elementary power sums \(P_a, Q_b\) through the Bartlett identity, and
+the two FIMs become identical. The asymptotic scaling is therefore the
+same as for OFDM: \(J_{\tilde{\alpha}\tilde{\alpha}}\sim NM\),
+\(J_{\tau\tau}\sim N^3 M\), \(J_{\nu\nu}\sim NM^3\).
+
+\paragraph{Parameter dependence.} As in the OFDM no-ICI case, the
+expected FIM does not depend on the true delay \(\tau\) (the
+\(\tau\)-phases inside \(\mathcal{A}_{a,b}\) cancel pairwise) nor on the
+true Doppler \(\nu\) (same cancellation inside \(\mathcal{B}_{a,b}\));
+the only parameter that survives is the complex gain \(\tilde{\alpha}\),
+and only in entries that are linear in it. The single-target CRB is
+therefore operating-point-free under i.i.d.\ QPSK signalling.
+
+\subsubsection{With OFDM-side ICI}
+
+We now retain the full OFDM-side ICI kernel
+\(I(n'-n) = (e^{j2\pi\nu T}-1)/(j2\pi[(n'-n)\Delta f + \nu])\)
+of ofdm\_io.tex (equation~(2) of ofdm\_fim.tex) inside the OFDM
+demodulator output before applying the SFFT. Starting from the
+ICI form of the OFDM I/O,
+\begin{equation}
+    Y[n,m] = \tilde{\alpha}\sum_{n'=0}^{N-1} X[n',m]\,
+             e^{-j2\pi n'\Delta f\,\tau}\, e^{j2\pi mT_S\,\nu}\, I(n'-n)
+             + Z[n,m],
+\end{equation}
+substituting the ISFFT for \(X[n',m]\) and applying the SFFT to
+\(Y[n,m]\) gives
+\begin{equation}
+    y[l',k'] = \frac{1}{NM}\,\tilde{\alpha}\sum_{l=0}^{N-1}\sum_{k=0}^{M-1}
+               x[l,k]\, K(l',l)\, B(k-k') + \tilde{Z}[l',k'],
+\label{eq:OTFS_IO_ICI}
+\end{equation}
+where the OFDM-side ICI has merged the simple delay kernel
+\(A(l'-l)\) into the \emph{two-index} effective delay kernel
+\begin{equation}
+    K(l',l) := \sum_{n=0}^{N-1}\sum_{n'=0}^{N-1} I(n'-n)\,
+               e^{-j2\pi n'\bigl[\Delta f\,\tau + \tfrac{l}{N}\bigr]}\,
+               e^{j2\pi n\tfrac{l'}{N}}.
+\end{equation}
+\(K(l',l)\) reduces to \(A(l'-l)\) (the no-ICI Dirichlet kernel of the
+previous subsubsection) when \(I(n'-n) = T\,\delta[n'-n]\); for general
+\(I\) it depends on \(l'\) and \(l\) separately --- the OFDM-side ICI
+breaks the convolutional structure of the delay axis. The Doppler
+kernel \(B(k-k')\) is unchanged.
+
+\paragraph{Derivatives.} Define the \(n'\)-weighted delay kernel
+\begin{equation}
+    K^{(1)}(l',l) := \sum_{n,n'=0}^{N-1} I(n'-n)\, n'\,
+                     e^{-j2\pi n'\bigl[\Delta f\,\tau + \tfrac{l}{N}\bigr]}\,
+                     e^{j2\pi n\tfrac{l'}{N}},
+\end{equation}
+and the \(I'\)-derivative kernel
+\begin{equation}
+    K^{I'}(l',l) := \sum_{n,n'=0}^{N-1} I'(n'-n)\,
+                    e^{-j2\pi n'\bigl[\Delta f\,\tau + \tfrac{l}{N}\bigr]}\,
+                    e^{j2\pi n\tfrac{l'}{N}},
+\end{equation}
+where \(I'(n)\) is the \(\nu\)-derivative kernel of ofdm\_fim.tex,
+\(I'(n) = T e^{j2\pi\nu T}/(j2\pi(n\Delta f+\nu))
+        - (e^{j2\pi\nu T}-1)/(j2\pi(n\Delta f+\nu))^2\), so that
+\(\partial I/\partial\nu = j2\pi I'\). The mean is
+\(\mu[l',k'] = (1/NM)\,\tilde{\alpha}\sum_{l,k} x[l,k]\, K(l',l)\, B(k-k')\),
+and its parameter derivatives become
+\begin{align}
+    \frac{\partial \mu}{\partial \tilde{\alpha}_R} &= \phantom{j}\Phi[l',k'], &
+    \frac{\partial \mu}{\partial \tilde{\alpha}_I} &= j\,\Phi[l',k'], \\
+    \frac{\partial \mu}{\partial \tau} &= -j2\pi\Delta f\,\tilde{\alpha}\,\Psi[l',k'], &
+    \frac{\partial \mu}{\partial \nu} &= j2\pi\,\tilde{\alpha}\,\Lambda[l',k'],
+\end{align}
+with the ICI-aware shorthand
+\begin{align}
+    \Phi[l',k']   &:= \tfrac{1}{NM}\sum_{l,k} x[l,k]\, K(l',l)\, B(k-k'), \\
+    \Psi[l',k']   &:= \tfrac{1}{NM}\sum_{l,k} x[l,k]\, K^{(1)}(l',l)\, B(k-k'), \\
+    \Lambda[l',k']&:= \tfrac{1}{NM}\sum_{l,k} x[l,k]\,
+                      \bigl[\,T_S\, K(l',l)\, B'(k-k') + K^{I'}(l',l)\, B(k-k')\,\bigr].
+\end{align}
+The combined kernel \(\Lambda\) mirrors the OFDM-doc factor
+\(\bigl(mT_S\, I(n'-n) + I'(n'-n)\bigr)\) of equation~(8) of
+ofdm\_fim.tex: \(mT_S\) carries through to \(B'(k-k')\) under the SFFT
+while \(I'(n'-n)\) becomes \(K^{I'}(l',l)\).
+
+\paragraph{FIM (general).} The FIM entries follow the same template as
+the no-ICI case with \((\Phi,\Psi,\Omega)\) replaced by
+\((\Phi,\Psi,\Lambda)\) and the \(T_S^a\) prefactors removed from the
+\(\nu\)-entries (\(T_S\) is now absorbed into \(\Lambda\)):
+\begin{align}
+    [\bm{J}(\bm{\eta})]_{\tilde{\alpha}_R, \tilde{\alpha}_R} &=
+        [\bm{J}(\bm{\eta})]_{\tilde{\alpha}_I, \tilde{\alpha}_I} =
+        \tfrac{2}{\sigma^2}\,\langle \Phi,\Phi\rangle, &
+    [\bm{J}(\bm{\eta})]_{\tilde{\alpha}_R, \tilde{\alpha}_I} &= 0, \\
+    [\bm{J}(\bm{\eta})]_{\tau,\tau} &=
+        \tfrac{8\pi^2 (\Delta f)^2 |\tilde{\alpha}|^2}{\sigma^2}\,
+        \langle \Psi,\Psi\rangle, &
+    [\bm{J}(\bm{\eta})]_{\nu,\nu} &=
+        \tfrac{8\pi^2 |\tilde{\alpha}|^2}{\sigma^2}\,
+        \langle \Lambda,\Lambda\rangle, \\
+    [\bm{J}(\bm{\eta})]_{\tau,\nu} &=
+        -\tfrac{8\pi^2 \Delta f\, |\tilde{\alpha}|^2}{\sigma^2}\,
+        \text{Re}\{\langle \Psi,\Lambda\rangle\}, &
+    [\bm{J}(\bm{\eta})]_{\tilde{\alpha}_R,\tau} &=
+        \phantom{-}\tfrac{4\pi\,\Delta f}{\sigma^2}\,
+        \text{Im}\{\tilde{\alpha}\,\langle \Phi,\Psi\rangle\}, \\
+    [\bm{J}(\bm{\eta})]_{\tilde{\alpha}_R,\nu} &=
+        -\tfrac{4\pi}{\sigma^2}\,
+        \text{Im}\{\tilde{\alpha}\,\langle \Phi,\Lambda\rangle\}, &
+    [\bm{J}(\bm{\eta})]_{\tilde{\alpha}_I,\tau} &=
+        -\tfrac{4\pi\,\Delta f}{\sigma^2}\,
+        \text{Re}\{\tilde{\alpha}\,\langle \Phi,\Psi\rangle\}, \\
+    [\bm{J}(\bm{\eta})]_{\tilde{\alpha}_I,\nu} &=
+        \phantom{-}\tfrac{4\pi}{\sigma^2}\,
+        \text{Re}\{\tilde{\alpha}\,\langle \Phi,\Lambda\rangle\}. & &
+\end{align}
+
+\paragraph{Expected FIM for i.i.d.\ unit-energy QPSK symbols.} The
+two-index kernel \(K(l',l)\) loses its second argument under
+\(\sum_{l',l}\) because of the orthogonality
+\(\sum_{l=0}^{N-1} e^{j2\pi l(n_1'-n_2')/N} = N\,\delta[n_1' = n_2']\)
+and
+\(\sum_{l'=0}^{N-1} e^{j2\pi l'(n_2-n_1)/N} = N\,\delta[n_1 = n_2]\)
+(both valid because the subcarrier indices live in
+\(\{0,\dots,N-1\}\)). Applying this collapse together with the Bartlett
+identity on the Doppler side gives the data-independent sums
+\begin{equation}
+    \sum_{l',l=0}^{N-1} K^{(a)*}(l',l)\, K^{(b)}(l',l) = N^2\,
+        \sum_{n,n'=0}^{N-1} (n')^{\,a+b}\, |I(n'-n)|^2 = N^2\,\mathcal{S}_{a+b},
+\end{equation}
+\begin{equation}
+    \sum_{l',l=0}^{N-1} K^{(a)*}(l',l)\, K^{I'}(l',l) = N^2\,
+        \sum_{n,n'=0}^{N-1} (n')^{\,a}\, I^*(n'-n)\, I'(n'-n) = N^2\,\mathcal{T}_a,
+\end{equation}
+\begin{equation}
+    \sum_{l',l=0}^{N-1} |K^{I'}(l',l)|^2 = N^2\,
+        \sum_{n,n'=0}^{N-1} |I'(n'-n)|^2 = N^2\,\mathcal{U},
+\end{equation}
+where \(K^{(0)} := K\), \(K^{(1)}\) is the \(n'\)-weighted kernel
+defined above, and \(\mathcal{S}_a,\mathcal{T}_a,\mathcal{U}\) are
+\emph{identical} to the corresponding OFDM-side sums of ofdm\_fim.tex
+(equations~(27)--(28) there). Taking expectations of the inner
+products under i.i.d.\ unit-energy QPSK \(x[l,k]\),
+\begin{align}
+    \mathrm{E}\{\langle \Phi,\Phi\rangle\} &=
+        \tfrac{1}{(NM)^2}\,N^2\,\mathcal{S}_0\,\cdot\,M^3 = M\,\mathcal{S}_0, \\
+    \mathrm{E}\{\langle \Phi,\Psi\rangle\} &= M\,\mathcal{S}_1, &
+    \mathrm{E}\{\langle \Psi,\Psi\rangle\} &= M\,\mathcal{S}_2, \\
+    \mathrm{E}\{\langle \Phi,\Lambda\rangle\} &=
+        T_S\,Q_1\,\mathcal{S}_0 + M\,\mathcal{T}_0, &
+    \mathrm{E}\{\langle \Psi,\Lambda\rangle\} &=
+        T_S\,Q_1\,\mathcal{S}_1 + M\,\mathcal{T}_1, \\
+    \mathrm{E}\{\langle \Lambda,\Lambda\rangle\} &=
+        T_S^2\,Q_2\,\mathcal{S}_0 + 2 T_S\,Q_1\,\text{Re}\{\mathcal{T}_0\} + M\,\mathcal{U}, & &
+\end{align}
+where \(Q_a := \sum_{m=0}^{M-1} m^a\) (so \(Q_1 = M(M-1)/2\),
+\(Q_2 = M(M-1)(2M-1)/6\)). Substituting yields
+\begin{align}
+    \mathrm{E}\{[\bm{J}(\bm{\eta})]_{\tilde{\alpha}_R, \tilde{\alpha}_R}\} &=
+        \mathrm{E}\{[\bm{J}(\bm{\eta})]_{\tilde{\alpha}_I, \tilde{\alpha}_I}\} =
+        \tfrac{2M}{\sigma^2}\,\mathcal{S}_0, \\
+    \mathrm{E}\{[\bm{J}(\bm{\eta})]_{\tilde{\alpha}_R, \tilde{\alpha}_I}\} &= 0, \\
+    \mathrm{E}\{[\bm{J}(\bm{\eta})]_{\tau,\tau}\} &=
+        \tfrac{8\pi^2 |\tilde{\alpha}|^2 M (\Delta f)^2}{\sigma^2}\,\mathcal{S}_2, \\
+    \mathrm{E}\{[\bm{J}(\bm{\eta})]_{\nu,\nu}\} &=
+        \tfrac{8\pi^2 |\tilde{\alpha}|^2}{\sigma^2}\!\left[
+            \tfrac{T_S^2\, M(M-1)(2M-1)}{6}\,\mathcal{S}_0
+          + T_S\, M(M-1)\,\text{Re}\{\mathcal{T}_0\}
+          + M\,\mathcal{U}\right], \\
+    \mathrm{E}\{[\bm{J}(\bm{\eta})]_{\tau,\nu}\} &=
+        -\tfrac{8\pi^2 |\tilde{\alpha}|^2 \Delta f}{\sigma^2}\!\left[
+            \tfrac{T_S\, M(M-1)}{2}\,\mathcal{S}_1
+          + M\,\text{Re}\{\mathcal{T}_1\}\right], \\
+    \mathrm{E}\{[\bm{J}(\bm{\eta})]_{\tilde{\alpha}_R, \tau}\} &=
+        \phantom{-}\tfrac{4\pi\,\tilde{\alpha}_I\, M\,\Delta f}{\sigma^2}\,
+        \mathcal{S}_1, \\
+    \mathrm{E}\{[\bm{J}(\bm{\eta})]_{\tilde{\alpha}_R, \nu}\} &=
+        -\tfrac{4\pi}{\sigma^2}\,\text{Im}\!\left\{\tilde{\alpha}\!\left[
+            \tfrac{T_S\, M(M-1)}{2}\,\mathcal{S}_0 + M\,\mathcal{T}_0\right]\right\}, \\
+    \mathrm{E}\{[\bm{J}(\bm{\eta})]_{\tilde{\alpha}_I, \tau}\} &=
+        -\tfrac{4\pi\,\tilde{\alpha}_R\, M\,\Delta f}{\sigma^2}\,
+        \mathcal{S}_1, \\
+    \mathrm{E}\{[\bm{J}(\bm{\eta})]_{\tilde{\alpha}_I, \nu}\} &=
+        \phantom{-}\tfrac{4\pi}{\sigma^2}\,\text{Re}\!\left\{\tilde{\alpha}\!\left[
+            \tfrac{T_S\, M(M-1)}{2}\,\mathcal{S}_0 + M\,\mathcal{T}_0\right]\right\}.
+\end{align}
+
+\paragraph{Equivalence with OFDM (ICI, QPSK).} The expected
+OTFS-with-OFDM-ICI FIM above coincides \emph{entry by entry} with the
+OFDM ICI QPSK FIM of ofdm\_fim.tex (Section~3.1.2, equations
+(32)--(36)). The same unitarity-of-(I)SFFT argument that we used in
+the no-ICI case applies again: for i.i.d.\ unit-energy QPSK the
+information content does not depend on whether the symbols are placed
+in the time--frequency grid or in the delay--Doppler grid. The
+data-independent sums \(\mathcal{S}_a,\mathcal{T}_a,\mathcal{U}\)
+inherit \emph{all} their OFDM-side properties: they depend on the
+true Doppler \(\nu\) through \(I,I'\) (so the CRB is no longer
+\(\nu\)-independent as in the no-ICI case), but remain independent of
+the true delay \(\tau\) and of the random QPSK data.
+
+\paragraph{Limit \(I\to\delta\).} Setting \(I(n) = \delta[n]\) and
+\(I'(n) = 0\) collapses \(K(l',l)\) to the no-ICI Dirichlet kernel
+\(A(l'-l)\) of the previous subsubsection, \(\mathcal{S}_a\to P_a\),
+\(\mathcal{T}_a\to 0\), and \(\mathcal{U}\to 0\), recovering the no-ICI
+QPSK FIM entry by entry.
+
+\subsection{Multiple Target Case}
+
+For \(P>1\), stack
+\(\bm{\eta} = [\bm{\eta}_1^T,\ldots,\bm{\eta}_P^T]^T\) with
+\(\bm{\eta}_p = [\tilde{\alpha}_{p,R}, \tilde{\alpha}_{p,I}, \tau_p, \nu_p]^T\).
+The FIM has the block form
+\begin{equation}
+    \bm{J}(\bm{\eta}) = \begin{bmatrix}
+        \bm{J}_{1,1} & \cdots & \bm{J}_{1,P} \\
+        \vdots & \ddots & \vdots \\
+        \bm{J}_{P,1} & \cdots & \bm{J}_{P,P}
+    \end{bmatrix},
+    \qquad \bm{J}_{q,p} = \bm{J}_{p,q}^T,
+\end{equation}
+where \(\bm{J}_{p,q}\in\mathbb{R}^{4\times 4}\) collects the FIM entries
+between the four parameters of target \(p\) and those of target \(q\).
+As in the single-target case we develop the FIM separately for the
+no-ICI and ICI OFDM-side channel models.
+
+\subsubsection{No OFDM-side ICI}
+
+The diagonal blocks \(\bm{J}_{p,p}\) coincide with the single-target
+no-OFDM-ICI expressions of Section~3.1.1 with all quantities indexed
+by \(p\); for instance
+\begin{align}
+    [\bm{J}_{p,p}]_{\tilde{\alpha}_R,\tilde{\alpha}_R} &= \tfrac{2}{\sigma^2}\,
+        \langle \Phi_p,\Phi_p\rangle, &
+    [\bm{J}_{p,p}]_{\tau,\tau} &= \tfrac{8\pi^2 (\Delta f)^2 |\tilde{\alpha}_p|^2}{\sigma^2}\,
+        \langle \Psi_p,\Psi_p\rangle, \\
+    [\bm{J}_{p,p}]_{\nu,\nu} &= \tfrac{8\pi^2 T_S^2 |\tilde{\alpha}_p|^2}{\sigma^2}\,
+        \langle \Omega_p,\Omega_p\rangle, &
+    [\bm{J}_{p,p}]_{\tau,\nu} &= -\tfrac{8\pi^2 \Delta f\, T_S\, |\tilde{\alpha}_p|^2}{\sigma^2}\,
+        \text{Re}\{\langle \Psi_p,\Omega_p\rangle\},
+\end{align}
+and the gain--kinematic cross entries follow the same pattern as in the
+single-target listing.
+
+The off-diagonal blocks \(\bm{J}_{p,q}\) with \(p\neq q\) capture
+cross-target coupling. Their 16 entries follow from
+\([\bm{J}_{p,q}]_{a,b} = \tfrac{2}{\sigma^2}\,
+\text{Re}\{\langle \partial\mu/\partial\eta_{p,a},\;\partial\mu/\partial\eta_{q,b}\rangle\}\),
+giving
+\begin{align}
+    [\bm{J}_{p,q}]_{\tilde{\alpha}_R,\tilde{\alpha}_R} &=
+        [\bm{J}_{p,q}]_{\tilde{\alpha}_I,\tilde{\alpha}_I} =
+        \tfrac{2}{\sigma^2}\,\text{Re}\{\langle \Phi_p,\Phi_q\rangle\}, \\
+    [\bm{J}_{p,q}]_{\tilde{\alpha}_R,\tilde{\alpha}_I} &=
+        -\tfrac{2}{\sigma^2}\,\text{Im}\{\langle \Phi_p,\Phi_q\rangle\}, &
+    [\bm{J}_{p,q}]_{\tilde{\alpha}_I,\tilde{\alpha}_R} &=
+        \phantom{-}\tfrac{2}{\sigma^2}\,\text{Im}\{\langle \Phi_p,\Phi_q\rangle\}, \\
+    [\bm{J}_{p,q}]_{\tilde{\alpha}_R,\tau} &=
+        \phantom{-}\tfrac{4\pi\Delta f}{\sigma^2}\,
+        \text{Im}\{\tilde{\alpha}_q\,\langle \Phi_p,\Psi_q\rangle\}, &
+    [\bm{J}_{p,q}]_{\tilde{\alpha}_R,\nu} &=
+        -\tfrac{4\pi T_S}{\sigma^2}\,
+        \text{Im}\{\tilde{\alpha}_q\,\langle \Phi_p,\Omega_q\rangle\}, \\
+    [\bm{J}_{p,q}]_{\tilde{\alpha}_I,\tau} &=
+        -\tfrac{4\pi\Delta f}{\sigma^2}\,
+        \text{Re}\{\tilde{\alpha}_q\,\langle \Phi_p,\Psi_q\rangle\}, &
+    [\bm{J}_{p,q}]_{\tilde{\alpha}_I,\nu} &=
+        \phantom{-}\tfrac{4\pi T_S}{\sigma^2}\,
+        \text{Re}\{\tilde{\alpha}_q\,\langle \Phi_p,\Omega_q\rangle\}, \\
+    [\bm{J}_{p,q}]_{\tau,\tilde{\alpha}_R} &=
+        -\tfrac{4\pi\Delta f}{\sigma^2}\,
+        \text{Im}\{\tilde{\alpha}_p^*\,\langle \Psi_p,\Phi_q\rangle\}, &
+    [\bm{J}_{p,q}]_{\tau,\tilde{\alpha}_I} &=
+        -\tfrac{4\pi\Delta f}{\sigma^2}\,
+        \text{Re}\{\tilde{\alpha}_p^*\,\langle \Psi_p,\Phi_q\rangle\}, \\
+    [\bm{J}_{p,q}]_{\nu,\tilde{\alpha}_R} &=
+        \phantom{-}\tfrac{4\pi T_S}{\sigma^2}\,
+        \text{Im}\{\tilde{\alpha}_p^*\,\langle \Omega_p,\Phi_q\rangle\}, &
+    [\bm{J}_{p,q}]_{\nu,\tilde{\alpha}_I} &=
+        \phantom{-}\tfrac{4\pi T_S}{\sigma^2}\,
+        \text{Re}\{\tilde{\alpha}_p^*\,\langle \Omega_p,\Phi_q\rangle\}, \\
+    [\bm{J}_{p,q}]_{\tau,\tau} &=
+        \tfrac{8\pi^2 (\Delta f)^2}{\sigma^2}\,
+        \text{Re}\{\tilde{\alpha}_p^*\tilde{\alpha}_q\,\langle \Psi_p,\Psi_q\rangle\}, &
+    [\bm{J}_{p,q}]_{\nu,\nu} &=
+        \tfrac{8\pi^2 T_S^2}{\sigma^2}\,
+        \text{Re}\{\tilde{\alpha}_p^*\tilde{\alpha}_q\,\langle \Omega_p,\Omega_q\rangle\}, \\
+    [\bm{J}_{p,q}]_{\tau,\nu} &=
+        -\tfrac{8\pi^2 \Delta f\, T_S}{\sigma^2}\,
+        \text{Re}\{\tilde{\alpha}_p^*\tilde{\alpha}_q\,\langle \Psi_p,\Omega_q\rangle\}, &
+    [\bm{J}_{p,q}]_{\nu,\tau} &=
+        -\tfrac{8\pi^2 \Delta f\, T_S}{\sigma^2}\,
+        \text{Re}\{\tilde{\alpha}_p^*\tilde{\alpha}_q\,\langle \Omega_p,\Psi_q\rangle\}.
+\end{align}
+Setting \(p=q\) recovers the diagonal block above (the imaginary-part
+entries vanish because \(\langle \Phi_p,\Phi_p\rangle\) is real), and
+\(\bm{J}_{q,p} = \bm{J}_{p,q}^T\) is consistent with
+\(\langle f,g\rangle = \overline{\langle g,f\rangle}\).
+
+\paragraph{Expected FIM for i.i.d.\ unit-energy QPSK symbols.} Define the
+cross-target lag-summed moments
+\begin{equation}
+    \mathcal{A}_{a,b}^{p,q} := \sum_{l,l'=0}^{N-1}
+        \bigl(A_p^{(a)}(l'-l)\bigr)^*\, A_q^{(b)}(l'-l),
+    \qquad
+    \mathcal{B}_{a,b}^{p,q} := \sum_{k,k'=0}^{M-1}
+        \bigl(B_p^{(a)}(k-k')\bigr)^*\, B_q^{(b)}(k-k').
+\end{equation}
+The same Bartlett-identity manipulation as in the single-target QPSK
+case yields the closed forms
+\begin{align}
+    \mathcal{A}_{a,b}^{p,q} &= N^2 \sum_{n=0}^{N-1} n^{a+b}\,
+        e^{-j2\pi n\,\Delta f\,\Delta\tau_{pq}} = N^2\, F_{a+b}\!\left(-\Delta f\,\Delta\tau_{pq},\, N\right), \\
+    \mathcal{B}_{a,b}^{p,q} &= M^2 \sum_{m=0}^{M-1} m^{a+b}\,
+        e^{\phantom{-}j2\pi m\, T_S\,\Delta\nu_{pq}} = M^2\, F_{a+b}\!\left(T_S\,\Delta\nu_{pq},\, M\right),
+\end{align}
+with \(\Delta\tau_{pq} := \tau_q - \tau_p\),
+\(\Delta\nu_{pq} := \nu_q - \nu_p\), and the Dirichlet-type sum
+\(F_a(z,K) := \sum_{k=0}^{K-1} k^a\, e^{j2\pi k z}\). The
+zeroth-order term has the closed form
+\(F_0(z,K) = (1-e^{j2\pi K z})/(1-e^{j2\pi z})\) for
+\(z\not\equiv 0\pmod 1\) with \(F_0(0,K) = K\), and the higher orders
+follow from \(F_1(z,K) = \tfrac{1}{j2\pi}\,\partial F_0/\partial z\) and
+\(F_2(z,K) = \tfrac{1}{(j2\pi)^2}\,\partial^2 F_0/\partial z^2\).
+
+For i.i.d.\ unit-energy QPSK the expected cross-target inner products
+collapse onto the data-diagonal:
+\begin{equation}
+    \mathrm{E}\{\langle \Phi_p^{(a_1,b_1)},\,\Phi_q^{(a_2,b_2)}\rangle\} =
+    \tfrac{1}{(NM)^2}\,\mathcal{A}_{a_1,a_2}^{p,q}\,\mathcal{B}_{b_1,b_2}^{p,q},
+\end{equation}
+where \(\Phi_p^{(0,0)} = \Phi_p\), \(\Phi_p^{(1,0)} = \Psi_p\), and
+\(\Phi_p^{(0,1)} = \Omega_p\). Substituting and simplifying gives
+\begin{equation}
+    \mathrm{E}\{\langle \Phi_p^{(a_1,b_1)},\,\Phi_q^{(a_2,b_2)}\rangle\}
+    = F_{a_1+a_2}\!\left(-\Delta f\,\Delta\tau_{pq},\, N\right)\,
+      F_{b_1+b_2}\!\left(T_S\,\Delta\nu_{pq},\, M\right),
+\label{eq:cross_moment_QPSK}
+\end{equation}
+which is real and positive when \(\Delta\tau_{pq} = \Delta\nu_{pq} = 0\)
+(diagonal block) and complex in general. With \(\Lambda_{p,q}^{(a,b)}\)
+denoting the OFDM no-ICI cross-target moment of ofdm\_fim.tex (equation
+(38) there), specialised to unit-energy QPSK, one has
+\begin{equation}
+    \mathrm{E}\{\langle \Phi_p^{(a_1,b_1)},\,\Phi_q^{(a_2,b_2)}\rangle\}
+    = (\Delta f)^{-(a_1+a_2)}\,(T_S)^{-(b_1+b_2)}\,\Lambda_{p,q}^{(a_1+a_2,\;b_1+b_2)}.
+\end{equation}
+Hence the off-diagonal blocks of the expected OTFS FIM are identical to
+those of the OFDM no-ICI QPSK FIM after substituting
+\eqref{eq:cross_moment_QPSK} into the inner-product expressions of the
+previous listing; in particular
+\begin{align}
+    \mathrm{E}\{[\bm{J}_{p,q}]_{\tilde{\alpha}_R,\tilde{\alpha}_R}\} &=
+        \tfrac{2}{\sigma^2}\,\text{Re}\{F_0(-\Delta f\Delta\tau_{pq},N)\,F_0(T_S\Delta\nu_{pq},M)\}, \\
+    \mathrm{E}\{[\bm{J}_{p,q}]_{\tau,\tau}\} &=
+        \tfrac{8\pi^2 (\Delta f)^2}{\sigma^2}\,\text{Re}\!\left\{\tilde{\alpha}_p^*\tilde{\alpha}_q\,
+        F_2(-\Delta f\Delta\tau_{pq},N)\, F_0(T_S\Delta\nu_{pq},M)\right\}, \\
+    \mathrm{E}\{[\bm{J}_{p,q}]_{\nu,\nu}\} &=
+        \tfrac{8\pi^2 T_S^2}{\sigma^2}\,\text{Re}\!\left\{\tilde{\alpha}_p^*\tilde{\alpha}_q\,
+        F_0(-\Delta f\Delta\tau_{pq},N)\, F_2(T_S\Delta\nu_{pq},M)\right\}, \\
+    \mathrm{E}\{[\bm{J}_{p,q}]_{\tau,\nu}\} &=
+        -\tfrac{8\pi^2 \Delta f\, T_S}{\sigma^2}\,\text{Re}\!\left\{\tilde{\alpha}_p^*\tilde{\alpha}_q\,
+        F_1(-\Delta f\Delta\tau_{pq},N)\, F_1(T_S\Delta\nu_{pq},M)\right\}, \\
+    \mathrm{E}\{[\bm{J}_{p,q}]_{\tilde{\alpha}_R,\tau}\} &=
+        \phantom{-}\tfrac{4\pi\,\Delta f}{\sigma^2}\,
+        \text{Im}\!\left\{\tilde{\alpha}_q\, F_1(-\Delta f\Delta\tau_{pq},N)\, F_0(T_S\Delta\nu_{pq},M)\right\}, \\
+    \mathrm{E}\{[\bm{J}_{p,q}]_{\tilde{\alpha}_R,\nu}\} &=
+        -\tfrac{4\pi\, T_S}{\sigma^2}\,
+        \text{Im}\!\left\{\tilde{\alpha}_q\, F_0(-\Delta f\Delta\tau_{pq},N)\, F_1(T_S\Delta\nu_{pq},M)\right\}, \\
+    \mathrm{E}\{[\bm{J}_{p,q}]_{\tilde{\alpha}_I,\tau}\} &=
+        -\tfrac{4\pi\,\Delta f}{\sigma^2}\,
+        \text{Re}\!\left\{\tilde{\alpha}_q\, F_1(-\Delta f\Delta\tau_{pq},N)\, F_0(T_S\Delta\nu_{pq},M)\right\}, \\
+    \mathrm{E}\{[\bm{J}_{p,q}]_{\tilde{\alpha}_I,\nu}\} &=
+        \phantom{-}\tfrac{4\pi\, T_S}{\sigma^2}\,
+        \text{Re}\!\left\{\tilde{\alpha}_q\, F_0(-\Delta f\Delta\tau_{pq},N)\, F_1(T_S\Delta\nu_{pq},M)\right\}.
+\end{align}
+The diagonal-block case \(p=q\) gives
+\(\Delta\tau_{pp} = \Delta\nu_{pp} = 0\), so
+\(F_a(0,K) = \sum_{k=0}^{K-1} k^a\) and the single-target QPSK
+expressions of the previous subsection are recovered exactly.
+
+\paragraph{Coupling structure.} Because
+\(F_a(-\Delta f\,\Delta\tau_{pq},N)\) is the OTFS delay-side
+ambiguity function and \(F_b(T_S\,\Delta\nu_{pq},M)\) is the
+Doppler-side ambiguity function, the off-diagonal blocks decay rapidly
+once the inter-target separation exceeds one delay--Doppler bin
+(\(|\Delta\tau_{pq}|\gtrsim 1/(N\Delta f)\) or
+\(|\Delta\nu_{pq}|\gtrsim 1/(MT_S)\)). In this resolution-limited
+regime the FIM becomes approximately block-diagonal and the multi-target
+CRB reduces to a sum of single-target CRBs --- the standard
+``well-separated targets'' approximation. When two targets share a
+delay--Doppler bin, the off-diagonal block is comparable in magnitude to
+the diagonal blocks and the CRB inflates accordingly, as expected from
+the resolution limit of the underlying time--frequency grid.
+
+\subsubsection{With OFDM-side ICI}
+
+For \(P>1\) targets, each path carries its own OFDM-side ICI kernel
+\(I_p(n'-n) = (e^{j2\pi\nu_p T}-1)/(j2\pi[(n'-n)\Delta f + \nu_p])\)
+and \(I_p'(n)\) defined as in Section~3.1.2 with \(\nu\to\nu_p\). The
+multi-target version of the I/O equation~\eqref{eq:OTFS_IO_ICI} is
+\begin{equation}
+    y[l',k'] = \frac{1}{NM}\sum_{p=0}^{P-1}\tilde{\alpha}_p
+               \sum_{l=0}^{N-1}\sum_{k=0}^{M-1} x[l,k]\,
+               K_p(l',l)\, B_p(k-k') + \tilde{Z}[l',k'],
+\end{equation}
+with the per-target two-index delay kernel
+\(K_p(l',l) = \sum_{n,n'=0}^{N-1} I_p(n'-n)\,
+e^{-j2\pi n'[\Delta f\tau_p + l/N]}\, e^{j2\pi nl'/N}\), and its
+weighted variants
+\begin{equation}
+    K_p^{(1)}(l',l) := \!\sum_{n,n'} I_p(n'-n)\, n'\,
+        e^{-j2\pi n'[\Delta f\tau_p + l/N]}\, e^{j2\pi n l'/N},
+    \qquad
+    K_p^{I'}(l',l) := \!\sum_{n,n'} I_p'(n'-n)\,
+        e^{-j2\pi n'[\Delta f\tau_p + l/N]}\, e^{j2\pi n l'/N}.
+\end{equation}
+The per-target shorthand
+\begin{align}
+    \Phi_p[l',k'] &:= \tfrac{1}{NM}\sum_{l,k} x[l,k]\, K_p(l',l)\, B_p(k-k'), \\
+    \Psi_p[l',k'] &:= \tfrac{1}{NM}\sum_{l,k} x[l,k]\, K_p^{(1)}(l',l)\, B_p(k-k'), \\
+    \Lambda_p[l',k'] &:= \tfrac{1}{NM}\sum_{l,k} x[l,k]\,
+        \bigl[\,T_S\, K_p(l',l)\, B_p'(k-k') + K_p^{I'}(l',l)\, B_p(k-k')\,\bigr]
+\end{align}
+yields the derivatives
+\(\partial\mu/\partial\tilde{\alpha}_{p,R} = \Phi_p\),
+\(\partial\mu/\partial\tilde{\alpha}_{p,I} = j\Phi_p\),
+\(\partial\mu/\partial\tau_p = -j2\pi\Delta f\,\tilde{\alpha}_p\,\Psi_p\),
+\(\partial\mu/\partial\nu_p = j2\pi\,\tilde{\alpha}_p\,\Lambda_p\), exactly
+as in the single-target ICI case but indexed by~\(p\).
+
+\paragraph{Diagonal blocks.} The diagonal blocks \(\bm{J}_{p,p}\)
+coincide with the single-target ICI expressions of Section~3.1.2 with
+all quantities indexed by \(p\):
+\begin{align}
+    [\bm{J}_{p,p}]_{\tilde{\alpha}_R,\tilde{\alpha}_R} &= \tfrac{2}{\sigma^2}\,
+        \langle \Phi_p,\Phi_p\rangle, &
+    [\bm{J}_{p,p}]_{\tau,\tau} &= \tfrac{8\pi^2 (\Delta f)^2 |\tilde{\alpha}_p|^2}{\sigma^2}\,
+        \langle \Psi_p,\Psi_p\rangle, \\
+    [\bm{J}_{p,p}]_{\nu,\nu} &= \tfrac{8\pi^2 |\tilde{\alpha}_p|^2}{\sigma^2}\,
+        \langle \Lambda_p,\Lambda_p\rangle, &
+    [\bm{J}_{p,p}]_{\tau,\nu} &= -\tfrac{8\pi^2 \Delta f\, |\tilde{\alpha}_p|^2}{\sigma^2}\,
+        \text{Re}\{\langle \Psi_p,\Lambda_p\rangle\},
+\end{align}
+and the gain--kinematic cross entries follow the same pattern as in
+the single-target ICI listing.
+
+\paragraph{Off-diagonal blocks (general).} The 16 entries of
+\(\bm{J}_{p,q}\) (\(p\neq q\)) follow from
+\([\bm{J}_{p,q}]_{a,b} = \tfrac{2}{\sigma^2}\,\text{Re}\{\langle
+\partial\mu/\partial\eta_{p,a},\,\partial\mu/\partial\eta_{q,b}\rangle\}\),
+giving the same template as in the no-ICI case with \(\Omega_p\)
+replaced everywhere by \(\Lambda_p\) and the \(T_S\) prefactors
+removed from the \(\nu\)-entries (because \(T_S\) is absorbed into
+\(\Lambda_p\)):
+\begin{align}
+    [\bm{J}_{p,q}]_{\tilde{\alpha}_R,\tilde{\alpha}_R} &=
+        [\bm{J}_{p,q}]_{\tilde{\alpha}_I,\tilde{\alpha}_I} =
+        \tfrac{2}{\sigma^2}\,\text{Re}\{\langle \Phi_p,\Phi_q\rangle\}, \\
+    [\bm{J}_{p,q}]_{\tilde{\alpha}_R,\tilde{\alpha}_I} &=
+        -\tfrac{2}{\sigma^2}\,\text{Im}\{\langle \Phi_p,\Phi_q\rangle\}, &
+    [\bm{J}_{p,q}]_{\tilde{\alpha}_I,\tilde{\alpha}_R} &=
+        \phantom{-}\tfrac{2}{\sigma^2}\,\text{Im}\{\langle \Phi_p,\Phi_q\rangle\}, \\
+    [\bm{J}_{p,q}]_{\tilde{\alpha}_R,\tau} &=
+        \phantom{-}\tfrac{4\pi\,\Delta f}{\sigma^2}\,
+        \text{Im}\{\tilde{\alpha}_q\,\langle \Phi_p,\Psi_q\rangle\}, &
+    [\bm{J}_{p,q}]_{\tilde{\alpha}_R,\nu} &=
+        -\tfrac{4\pi}{\sigma^2}\,
+        \text{Im}\{\tilde{\alpha}_q\,\langle \Phi_p,\Lambda_q\rangle\}, \\
+    [\bm{J}_{p,q}]_{\tilde{\alpha}_I,\tau} &=
+        -\tfrac{4\pi\,\Delta f}{\sigma^2}\,
+        \text{Re}\{\tilde{\alpha}_q\,\langle \Phi_p,\Psi_q\rangle\}, &
+    [\bm{J}_{p,q}]_{\tilde{\alpha}_I,\nu} &=
+        \phantom{-}\tfrac{4\pi}{\sigma^2}\,
+        \text{Re}\{\tilde{\alpha}_q\,\langle \Phi_p,\Lambda_q\rangle\}, \\
+    [\bm{J}_{p,q}]_{\tau,\tilde{\alpha}_R} &=
+        -\tfrac{4\pi\,\Delta f}{\sigma^2}\,
+        \text{Im}\{\tilde{\alpha}_p^*\,\langle \Psi_p,\Phi_q\rangle\}, &
+    [\bm{J}_{p,q}]_{\tau,\tilde{\alpha}_I} &=
+        -\tfrac{4\pi\,\Delta f}{\sigma^2}\,
+        \text{Re}\{\tilde{\alpha}_p^*\,\langle \Psi_p,\Phi_q\rangle\}, \\
+    [\bm{J}_{p,q}]_{\nu,\tilde{\alpha}_R} &=
+        \phantom{-}\tfrac{4\pi}{\sigma^2}\,
+        \text{Im}\{\tilde{\alpha}_p^*\,\langle \Lambda_p,\Phi_q\rangle\}, &
+    [\bm{J}_{p,q}]_{\nu,\tilde{\alpha}_I} &=
+        \phantom{-}\tfrac{4\pi}{\sigma^2}\,
+        \text{Re}\{\tilde{\alpha}_p^*\,\langle \Lambda_p,\Phi_q\rangle\}, \\
+    [\bm{J}_{p,q}]_{\tau,\tau} &=
+        \tfrac{8\pi^2 (\Delta f)^2}{\sigma^2}\,
+        \text{Re}\{\tilde{\alpha}_p^*\tilde{\alpha}_q\,\langle \Psi_p,\Psi_q\rangle\}, &
+    [\bm{J}_{p,q}]_{\nu,\nu} &=
+        \tfrac{8\pi^2}{\sigma^2}\,
+        \text{Re}\{\tilde{\alpha}_p^*\tilde{\alpha}_q\,\langle \Lambda_p,\Lambda_q\rangle\}, \\
+    [\bm{J}_{p,q}]_{\tau,\nu} &=
+        -\tfrac{8\pi^2 \Delta f}{\sigma^2}\,
+        \text{Re}\{\tilde{\alpha}_p^*\tilde{\alpha}_q\,\langle \Psi_p,\Lambda_q\rangle\}, &
+    [\bm{J}_{p,q}]_{\nu,\tau} &=
+        -\tfrac{8\pi^2 \Delta f}{\sigma^2}\,
+        \text{Re}\{\tilde{\alpha}_p^*\tilde{\alpha}_q\,\langle \Lambda_p,\Psi_q\rangle\}.
+\end{align}
+
+\paragraph{Expected FIM for i.i.d.\ unit-energy QPSK symbols.} Define
+the cross-target kernel-summed moments (generalising
+\(\mathcal{S}_a,\mathcal{T}_a,\mathcal{U}\) of Section~3.1.2)
+\begin{align}
+    \mathcal{S}_a^{p,q}  &:= \sum_{n,n'=0}^{N-1} (n')^a\,
+        I_p^*(n'-n)\, I_q(n'-n)\,
+        e^{-j2\pi n'\,\Delta f\,\Delta\tau_{pq}}, \quad a=0,1,2, \\
+    \mathcal{T}_a^{p,q}  &:= \sum_{n,n'=0}^{N-1} (n')^a\,
+        I_p^*(n'-n)\, I_q'(n'-n)\,
+        e^{-j2\pi n'\,\Delta f\,\Delta\tau_{pq}}, \quad a=0,1, \\
+    \check{\mathcal{T}}_a^{p,q}  &:= \sum_{n,n'=0}^{N-1} (n')^a\,
+        (I_p')^*(n'-n)\, I_q(n'-n)\,
+        e^{-j2\pi n'\,\Delta f\,\Delta\tau_{pq}}, \quad a=0,1, \\
+    \mathcal{U}^{p,q}    &:= \sum_{n,n'=0}^{N-1}
+        (I_p')^*(n'-n)\, I_q'(n'-n)\,
+        e^{-j2\pi n'\,\Delta f\,\Delta\tau_{pq}}.
+\end{align}
+For \(p=q\) the phase factor disappears and one recovers
+\(\mathcal{S}_a^{p,p} = \mathcal{S}_a\) (real),
+\(\mathcal{T}_a^{p,p} = \mathcal{T}_a\),
+\(\check{\mathcal{T}}_a^{p,p} = \mathcal{T}_a^*\),
+\(\mathcal{U}^{p,p} = \mathcal{U}\) (real). Combining these delay-side
+moments with the Doppler-side Dirichlet sums
+\(F_b(T_S\Delta\nu_{pq},M)\) introduced in the no-ICI multi-target
+listing, the QPSK-averaged cross-target inner products are
+\begin{align}
+    \mathrm{E}\{\langle \Phi_p,\Phi_q\rangle\} &=
+        \mathcal{S}_0^{p,q}\, F_0(T_S\Delta\nu_{pq},M), &
+    \mathrm{E}\{\langle \Phi_p,\Psi_q\rangle\} &=
+        \mathrm{E}\{\langle \Psi_p,\Phi_q\rangle\} =
+        \mathcal{S}_1^{p,q}\, F_0(T_S\Delta\nu_{pq},M), \\
+    \mathrm{E}\{\langle \Psi_p,\Psi_q\rangle\} &=
+        \mathcal{S}_2^{p,q}\, F_0(T_S\Delta\nu_{pq},M), &
+    \mathrm{E}\{\langle \Phi_p,\Lambda_q\rangle\} &=
+        T_S\,\mathcal{S}_0^{p,q}\, F_1(T_S\Delta\nu_{pq},M)
+        + \mathcal{T}_0^{p,q}\, F_0(T_S\Delta\nu_{pq},M), \\
+    \mathrm{E}\{\langle \Lambda_p,\Phi_q\rangle\} &=
+        T_S\,\mathcal{S}_0^{p,q}\, F_1(T_S\Delta\nu_{pq},M)
+        + \check{\mathcal{T}}_0^{p,q}\, F_0(T_S\Delta\nu_{pq},M), &
+    \mathrm{E}\{\langle \Psi_p,\Lambda_q\rangle\} &=
+        T_S\,\mathcal{S}_1^{p,q}\, F_1(T_S\Delta\nu_{pq},M)
+        + \mathcal{T}_1^{p,q}\, F_0(T_S\Delta\nu_{pq},M), \\
+    \mathrm{E}\{\langle \Lambda_p,\Psi_q\rangle\} &=
+        T_S\,\mathcal{S}_1^{p,q}\, F_1(T_S\Delta\nu_{pq},M)
+        + \check{\mathcal{T}}_1^{p,q}\, F_0(T_S\Delta\nu_{pq},M),
+\end{align}
+\begin{equation}
+    \mathrm{E}\{\langle \Lambda_p,\Lambda_q\rangle\} =
+        T_S^2\,\mathcal{S}_0^{p,q}\, F_2(T_S\Delta\nu_{pq},M)
+        + T_S\,\bigl(\mathcal{T}_0^{p,q} + \check{\mathcal{T}}_0^{p,q}\bigr)\,
+          F_1(T_S\Delta\nu_{pq},M)
+        + \mathcal{U}^{p,q}\, F_0(T_S\Delta\nu_{pq},M).
+\end{equation}
+Substituting these into the off-diagonal block listing above gives the
+expected FIM under QPSK signalling. The diagonal-block case \(p=q\)
+sets \(\Delta\tau_{pp} = \Delta\nu_{pp} = 0\), so
+\(F_b(0,M) = Q_b\), and the single-target ICI QPSK FIM of
+Section~3.1.2 is recovered.
+
+\paragraph{Equivalence with OFDM (ICI, multi-target QPSK).} The same
+(I)SFFT-unitarity argument that linked the OTFS no-ICI and OTFS ICI
+single-target FIMs to their OFDM counterparts carries over to multiple
+targets: the cross-target moments
+\(\mathcal{S}_a^{p,q},\mathcal{T}_a^{p,q},\check{\mathcal{T}}_a^{p,q},
+\mathcal{U}^{p,q}\) above are \emph{identical} to those produced by
+expanding the multi-target OFDM ICI FIM (Section~3.2.2 of
+ofdm\_fim.tex) under i.i.d.\ unit-energy QPSK. The OTFS and OFDM
+expected FIMs therefore coincide block-by-block, just as they did in
+the single-target case.
+
+\paragraph{Limit \(I_p\to\delta\).} Setting \(I_p(n)=\delta[n]\) and
+\(I_p'(n) = 0\) for every \(p\) collapses
+\(\mathcal{S}_a^{p,q}\to F_a(-\Delta f\,\Delta\tau_{pq},N)\),
+\(\mathcal{T}_a^{p,q},\check{\mathcal{T}}_a^{p,q},\mathcal{U}^{p,q}\to 0\),
+and the ICI expressions reduce entry-by-entry to the no-OFDM-ICI
+multi-target listing of the previous subsubsection.
+
+\end{document}

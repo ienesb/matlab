@@ -1,0 +1,549 @@
+\documentclass[11pt]{article}
+
+\usepackage{amsmath,amssymb,bm}
+\usepackage{hyperref}
+\usepackage{svg}
+\usepackage[a4paper,margin=1in]{geometry}
+\usepackage{array}
+
+\newcolumntype{C}{>{\centering\arraybackslash}m{0.21\textwidth}}
+
+\title{Single-Target FIM Comparison:\\
+OFDM vs OTFS, with and without OFDM-side ICI}
+\author{}
+\date{}
+
+\begin{document}
+\maketitle
+
+\section{Setup}
+
+We compare the single-target Fisher information matrices derived in
+ofdm\_fim.tex (Section~3.1) and otfs\_fim.tex (Section~3.1) for the
+four combinations
+\begin{enumerate}
+    \item OFDM with no ICI (subcarriers treated as orthogonal,
+          \(I(n'-n) = \delta[n'-n]\)),
+    \item OFDM with the full Doppler-induced ICI kernel
+          \(I(n'-n) = (e^{j2\pi\nu T}-1)/(j2\pi[(n'-n)\Delta f + \nu])\),
+    \item Two-step OTFS using the no-ICI form of the inner OFDM
+          modulator,
+    \item Two-step OTFS using the full ICI form of the inner OFDM
+          modulator.
+\end{enumerate}
+In all four cases the parameter vector is
+\(\bm{\eta} = [\tilde{\alpha}_R,\tilde{\alpha}_I,\tau,\nu]^T\), the
+noise per observation bin has variance \(\sigma^2\), and the data
+symbols are i.i.d.\ zero-mean unit-energy QPSK,
+\begin{equation}
+    \mathrm{E}\{X[n,m]\,X^*[n',m']\} = \delta_{n,n'}\,\delta_{m,m'},
+    \qquad
+    \mathrm{E}\{x[l,k]\,x^*[l',k']\} = \delta_{l,l'}\,\delta_{k,k'}.
+\end{equation}
+For OFDM with no ICI we have \(|X[n,m]|^2 = 1\) deterministically (no
+expectation needed); in the other three cases cross-bin products
+survive in the FIM integrand and only vanish on average, so we report
+the expected FIM \(\mathrm{E}\{\bm{J}(\bm{\eta})\}\).
+
+\subsection*{Notation}
+
+Let \(P_a := \sum_{n=0}^{N-1} n^a\) and \(Q_b := \sum_{m=0}^{M-1} m^b\)
+denote the elementary power sums on the OFDM grid, with
+\(P_0 = N,\, P_1 = N(N-1)/2,\, P_2 = N(N-1)(2N-1)/6\) and analogously
+for \(Q_b\). The OFDM-side ICI introduces the kernel-summed moments
+\begin{align}
+    \mathcal{S}_a &:= \sum_{n,n'=0}^{N-1} (n')^a\, |I(n'-n)|^2,
+        \qquad a = 0,1,2, \\
+    \mathcal{T}_a &:= \sum_{n,n'=0}^{N-1} (n')^a\, I^*(n'-n)\, I'(n'-n),
+        \qquad a = 0,1, \\
+    \mathcal{U}   &:= \sum_{n,n'=0}^{N-1} |I'(n'-n)|^2,
+\end{align}
+where \(I'(n) = T e^{j2\pi\nu T}/(j2\pi(n\Delta f + \nu))
+                 - (e^{j2\pi\nu T} - 1)/(j2\pi(n\Delta f + \nu))^2\)
+is the \(\nu\)-derivative kernel of ofdm\_fim.tex.
+\(\mathcal{S}_a\) and \(\mathcal{U}\) are real; \(\mathcal{T}_a\) is
+generally complex. In the limit \(I\to\delta\) we have
+\(\mathcal{S}_a\to P_a\), \(\mathcal{T}_a\to 0\), \(\mathcal{U}\to 0\).
+
+\section{Side-by-side comparison}
+
+The expected FIM entries for all four cases are collected in
+Table~\ref{tab:fim_compare}. Off-diagonal entries follow from symmetry
+\([\bm{J}]_{k,l} = [\bm{J}]_{l,k}\); the \(4\times 4\) FIM has 10
+distinct entries.
+
+\begin{table}[h]
+\centering
+\resizebox{\textwidth}{!}{$
+\renewcommand{\arraystretch}{2.4}
+\begin{array}{l|c|c|c|c}
+\hline
+\text{FIM entry} & \text{OFDM, no ICI} & \text{OFDM, ICI} &
+\text{OTFS, no OFDM-ICI} & \text{OTFS, OFDM-ICI} \\
+\hline
+J_{\tilde{\alpha}_R, \tilde{\alpha}_R} = J_{\tilde{\alpha}_I, \tilde{\alpha}_I}
+    & \dfrac{2 N M}{\sigma^2}
+    & \dfrac{2 M\, \mathcal{S}_0}{\sigma^2}
+    & \dfrac{2 N M}{\sigma^2}
+    & \dfrac{2 M\, \mathcal{S}_0}{\sigma^2} \\
+J_{\tilde{\alpha}_R, \tilde{\alpha}_I}
+    & 0 & 0 & 0 & 0 \\
+J_{\tau, \tau}
+    & \dfrac{8\pi^2 |\tilde{\alpha}|^2 M (\Delta f)^2\, P_2}{\sigma^2}
+    & \dfrac{8\pi^2 |\tilde{\alpha}|^2 M (\Delta f)^2\, \mathcal{S}_2}{\sigma^2}
+    & \dfrac{8\pi^2 |\tilde{\alpha}|^2 M (\Delta f)^2\, P_2}{\sigma^2}
+    & \dfrac{8\pi^2 |\tilde{\alpha}|^2 M (\Delta f)^2\, \mathcal{S}_2}{\sigma^2} \\
+J_{\nu, \nu}
+    & \dfrac{8\pi^2 |\tilde{\alpha}|^2 N T_S^2\, Q_2}{\sigma^2}
+    & \dfrac{8\pi^2 |\tilde{\alpha}|^2}{\sigma^2}\!\left[T_S^2 Q_2\, \mathcal{S}_0 + 2 T_S Q_1\, \mathrm{Re}\{\mathcal{T}_0\} + M\, \mathcal{U}\right]
+    & \dfrac{8\pi^2 |\tilde{\alpha}|^2 N T_S^2\, Q_2}{\sigma^2}
+    & \dfrac{8\pi^2 |\tilde{\alpha}|^2}{\sigma^2}\!\left[T_S^2 Q_2\, \mathcal{S}_0 + 2 T_S Q_1\, \mathrm{Re}\{\mathcal{T}_0\} + M\, \mathcal{U}\right] \\
+J_{\tau, \nu}
+    & -\dfrac{8\pi^2 |\tilde{\alpha}|^2 \Delta f\, T_S\, P_1 Q_1}{\sigma^2}
+    & -\dfrac{8\pi^2 |\tilde{\alpha}|^2 \Delta f}{\sigma^2}\!\left[T_S Q_1\, \mathcal{S}_1 + M\, \mathrm{Re}\{\mathcal{T}_1\}\right]
+    & -\dfrac{8\pi^2 |\tilde{\alpha}|^2 \Delta f\, T_S\, P_1 Q_1}{\sigma^2}
+    & -\dfrac{8\pi^2 |\tilde{\alpha}|^2 \Delta f}{\sigma^2}\!\left[T_S Q_1\, \mathcal{S}_1 + M\, \mathrm{Re}\{\mathcal{T}_1\}\right] \\
+J_{\tilde{\alpha}_R, \tau}
+    & \dfrac{4\pi\, \tilde{\alpha}_I\, M \Delta f\, P_1}{\sigma^2}
+    & \dfrac{4\pi\, \tilde{\alpha}_I\, M \Delta f\, \mathcal{S}_1}{\sigma^2}
+    & \dfrac{4\pi\, \tilde{\alpha}_I\, M \Delta f\, P_1}{\sigma^2}
+    & \dfrac{4\pi\, \tilde{\alpha}_I\, M \Delta f\, \mathcal{S}_1}{\sigma^2} \\
+J_{\tilde{\alpha}_R, \nu}
+    & -\dfrac{4\pi\, \tilde{\alpha}_I\, N T_S\, Q_1}{\sigma^2}
+    & -\dfrac{4\pi}{\sigma^2}\, \mathrm{Im}\!\left\{\tilde{\alpha}\!\left[T_S Q_1\, \mathcal{S}_0 + M\, \mathcal{T}_0\right]\right\}
+    & -\dfrac{4\pi\, \tilde{\alpha}_I\, N T_S\, Q_1}{\sigma^2}
+    & -\dfrac{4\pi}{\sigma^2}\, \mathrm{Im}\!\left\{\tilde{\alpha}\!\left[T_S Q_1\, \mathcal{S}_0 + M\, \mathcal{T}_0\right]\right\} \\
+J_{\tilde{\alpha}_I, \tau}
+    & -\dfrac{4\pi\, \tilde{\alpha}_R\, M \Delta f\, P_1}{\sigma^2}
+    & -\dfrac{4\pi\, \tilde{\alpha}_R\, M \Delta f\, \mathcal{S}_1}{\sigma^2}
+    & -\dfrac{4\pi\, \tilde{\alpha}_R\, M \Delta f\, P_1}{\sigma^2}
+    & -\dfrac{4\pi\, \tilde{\alpha}_R\, M \Delta f\, \mathcal{S}_1}{\sigma^2} \\
+J_{\tilde{\alpha}_I, \nu}
+    & \dfrac{4\pi\, \tilde{\alpha}_R\, N T_S\, Q_1}{\sigma^2}
+    & \dfrac{4\pi}{\sigma^2}\, \mathrm{Re}\!\left\{\tilde{\alpha}\!\left[T_S Q_1\, \mathcal{S}_0 + M\, \mathcal{T}_0\right]\right\}
+    & \dfrac{4\pi\, \tilde{\alpha}_R\, N T_S\, Q_1}{\sigma^2}
+    & \dfrac{4\pi}{\sigma^2}\, \mathrm{Re}\!\left\{\tilde{\alpha}\!\left[T_S Q_1\, \mathcal{S}_0 + M\, \mathcal{T}_0\right]\right\} \\
+\hline
+\end{array}
+$}
+\caption{Expected single-target Fisher information matrix entries
+under i.i.d.\ unit-energy QPSK signalling. Columns 1 and 3 (no-ICI
+cases) are deterministic in the symbols; columns 2 and 4 (ICI cases)
+are expected over the random data. The four off-diagonal entries with
+no \(\nu\)-derivative differ between the no-ICI and ICI columns only
+through the substitution \(P_a\to\mathcal{S}_a\); the four entries
+that carry a \(\nu\)-derivative additionally pick up the
+\(\mathcal{T}_a,\mathcal{U}\) corrections inherited from the kernel
+\(I\)'s own \(\nu\)-dependence.}
+\label{tab:fim_compare}
+\end{table}
+
+\section{Equivalence between OFDM and OTFS under QPSK}
+
+The most striking observation in Table~\ref{tab:fim_compare} is that
+columns 1 and 3 coincide entry by entry, as do columns 2 and 4. That
+is, under i.i.d.\ unit-energy QPSK signalling
+\begin{equation}
+    \boxed{\;
+    \mathrm{E}\{\bm{J}^{\text{OFDM, no ICI}}\} =
+    \mathrm{E}\{\bm{J}^{\text{OTFS, no OFDM-ICI}}\},
+    \qquad
+    \mathrm{E}\{\bm{J}^{\text{OFDM, ICI}}\} =
+    \mathrm{E}\{\bm{J}^{\text{OTFS, OFDM-ICI}}\}.
+    \;}
+\end{equation}
+The reason is structural: the ISFFT and SFFT are unitary linear
+transforms relating \(X[n,m]\) and \(x[l,k]\) one-to-one. For data
+that are jointly circularly symmetric and i.i.d.\ unit-energy --- a
+property the unit-energy QPSK ensemble enjoys --- the second-order
+statistics that determine the FIM are invariant under this unitary
+change of basis. Equivalently, the OTFS observation
+\(y[l',k']\) is the SFFT of the OFDM observation \(Y[n,m]\); applying
+a unitary transform to a Gaussian observation preserves its
+information about \(\bm{\eta}\). The two grid geometries (time--frequency
+vs.\ delay--Doppler) are therefore informationally equivalent under
+random QPSK loading and the FIM is identical entry by entry.
+
+Two corollaries follow:
+\begin{itemize}
+    \item \emph{CRBs match.} Any Cram\'er--Rao bound computed from the
+          OFDM no-ICI FIM is also the CRB for the no-OFDM-ICI OTFS
+          model; likewise the OFDM ICI CRB equals the OFDM-ICI OTFS
+          CRB.
+    \item \emph{Sensing performance is data-dependent, not
+          waveform-dependent.} The choice between placing pilots in
+          \((n,m)\) or \((l,k)\) does not change estimator variance
+          when data are i.i.d.\ unit-energy QPSK; what matters is the
+          ICI-vs.-no-ICI receiver model and the average squared
+          symbol energy.
+\end{itemize}
+The equivalence breaks down if the data depart from i.i.d.\
+unit-energy (e.g.\ pilot patterns concentrating energy on specific
+grid points, or signalling alphabets with non-constant modulus). In
+those cases the OFDM and OTFS FIMs can differ even within the same
+ICI model.
+
+\section{No-ICI vs.\ ICI under QPSK}
+
+Since the OFDM/OTFS pairs agree, the remaining comparison reduces to
+two distinct expected FIMs --- one without OFDM-side ICI and one with.
+Their entry-by-entry differences are:
+
+\paragraph{Entries with no \(\nu\)-derivative
+(\(J_{\tilde{\alpha}_R\tilde{\alpha}_R}\),
+\(J_{\tilde{\alpha}_I\tilde{\alpha}_I}\),
+\(J_{\tau\tau}\),
+\(J_{\tilde{\alpha}_R\tau}\),
+\(J_{\tilde{\alpha}_I\tau}\)).}
+These differ only through the single substitution
+\(P_a \to \mathcal{S}_a\). The kernel \(I\) does not appear separately;
+it merely smears the discrete index moments \(P_a = \sum_{n} n^a\) into
+the lag-summed quadratic moments
+\(\mathcal{S}_a = \sum_{n,n'} (n')^a |I(n'-n)|^2\). When \(|I|^2\) is
+sharply concentrated at the origin (low normalized Doppler \(\nu T\)),
+\(\mathcal{S}_a \approx P_a \cdot \sum_q |I(q)|^2\) and the entries
+scale similarly to their no-ICI counterparts up to a real positive
+constant.
+
+\paragraph{Entries with a \(\nu\)-derivative
+(\(J_{\nu\nu}\),
+\(J_{\tau\nu}\),
+\(J_{\tilde{\alpha}_R\nu}\),
+\(J_{\tilde{\alpha}_I\nu}\)).}
+These pick up extra terms in \(\mathcal{T}_a\) and \(\mathcal{U}\)
+that have no analog in the no-ICI form. The mechanism is that \(I\)
+itself depends on \(\nu\); differentiating with respect to \(\nu\)
+therefore excites two contributions:
+\begin{enumerate}
+    \item the symbol-time phase rotation \(e^{j2\pi mT_S\nu}\), which
+          carries through to the no-ICI expressions via the
+          \(Q_a = \sum_m m^a\) moments, and
+    \item the per-subcarrier kernel response \(\partial I/\partial\nu
+          = j2\pi I'\), which has no counterpart when \(I\) is treated
+          as a fixed delta.
+\end{enumerate}
+Because \(\mathcal{T}_0\) and \(\mathcal{T}_1\) are generically
+complex, the gain--Doppler cross-entries
+(\(J_{\tilde{\alpha}_R\nu}\), \(J_{\tilde{\alpha}_I\nu}\)) mix
+\(\tilde{\alpha}_R\) and \(\tilde{\alpha}_I\) through the
+\(\mathrm{Im}\{\tilde{\alpha}\,(\cdot)\}\) and
+\(\mathrm{Re}\{\tilde{\alpha}\,(\cdot)\}\) wrappers, whereas in the
+no-ICI case each entry isolates a single quadrature of
+\(\tilde{\alpha}\) cleanly.
+
+\paragraph{Parameter dependence.} Neither FIM depends on the true
+delay \(\tau\) --- its phase factors cancel pairwise in both rows of
+the table. The Doppler dependence differs sharply:
+\begin{itemize}
+    \item \emph{No ICI (columns 1, 3)}: the FIM is \emph{independent} of
+          the true \(\nu\). All \(\nu\)-phases \(e^{j2\pi mT_S\nu}\)
+          drop out under \(|\cdot|^2\) operations, and \(I\) is fixed
+          to \(\delta\). The CRB is therefore operating-point free
+          --- the same numeric value applies whether the target sits
+          on the grid or moves at any Doppler.
+    \item \emph{With ICI (columns 2, 4)}: the FIM depends on the
+          true \(\nu\) through every occurrence of
+          \(\mathcal{S}_a,\mathcal{T}_a,\mathcal{U}\), since these are
+          quadratic forms of \(I\) and \(I'\) which both depend on
+          \(\nu\). The CRB is therefore operating-point dependent and
+          generally degrades as \(\nu T\) grows (broader \(I\), more
+          off-diagonal leakage).
+\end{itemize}
+
+\paragraph{Asymptotic scaling.}
+For large \((N, M)\): \(P_a, Q_a, \mathcal{S}_a \sim N^{a+1}, M^{a+1},
+N^{a+1}\) respectively, while \(\mathcal{T}_a \sim N^{a+1}\) and
+\(\mathcal{U}\sim N\). Substituting,
+\begin{equation}
+    J_{\tilde{\alpha}\tilde{\alpha}} \sim NM,
+    \quad
+    J_{\tau\tau} \sim N^3 M,
+    \quad
+    J_{\nu\nu} \sim N M^3
+\end{equation}
+in all four cases --- the dominant grid scaling is unchanged by the
+choice of waveform (OFDM vs OTFS) or by the inclusion of ICI. The ICI
+signature lives in the constants of proportionality (set by the shape
+of \(I\)) and in the sub-leading \(\mathcal{T}_a,\mathcal{U}\)
+corrections that become non-negligible at modest \(M\) or when the
+operating \(\nu T\) is large enough to spread \(I\) noticeably across
+subcarriers.
+
+\paragraph{Limit \(I\to\delta\).} Setting
+\(I(n)=\delta[n]\) and \(I'(n)=0\) gives \(\mathcal{S}_a\to P_a\),
+\(\mathcal{T}_a\to 0\), \(\mathcal{U}\to 0\), so columns 2 and 4
+collapse onto columns 1 and 3 respectively. The four-column table
+then degenerates into a single column, confirming internal
+consistency.
+
+\section{Multi-target case}
+
+For \(P>1\) targets, all four FIMs share the block structure
+\begin{equation}
+    \bm{J}(\bm{\eta}) = \begin{bmatrix}
+        \bm{J}_{1,1} & \cdots & \bm{J}_{1,P} \\
+        \vdots & \ddots & \vdots \\
+        \bm{J}_{P,1} & \cdots & \bm{J}_{P,P}
+    \end{bmatrix},\qquad
+    \bm{J}_{q,p} = \bm{J}_{p,q}^T,\qquad
+    \bm{\eta}_p = [\tilde{\alpha}_{p,R},\tilde{\alpha}_{p,I},\tau_p,\nu_p]^T,
+\end{equation}
+with diagonal blocks \(\bm{J}_{p,p}\in\mathbb{R}^{4\times 4}\) carrying
+the per-target information and off-diagonal blocks \(\bm{J}_{p,q}\)
+\((p\neq q)\) carrying cross-target coupling.
+
+\subsection*{Diagonal blocks}
+
+The diagonal block \(\bm{J}_{p,p}\) equals the single-target FIM of
+the previous section with all parameters indexed by \(p\) and with
+\(\tilde{\alpha}\to\tilde{\alpha}_p\). All four cases therefore inherit
+the diagonal-block landscape of Section~2 verbatim:
+\begin{equation}
+    \mathrm{E}\{\bm{J}_{p,p}^{\text{OFDM, no-ICI}}\}
+    = \mathrm{E}\{\bm{J}_{p,p}^{\text{OTFS, no-OFDM-ICI}}\},\qquad
+    \mathrm{E}\{\bm{J}_{p,p}^{\text{OFDM, ICI}}\}
+    = \mathrm{E}\{\bm{J}_{p,p}^{\text{OTFS, OFDM-ICI}}\},
+\end{equation}
+and Table~\ref{tab:fim_compare} applies to each diagonal block under
+the substitutions \(\tilde{\alpha}\to\tilde{\alpha}_p\),
+\(\tau\to\tau_p\), \(\nu\to\nu_p\), \(I\to I_p\). The four-way
+comparison again collapses to two distinct entries (no-ICI vs.\ ICI).
+
+\subsection*{Cross-target moments}
+
+For the off-diagonal blocks define the inter-target separations
+\(\Delta\tau_{pq} := \tau_q - \tau_p\),
+\(\Delta\nu_{pq} := \nu_q - \nu_p\), the Doppler-side Dirichlet sum
+\begin{equation}
+    F_b(z,K) := \sum_{k=0}^{K-1} k^b\, e^{j2\pi kz},
+\end{equation}
+and the cross-target kernel-summed moments
+\begin{align}
+    \mathcal{S}_a^{p,q} &:= \sum_{n,n'=0}^{N-1} (n')^a\,
+        I_p^*(n'-n)\, I_q(n'-n)\,
+        e^{-j2\pi n'\,\Delta f\,\Delta\tau_{pq}},\quad a=0,1,2, \\
+    \mathcal{T}_a^{p,q} &:= \sum_{n,n'=0}^{N-1} (n')^a\,
+        I_p^*(n'-n)\, I_q'(n'-n)\,
+        e^{-j2\pi n'\,\Delta f\,\Delta\tau_{pq}},\quad a=0,1, \\
+    \check{\mathcal{T}}_a^{p,q} &:= \sum_{n,n'=0}^{N-1} (n')^a\,
+        (I_p')^*(n'-n)\, I_q(n'-n)\,
+        e^{-j2\pi n'\,\Delta f\,\Delta\tau_{pq}}, \\
+    \mathcal{U}^{p,q} &:= \sum_{n,n'=0}^{N-1}
+        (I_p')^*(n'-n)\, I_q'(n'-n)\,
+        e^{-j2\pi n'\,\Delta f\,\Delta\tau_{pq}},
+\end{align}
+which generalise \(\mathcal{S}_a,\mathcal{T}_a,\mathcal{U}\) of
+Section~1. At \(p=q\) the phase factor disappears and
+\(\mathcal{S}_a^{p,p}=\mathcal{S}_a\),
+\(\mathcal{T}_a^{p,p}=\mathcal{T}_a\),
+\(\check{\mathcal{T}}_a^{p,p}=\mathcal{T}_a^*\),
+\(\mathcal{U}^{p,p}=\mathcal{U}\). In the limit \(I_p\to\delta\),
+\(\mathcal{S}_a^{p,q}\to F_a(-\Delta f\,\Delta\tau_{pq},N)\) and
+\(\mathcal{T}_a^{p,q},\check{\mathcal{T}}_a^{p,q},\mathcal{U}^{p,q}\to 0\),
+so the ICI cross-target moments reduce to the no-ICI delay-side
+ambiguity function. We abbreviate
+\(F_a^{(\tau)} := F_a(-\Delta f\,\Delta\tau_{pq},N)\) and
+\(F_b^{(\nu)} := F_b(T_S\,\Delta\nu_{pq},M)\) throughout.
+
+\subsection*{Off-diagonal block comparison}
+
+Under QPSK signalling, the (I)SFFT-unitarity argument that gave
+\(\mathrm{E}\{\bm{J}^{\text{OFDM}}\}=\mathrm{E}\{\bm{J}^{\text{OTFS}}\}\)
+for each diagonal block applies equally to the off-diagonal blocks.
+Concretely:
+\begin{equation}
+    \mathrm{E}\{\bm{J}_{p,q}^{\text{OFDM, no ICI}}\}
+    = \mathrm{E}\{\bm{J}_{p,q}^{\text{OTFS, no OFDM-ICI}}\},
+    \qquad
+    \mathrm{E}\{\bm{J}_{p,q}^{\text{OFDM, ICI}}\}
+    = \mathrm{E}\{\bm{J}_{p,q}^{\text{OTFS, OFDM-ICI}}\}
+    \quad\text{for every } p,q.
+\end{equation}
+The four-case off-diagonal comparison therefore collapses to a
+two-column table (no-ICI form vs.\ ICI form), shown in
+Table~\ref{tab:fim_cross}. The six rows cover one entry from each
+``family'' (gain--gain, gain--delay, gain--Doppler, delay--delay,
+Doppler--Doppler, delay--Doppler).
+
+\begin{table}[h]
+\centering
+\small
+\renewcommand{\arraystretch}{1.8}
+\[
+\begin{array}{l|c|c}
+\hline
+\text{Entry } J_{p,q,(a,b)}
+    & \text{No OFDM-ICI}
+    & \text{With OFDM-ICI} \\
+\hline
+J_{p,q,\tilde{\alpha}_R\tilde{\alpha}_R}
+    & \dfrac{2}{\sigma^2}\,\mathrm{Re}\{F_0^{(\tau)} F_0^{(\nu)}\}
+    & \dfrac{2}{\sigma^2}\,\mathrm{Re}\{\mathcal{S}_0^{p,q}\, F_0^{(\nu)}\} \\
+J_{p,q,\tilde{\alpha}_R\tau}
+    & \dfrac{4\pi\,\Delta f}{\sigma^2}\,\mathrm{Im}\{\tilde{\alpha}_q\, F_1^{(\tau)} F_0^{(\nu)}\}
+    & \dfrac{4\pi\,\Delta f}{\sigma^2}\,\mathrm{Im}\{\tilde{\alpha}_q\,\mathcal{S}_1^{p,q}\, F_0^{(\nu)}\} \\
+J_{p,q,\tilde{\alpha}_R\nu}
+    & -\dfrac{4\pi\, T_S}{\sigma^2}\,\mathrm{Im}\{\tilde{\alpha}_q\, F_0^{(\tau)} F_1^{(\nu)}\}
+    & -\dfrac{4\pi}{\sigma^2}\,\mathrm{Im}\{\tilde{\alpha}_q(T_S\mathcal{S}_0^{p,q} F_1^{(\nu)} + \mathcal{T}_0^{p,q} F_0^{(\nu)})\} \\
+J_{p,q,\tau\tau}
+    & \dfrac{8\pi^2 (\Delta f)^2}{\sigma^2}\,\mathrm{Re}\{\tilde{\alpha}_p^*\tilde{\alpha}_q F_2^{(\tau)} F_0^{(\nu)}\}
+    & \dfrac{8\pi^2 (\Delta f)^2}{\sigma^2}\,\mathrm{Re}\{\tilde{\alpha}_p^*\tilde{\alpha}_q \mathcal{S}_2^{p,q} F_0^{(\nu)}\} \\
+J_{p,q,\tau\nu}
+    & -\dfrac{8\pi^2 \Delta f\, T_S}{\sigma^2}\,\mathrm{Re}\{\tilde{\alpha}_p^*\tilde{\alpha}_q F_1^{(\tau)} F_1^{(\nu)}\}
+    & -\dfrac{8\pi^2 \Delta f}{\sigma^2}\,\mathrm{Re}\{\tilde{\alpha}_p^*\tilde{\alpha}_q (T_S\mathcal{S}_1^{p,q} F_1^{(\nu)} + \mathcal{T}_1^{p,q} F_0^{(\nu)})\} \\
+\hline
+\end{array}
+\]
+\caption{Five representative entries of the expected off-diagonal
+block \(\bm{J}_{p,q}\) (\(p\neq q\)) under i.i.d.\ unit-energy QPSK
+signalling. The OFDM and OTFS columns coincide for each ICI model
+(four-case comparison collapses to two), so only the two distinct
+forms are listed. Notation:
+\(F_a^{(\tau)} := F_a(-\Delta f\,\Delta\tau_{pq},N)\) and
+\(F_b^{(\nu)} := F_b(T_S\,\Delta\nu_{pq},M)\). The
+\(\nu\nu\)-entry is displayed separately in
+equation~\eqref{eq:Jpq_nunu} due to its length; the remaining 10
+off-diagonal entries follow from the same template by swapping
+\(\mathrm{Re}\leftrightarrow\mathrm{Im}\), conjugating
+\(\tilde{\alpha}\) factors, and replacing
+\(\mathcal{T}\leftrightarrow\check{\mathcal{T}}\) where the role of
+\(p\) and \(q\) is reversed.}
+\label{tab:fim_cross}
+\end{table}
+
+The \(\nu\nu\)-entry, which carries all three of the ICI-induced
+moments, is too wide for the table; the no-ICI and ICI forms are
+\begin{align}
+    {[\bm{J}_{p,q}]_{\nu,\nu}^{\text{no ICI}}} &=
+        \tfrac{8\pi^2 T_S^2}{\sigma^2}\,
+        \mathrm{Re}\!\left\{\tilde{\alpha}_p^*\tilde{\alpha}_q\,
+            F_0^{(\tau)}\, F_2^{(\nu)}\right\}, \\
+    {[\bm{J}_{p,q}]_{\nu,\nu}^{\text{ICI}}} &=
+        \tfrac{8\pi^2}{\sigma^2}\,
+        \mathrm{Re}\!\left\{\tilde{\alpha}_p^*\tilde{\alpha}_q\!
+            \left(T_S^2\,\mathcal{S}_0^{p,q}\, F_2^{(\nu)}
+                + T_S\bigl(\mathcal{T}_0^{p,q} + \check{\mathcal{T}}_0^{p,q}\bigr)\, F_1^{(\nu)}
+                + \mathcal{U}^{p,q}\, F_0^{(\nu)}\right)\right\}.
+\label{eq:Jpq_nunu}
+\end{align}
+
+\subsection*{Multi-target observations}
+
+\paragraph{Equivalence persists block-by-block.} The same
+(I)SFFT-unitarity argument that proved
+\(\mathrm{E}\{\bm{J}^{\text{OFDM}}\} =
+\mathrm{E}\{\bm{J}^{\text{OTFS}}\}\) for single targets applies
+unchanged for each block:
+\begin{equation}
+    \boxed{\;
+    \mathrm{E}\{\bm{J}_{p,q}^{\text{OFDM, no ICI}}\} =
+    \mathrm{E}\{\bm{J}_{p,q}^{\text{OTFS, no OFDM-ICI}}\},
+    \qquad
+    \mathrm{E}\{\bm{J}_{p,q}^{\text{OFDM, ICI}}\} =
+    \mathrm{E}\{\bm{J}_{p,q}^{\text{OTFS, OFDM-ICI}}\}
+    \quad\forall\, p,q.
+    \;}
+\end{equation}
+The whole \(4P\times 4P\) FIM is therefore identical between OFDM and
+OTFS under i.i.d.\ unit-energy QPSK loading; only the ICI/no-ICI
+distinction matters.
+
+\paragraph{No-ICI vs.\ ICI in the cross blocks.} As in the
+single-target case, the ICI columns differ from the no-ICI columns
+through two patterns:
+\begin{itemize}
+    \item \emph{Entries with no \(\nu\)-derivative} (the
+          \(\tilde{\alpha}_R\tilde{\alpha}_R\),
+          \(\tilde{\alpha}_R\tau\) and \(\tau\tau\) rows of
+          Table~\ref{tab:fim_cross}) inherit a single substitution
+          \(F_a^{(\tau)} \to \mathcal{S}_a^{p,q}\). The Doppler-side
+          factor \(F_b^{(\nu)}\) is unchanged. Crucially,
+          \(\mathcal{S}_a^{p,q}\) is \emph{not} a simple Dirichlet
+          sum: it is a weighted lag correlation of \(I_p\) and
+          \(I_q\) carrying the inter-target delay phase. Coincident
+          targets (\(\tau_p = \tau_q\)) give the real
+          single-target \(\mathcal{S}_a\); well-separated targets
+          give a complex value that decays with \(\Delta\tau_{pq}\)
+          but at a rate set by the \emph{full kernel width} of
+          \(|I|\), not the bin width \(1/(N\Delta f)\).
+    \item \emph{Entries with a \(\nu\)-derivative} (the
+          \(\tilde{\alpha}_R\nu\) and \(\tau\nu\) rows of
+          Table~\ref{tab:fim_cross}, plus the \(\nu\nu\)-entry
+          \eqref{eq:Jpq_nunu}) additionally pick up the cross-target
+          \(\mathcal{T}_a^{p,q}, \check{\mathcal{T}}_a^{p,q},
+          \mathcal{U}^{p,q}\) moments, which have no analog in the
+          no-ICI form. These produce extra cross-target coupling
+          terms whenever \(I\) has appreciable Doppler bandwidth, and
+          they survive even when \(\Delta\nu_{pq}=0\) (i.e.\ two
+          targets at the same Doppler but different delays still
+          couple through \(\mathcal{T},\mathcal{U}\) in the ICI
+          model).
+\end{itemize}
+
+\paragraph{Resolution and block-diagonality.} For all four cases the
+off-diagonal block scales with the underlying ambiguity functions:
+\begin{itemize}
+    \item No-ICI: amplitude controlled by
+          \(|F_a^{(\tau)}|\,|F_b^{(\nu)}|\) which decays once
+          \(|\Delta\tau_{pq}|\gtrsim 1/(N\Delta f)\) or
+          \(|\Delta\nu_{pq}|\gtrsim 1/(MT_S)\) --- the delay/Doppler
+          bin widths.
+    \item ICI: \(|\mathcal{S}_a^{p,q}|\) decays at the slower
+          \emph{kernel-width} rate \(\sim 1/T \sim \Delta f\)
+          (because \(|I|\) is itself
+          \(\mathrm{sinc}\)-like with width \(\sim\Delta f\)), while
+          \(|F_b^{(\nu)}|\) still decays at \(1/(MT_S)\) on the
+          Doppler side.
+\end{itemize}
+In either case, well-separated targets give
+\(\bm{J}\approx\mathrm{blkdiag}(\bm{J}_{p,p})\) and the multi-target
+CRB factorises into independent per-target CRBs. At sub-resolution
+spacings the cross blocks become comparable to the diagonal blocks
+and the multi-target CRB inflates as expected.
+
+\paragraph{Limit \(I\to\delta\).} Setting
+\(I_p(n)=\delta[n]\) and \(I_p'(n)=0\) for every \(p\) gives
+\(\mathcal{S}_a^{p,q}\to F_a^{(\tau)}\),
+\(\mathcal{T}_a^{p,q},\check{\mathcal{T}}_a^{p,q},\mathcal{U}^{p,q}\to 0\),
+collapsing the ICI column of Table~\ref{tab:fim_cross} entry-by-entry
+onto the no-ICI column --- the multi-target analog of the single-target
+limit at the end of Section~3.
+
+\section{Summary}
+
+Under the i.i.d.\ unit-energy QPSK assumption, the four single-target
+FIMs and the four multi-target FIMs each collapse to \emph{two}
+distinct cases:
+\begin{itemize}
+    \item \textbf{No OFDM-side ICI} (OFDM no-ICI \(=\) OTFS no-OFDM-ICI):
+          single-target diagonal blocks are closed-form,
+          \(\tau\)- and \(\nu\)-independent, driven by the elementary
+          power sums \(P_a, Q_b\) of the grid. Multi-target
+          off-diagonal blocks are driven by the delay/Doppler
+          ambiguity functions
+          \(F_a(-\Delta f\,\Delta\tau_{pq},N)\,F_b(T_S\,\Delta\nu_{pq},M)\),
+          which decay at the grid bin widths
+          \(1/(N\Delta f)\) and \(1/(MT_S)\) respectively. CRBs are
+          deterministic and operating-point-free.
+    \item \textbf{With OFDM-side ICI} (OFDM ICI \(=\) OTFS OFDM-ICI):
+          single-target diagonal blocks are driven by the
+          kernel-summed moments \(\mathcal{S}_a, \mathcal{T}_a,
+          \mathcal{U}\), which depend on the true Doppler through
+          \(I\) and \(I'\). Multi-target off-diagonal blocks involve
+          their cross-target generalisations
+          \(\mathcal{S}_a^{p,q}, \mathcal{T}_a^{p,q},
+          \check{\mathcal{T}}_a^{p,q}, \mathcal{U}^{p,q}\) on the
+          delay side and \(F_b(T_S\,\Delta\nu_{pq},M)\) on the Doppler
+          side. CRBs are operating-point dependent and recover the
+          no-ICI form continuously as \(\nu T\to 0\).
+\end{itemize}
+The OFDM/OTFS labels distinguish only the data-domain interpretation
+(time--frequency vs.\ delay--Doppler); the information content is the
+same for both single-target and multi-target estimation so long as the
+symbols are i.i.d.\ unit-energy. To break this equivalence one must
+depart from i.i.d.\ unit-energy symbols --- pilots, non-constant-modulus
+alphabets, or correlated training sequences --- in which case the OFDM
+and OTFS columns can separate and the choice of waveform begins to
+matter for parameter estimation.
+
+\end{document}

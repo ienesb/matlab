@@ -1,0 +1,225 @@
+\documentclass[11pt]{article}
+
+\usepackage{amsmath,amssymb,bm}
+\usepackage{hyperref}
+\usepackage{svg}
+\usepackage[a4paper,margin=1in]{geometry}
+
+\title{Two-Step OTFS I/O Equations}
+\author{}
+\date{}
+
+\begin{document}
+\maketitle
+
+\section*{System model}
+
+Consider a two-step OTFS modulator that uses an inverse symplectic finite
+Fourier transform (ISFFT) followed by an OFDM modulator. Let \(N\) be the
+number of subcarriers and \(M\) be the number of time slots, so that the
+delay--Doppler grid contains \(NM\) information symbols
+\(x[l,k]\), where \(l \in \{0,\dots,N-1\}\) is the delay index and
+\(k \in \{0,\dots,M-1\}\) is the Doppler index. The delay and Doppler
+resolutions on this grid are \(1/(N\Delta f)\) and \(1/(MT_S)\) respectively,
+where \(\Delta f\) is the subcarrier spacing, \(T = 1/\Delta f\) is the useful
+OFDM symbol duration, and \(T_S = T + T_{cp}\) is the OFDM symbol duration
+including the cyclic prefix.
+
+\subsection*{Transmitter: ISFFT \(+\) OFDM modulator}
+
+The first step maps the delay--Doppler symbols \(x[l,k]\) to time--frequency
+symbols \(X[n,m]\) on an \(N \times M\) grid using the ISFFT:
+\begin{equation}
+    X[n,m] = \frac{1}{\sqrt{NM}}
+             \sum_{l=0}^{N-1}\sum_{k=0}^{M-1} x[l,k]\,
+             e^{\,j2\pi\bigl(\tfrac{mk}{M} - \tfrac{nl}{N}\bigr)},
+    \qquad
+    \begin{aligned}
+    &0 \leq n \leq N-1, \\
+    &0 \leq m \leq M-1.
+    \end{aligned}
+\end{equation}
+The symbols \(X[n,m]\) are then transmitted using the standard OFDM modulator,
+i.e.\ \(X[n,m]\) is placed on the \(n\)th subcarrier of the \(m\)th OFDM
+symbol. The \(m\)th OFDM symbol in the time domain is therefore
+\begin{equation}
+    s_m(t) = \sum_{n=0}^{N-1} X[n,m]\, e^{j2\pi n\Delta f\, t},
+    \qquad 0 < t < T,
+\end{equation}
+and after appending a cyclic prefix the transmitted signal becomes
+\begin{equation}
+    s(t) = \sum_{m=0}^{M-1} s_m^{CP}(t - mT_S),
+\end{equation}
+exactly as in the OFDM case.
+
+\subsection*{Channel}
+
+The signal propagates through a \(P\)-path doubly selective channel with
+delays \(\tau_p\), Doppler shifts \(\nu_p\), and complex gains \(\alpha_p\):
+\begin{equation}
+    r(t) = \sum_{p=0}^{P-1}\alpha_p\, s(t-\tau_p)\, e^{\,j2\pi \nu_p t} + z(t),
+\end{equation}
+with \(z(t)\) additive white Gaussian noise.
+
+\subsection*{Receiver: OFDM demodulator \(+\) SFFT}
+
+The receiver first performs OFDM demodulation. Following the derivation of
+the OFDM I/O equation (and assuming the cyclic prefix is long enough to
+absorb the channel delay spread so that inter--symbol interference is
+avoided), the demodulator output on the \(n\)th subcarrier of the \(m\)th
+OFDM symbol is
+\begin{equation}
+    Y[n,m] = \sum_{p=0}^{P-1} \tilde{\alpha}_p
+             \sum_{n'=0}^{N-1} X[n',m]\,
+             e^{-j2\pi n'\Delta f\, \tau_p}\,
+             e^{\,j2\pi \nu_p\, mT_S}\,
+             I_p(n'-n) + Z[n,m],
+\label{eq:Y_general}
+\end{equation}
+where \(\tilde{\alpha}_p = \alpha_p\, e^{-j2\pi n\Delta f\, mT_S}\),
+\(Z[n,m]\) is the projected noise, and
+\begin{equation}
+    I_p(n'-n) = \int_0^T e^{j2\pi(n'-n)\Delta f\, t'}\,
+                e^{j2\pi \nu_p\, t'}\, dt'
+              = \frac{e^{j2\pi \nu_p T} - 1}
+                     {j2\pi\bigl[(n'-n)\Delta f + \nu_p\bigr]}
+\end{equation}
+captures the inter--carrier interference (ICI) caused by the Doppler shifts.
+When the Doppler spread is small compared to \(\Delta f\) we have
+\(I_p(n'-n) \approx T\,\delta[n'-n]\) and the simplified TF channel model
+follows:
+\begin{equation}
+    Y[n,m] \;\approx\; \sum_{p=0}^{P-1} \tilde{\alpha}_p\, X[n,m]\,
+                       e^{-j2\pi n\Delta f\, \tau_p}\,
+                       e^{\,j2\pi \nu_p\, mT_S} + Z[n,m].
+\label{eq:Y_simplified}
+\end{equation}
+
+The second step at the receiver is the SFFT, which maps the
+time--frequency samples \(Y[n,m]\) back to the delay--Doppler domain:
+\begin{equation}
+    y[l',k'] = \frac{1}{\sqrt{NM}}
+               \sum_{n=0}^{N-1}\sum_{m=0}^{M-1} Y[n,m]\,
+               e^{-j2\pi\bigl(\tfrac{mk'}{M} - \tfrac{nl'}{N}\bigr)},
+    \qquad
+    \begin{aligned}
+    &0 \leq l' \leq N-1, \\
+    &0 \leq k' \leq M-1.
+    \end{aligned}
+\end{equation}
+
+\section*{Delay--Doppler I/O equation (simplified, no ICI)}
+
+Inserting~\eqref{eq:Y_simplified} into the SFFT and substituting the ISFFT
+expression for \(X[n,m]\) gives
+\begin{align}
+y[l',k']
+&= \frac{1}{\sqrt{NM}}\sum_{n=0}^{N-1}\sum_{m=0}^{M-1}
+   \Biggl[
+     \sum_{p=0}^{P-1} \tilde{\alpha}_p\, X[n,m]\,
+     e^{-j2\pi n\Delta f\, \tau_p}\,
+     e^{\,j2\pi \nu_p\, mT_S}
+   \Biggr]
+   e^{-j2\pi\bigl(\tfrac{mk'}{M} - \tfrac{nl'}{N}\bigr)} + \tilde{Z}[l',k']
+   \notag\\[4pt]
+&= \frac{1}{NM}\sum_{p=0}^{P-1}\tilde{\alpha}_p
+   \sum_{l=0}^{N-1}\sum_{k=0}^{M-1} x[l,k]\,
+   \underbrace{\sum_{n=0}^{N-1}
+        e^{\,j2\pi n\bigl[\tfrac{l'-l}{N} - \Delta f\,\tau_p\bigr]}
+   }_{\displaystyle A_p(l'-l)}\;
+   \underbrace{\sum_{m=0}^{M-1}
+        e^{\,j2\pi m\bigl[\tfrac{k-k'}{M} + T_S\,\nu_p\bigr]}
+   }_{\displaystyle B_p(k-k')}
+   + \tilde{Z}[l',k'],
+\label{eq:OTFS_IO_general}
+\end{align}
+where \(\tilde{Z}[l',k']\) denotes the SFFT of the OFDM-domain noise.
+
+\subsection*{Delay and Doppler kernels}
+
+The two kernels are geometric sums:
+\begin{align}
+A_p(l'-l) &= \sum_{n=0}^{N-1}
+             e^{\,j2\pi n\bigl[\tfrac{l'-l}{N} - \Delta f\,\tau_p\bigr]}
+           = \frac{e^{\,j2\pi N\bigl[\tfrac{l'-l}{N} - \Delta f\,\tau_p\bigr]} - 1}
+                  {e^{\,j2\pi \bigl[\tfrac{l'-l}{N} - \Delta f\,\tau_p\bigr]} - 1}, \\
+B_p(k-k') &= \sum_{m=0}^{M-1}
+             e^{\,j2\pi m\bigl[\tfrac{k-k'}{M} + T_S\,\nu_p\bigr]}
+           = \frac{e^{\,j2\pi M\bigl[\tfrac{k-k'}{M} + T_S\,\nu_p\bigr]} - 1}
+                  {e^{\,j2\pi \bigl[\tfrac{k-k'}{M} + T_S\,\nu_p\bigr]} - 1}.
+\end{align}
+They have the standard Dirichlet form and concentrate their energy at
+\(l'-l \approx \Delta f\,\tau_p\, N\) and \(k'-k \approx T_S\,\nu_p\, M\),
+i.e.\ at the normalized delay and Doppler indices of path \(p\).
+
+\subsection*{Integer (on-grid) delay and Doppler}
+
+In the special case where every path has its delay and Doppler aligned with
+the delay--Doppler grid,
+\begin{equation}
+    \tau_p = \frac{l_p}{N\Delta f}, \qquad
+    \nu_p  = \frac{k_p}{M T_S},
+    \qquad l_p,\, k_p \in \mathbb{Z},
+\end{equation}
+the kernels collapse to discrete Kronecker deltas (with circular indexing):
+\begin{align}
+    A_p(l'-l) &= N\,\delta\!\left[(l - l' + l_p)\bmod N\right], \\
+    B_p(k-k') &= M\,\delta\!\left[(k - k' + k_p)\bmod M\right].
+\end{align}
+Substituting these into \eqref{eq:OTFS_IO_general} eliminates the inner sums
+and yields the well-known sparse delay--Doppler I/O relation:
+\begin{equation}
+    y[l',k'] = \sum_{p=0}^{P-1} \tilde{\alpha}_p\,
+               x\!\left[(l' - l_p)_N,\, (k' - k_p)_M\right]
+               + \tilde{Z}[l',k'],
+\label{eq:OTFS_IO_integer}
+\end{equation}
+where \((\cdot)_N\) and \((\cdot)_M\) denote reduction modulo \(N\) and
+\(M\). Each delay--Doppler tap therefore appears as a two--dimensional
+circular shift of the input grid, scaled by the corresponding path gain.
+
+\subsection*{Fractional delay and Doppler (general case)}
+
+When \(\tau_p\) or \(\nu_p\) is not on the grid, the kernels do not collapse
+to deltas and~\eqref{eq:OTFS_IO_general} retains its full form. Writing
+\(\tau_p = (l_p + \kappa_p)/(N\Delta f)\) and
+\(\nu_p  = (k_p + \iota_p)/(MT_S)\) with integer parts \(l_p,k_p\) and
+fractional parts \(\kappa_p \in [-\tfrac12,\tfrac12)\),
+\(\iota_p \in [-\tfrac12,\tfrac12)\), the kernels become
+\begin{align}
+A_p(l'-l) &= e^{\,j\pi(N-1)\bigl[\tfrac{l'-l-l_p}{N} - \tfrac{\kappa_p}{N}\bigr]}
+             \cdot
+             \frac{\sin\!\bigl(\pi(l'-l-l_p-\kappa_p)\bigr)}
+                  {\sin\!\bigl(\tfrac{\pi}{N}(l'-l-l_p-\kappa_p)\bigr)}, \\
+B_p(k-k') &= e^{\,j\pi(M-1)\bigl[\tfrac{k-k'+k_p}{M} + \tfrac{\iota_p}{M}\bigr]}
+             \cdot
+             \frac{\sin\!\bigl(\pi(k-k'+k_p+\iota_p)\bigr)}
+                  {\sin\!\bigl(\tfrac{\pi}{M}(k-k'+k_p+\iota_p)\bigr)},
+\end{align}
+which are Dirichlet kernels centered at the integer delay/Doppler indices
+\((l_p,k_p)\) and spread by the fractional parts \((\kappa_p,\iota_p)\).
+Inserting these into~\eqref{eq:OTFS_IO_general} gives the full
+delay--Doppler input--output relation including the inter--bin leakage that
+is characteristic of fractional Doppler.
+
+\section*{Compact form}
+
+Combining the two kernels, define the effective delay--Doppler channel
+response
+\begin{equation}
+    h_{\text{DD}}[l'-l,\,k'-k] = \frac{1}{NM}
+        \sum_{p=0}^{P-1}\tilde{\alpha}_p\, A_p(l'-l)\, B_p(k-k').
+\end{equation}
+Then~\eqref{eq:OTFS_IO_general} can be written as a (twisted) 2D convolution
+on the delay--Doppler grid:
+\begin{equation}
+    y[l',k'] = \sum_{l=0}^{N-1}\sum_{k=0}^{M-1}
+               h_{\text{DD}}[l'-l,\,k'-k]\, x[l,k] + \tilde{Z}[l',k'].
+\end{equation}
+In the integer-tap case this reduces to~\eqref{eq:OTFS_IO_integer}, and the
+sparsity of the delay--Doppler channel \(h_{\text{DD}}\) is what makes OTFS
+attractive for high-mobility channels: each physical path produces a single
+tap (up to leakage), whereas in the time--frequency domain it spreads over
+the entire grid through the kernels \(I_p(\cdot)\).
+
+\end{document}

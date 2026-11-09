@@ -1,0 +1,364 @@
+\documentclass[11pt]{article}
+
+\usepackage{amsmath,amssymb,bm}
+\usepackage{hyperref}
+\usepackage{svg}
+\usepackage[a4paper,margin=1in]{geometry}
+
+\title{OTFS MCRB A and B Matrix Calculations}
+\author{}
+\date{}
+
+\begin{document}
+\maketitle
+
+The two-step OTFS I/O equation given as (otfs\_io.tex) is, in the delay--Doppler domain,
+\begin{equation}
+    y[l',k'] = \frac{1}{NM}\sum_{p=0}^{P-1} \tilde{\alpha}_p
+               \sum_{l=0}^{N-1}\sum_{k=0}^{M-1} x[l,k]\,
+               A_p(l'-l)\, B_p(k-k') + \tilde{Z}[l',k'],
+\label{eq:OTFS_IO}
+\end{equation}
+with the delay and Doppler kernels
+\begin{equation}
+    A_p(d) = \sum_{n=0}^{N-1} e^{\,j2\pi n[d/N - \Delta f\,\tau_p]}, \qquad
+    B_p(d) = \sum_{m=0}^{M-1} e^{\,j2\pi m[d/M + T_S\,\nu_p]}.
+\end{equation}
+The receiver noise \(\tilde{Z}[l',k']\) is i.i.d.\ complex Gaussian with the same per-bin variance \(\sigma^2\) as in the underlying TF domain, so \(y[l',k']\) is complex Gaussian with mean
+\begin{equation}
+    \mu[l',k'] = \frac{1}{NM}\sum_{p=0}^{P-1} \tilde{\alpha}_p \sum_{l,k} x[l,k]\, A_p(l'-l)\, B_p(k-k').
+\end{equation}
+
+The MCRB framework (\texttt{MCRB derivations.pdf}) further requires the \emph{assumed} mean \(\tilde{\mu}[l',k']\), built from the receiver-side delay--Doppler symbols \(\hat{x}[l,k]\):
+\begin{equation}
+    \tilde{\mu}[l',k'] = \frac{1}{NM}\sum_{p=0}^{P-1} \tilde{\alpha}_p \sum_{l,k} \hat{x}[l,k]\, A_p(l'-l)\, B_p(k-k').
+\end{equation}
+Only the data symbols differ between \(\mu\) and \(\tilde{\mu}\); the channel-parameter vector \(\bm{\eta}\) is identical. The mismatch signal is
+\begin{equation}
+    \Delta[l',k'] := \mu[l',k'] - \tilde{\mu}[l',k'] = \frac{1}{NM}\sum_{p=0}^{P-1} \tilde{\alpha}_p \sum_{l,k} e[l,k]\, A_p(l'-l)\, B_p(k-k'),
+\end{equation}
+with the symbol-domain error \(e[l,k] := x[l,k] - \hat{x}[l,k]\).
+
+\paragraph{Binary symmetric channel model for \(\hat{x}\).} As in \texttt{ofdm\_mcrb.tex}, the receiver-side symbols \(\hat{x}\) are obtained from the bit-stream of \(x\) through a BSC with crossover probability \(p\), then re-mapped. For Gray-coded unit-energy QPSK, the first- and second-order statistics conditional on \(x\) are
+\begin{align}
+    \mathrm{E}[\hat{x}[l,k] \mid x] &= (1-2p)\, x[l,k], &
+    \mathrm{E}[|\hat{x}[l,k]|^2 \mid x] &= 1, \\
+    \mathrm{E}[e^*[l,k]\, \hat{x}[l,k] \mid x] &= -2p, &
+    \mathrm{E}[|e[l,k]|^2 \mid x] &= 4p,
+\end{align}
+and \(\mathrm{E}[e[l,k]\, \hat{x}^*[l',k'] \mid x] = -2p\, \delta_{l,l'}\, \delta_{k,k'}\) for i.i.d.\ QPSK across the delay--Doppler grid. The ISFFT/SFFT pair is unitary, so i.i.d.\ unit-energy QPSK in the delay--Doppler grid maps to i.i.d.\ unit-energy QPSK statistics in the time--frequency grid in expectation (Section~3.1.1 of \texttt{otfs\_fim.tex}), but the BSC is applied in the \emph{delay--Doppler} domain in line with the OTFS demodulation chain.
+
+\paragraph{First derivatives of \(\tilde{\mu}\).} Replacing \(x\) by \(\hat{x}\) in the derivatives of \texttt{otfs\_fim.tex} (\(\S\)``Derivatives of the mean''):
+\begin{align}
+    \tilde{g}_{\tilde{\alpha}_{p,R}} &= \tilde{\Phi}_p, &
+    \tilde{g}_{\tilde{\alpha}_{p,I}} &= j\, \tilde{\Phi}_p, &
+    \tilde{g}_{\tau_p} &= -j2\pi\Delta f\, \tilde{\alpha}_p\, \tilde{\Psi}_p, &
+    \tilde{g}_{\nu_p} &= j2\pi\, \tilde{\alpha}_p\, \tilde{\Omega}_p^{\!\star},
+\end{align}
+where \(\tilde{\Omega}_p^{\!\star}\) stands for \(T_S\, \tilde{\Omega}_p\) (no OFDM-side ICI) or \(\tilde{\Lambda}_p\) (with OFDM-side ICI), exactly as in \texttt{otfs\_fim.tex}. The receiver-side shorthand quantities are obtained by the substitution \(x \to \hat{x}\) in (otfs\_fim.tex) equations~(13)--(15) [no ICI] and equations~(31)--(33) [ICI]; for example for the no-ICI case,
+\begin{equation}
+    \tilde{\Phi}_p[l',k'] := \tfrac{1}{NM}\sum_{l,k} \hat{x}[l,k]\, A_p(l'-l)\, B_p(k-k'),
+\end{equation}
+and analogously for \(\tilde{\Psi}_p, \tilde{\Omega}_p\); for the ICI case substitute \(A_p \to K_p\) and \(A_p' \to K_p^{(1)}\) and use \(\tilde{\Lambda}_p\) of \texttt{otfs\_fim.tex} \(\S\)3.1.2 with \(\hat{x}\). The mismatch signal in the same shorthand reads \(\Delta = \sum_p \tilde{\alpha}_p\, \Phi_{e,p}\), where \(\Phi_{e,p}\) is built from the error \(e[l,k]\) instead of \(\hat{x}[l,k]\).
+
+\paragraph{Second derivatives of \(\tilde{\mu}\).} The matrix \(\bm{A}\) requires \(\tilde{h}_{kl} := \partial^2 \tilde{\mu}/\partial \eta_k \partial \eta_l\). Cross-target second derivatives vanish whenever \(k,l\) belong to different targets, by the same linearity argument as in the OFDM case. Within a single target \(p\), introduce the additional shorthand
+\begin{align}
+    \tilde{\Xi}_p[l',k']      &:= \tfrac{1}{NM}\sum_{l,k} \hat{x}[l,k]\, A_p''(l'-l)\, B_p(k-k'), \\
+    \tilde{\Omega}_{1,p}[l',k'] &:= \tfrac{1}{NM}\sum_{l,k} \hat{x}[l,k]\, A_p'(l'-l)\, B_p'(k-k'), \\
+    \tilde{\Theta}_p[l',k']   &:= \tfrac{1}{NM}\sum_{l,k} \hat{x}[l,k]\, A_p(l'-l)\, B_p''(k-k'),
+\end{align}
+where \(A_p''(d) := \sum_n n^2 e^{j2\pi n[d/N - \Delta f \tau_p]}\), \(B_p''(d) := \sum_m m^2 e^{j2\pi m[d/M + T_S \nu_p]}\); these are the second-moment kernels, related to \(A_p, B_p\) through \(\partial A_p'/\partial \tau_p = -j2\pi\Delta f\, A_p''\) and \(\partial B_p'/\partial \nu_p = j2\pi T_S\, B_p''\). The nontrivial Hessian entries are (no OFDM-side ICI)
+\begin{align}
+    \tilde{h}_{\tilde{\alpha}_{p,R}, \tau_p} &= -j2\pi\Delta f\, \tilde{\Psi}_p, &
+    \tilde{h}_{\tilde{\alpha}_{p,R}, \nu_p} &= j2\pi T_S\, \tilde{\Omega}_p, \\
+    \tilde{h}_{\tilde{\alpha}_{p,I}, \tau_p} &= 2\pi\Delta f\, \tilde{\Psi}_p, &
+    \tilde{h}_{\tilde{\alpha}_{p,I}, \nu_p} &= -2\pi T_S\, \tilde{\Omega}_p, \\
+    \tilde{h}_{\tau_p, \tau_p} &= -4\pi^2 (\Delta f)^2\, \tilde{\alpha}_p\, \tilde{\Xi}_p, &
+    \tilde{h}_{\nu_p, \nu_p} &= -4\pi^2 T_S^2\, \tilde{\alpha}_p\, \tilde{\Theta}_p, \\
+    \tilde{h}_{\tau_p, \nu_p} &= 4\pi^2 \Delta f\, T_S\, \tilde{\alpha}_p\, \tilde{\Omega}_{1,p}. & &
+\end{align}
+For the ICI case, the same template applies with the kernel-substitution \(A_p \to K_p\), \(A_p' \to K_p^{(1)}\), \(A_p'' \to K_p^{(2)}\) (where \(K_p^{(2)}\) is the \((n')^2\)-weighted version of \(K_p\)) on the delay side, and \(B_p, B_p', B_p''\) carrying through unchanged on the Doppler side. The \(\nu\)-derivatives additionally pick up \(K_p^{I'}\) and \(K_p^{I''}\) contributions, paralleling the OFDM ICI Hessian; we list these explicitly in the ICI sub-subsections below where they are needed.
+
+\paragraph{MCRB component matrices.} From \texttt{MCRB derivations.pdf},
+\begin{align}
+    \bm{B}(\bm{\eta}) &= \tilde{\bm{J}}(\bm{\eta}) + \bm{b}(\bm{\eta})\, \bm{b}^T(\bm{\eta}), &
+    [\tilde{\bm{J}}]_{kl} &= \tfrac{2}{\sigma^2}\, \mathrm{Re}\{\tilde{g}_k^H\, \tilde{g}_l\}, &
+    [\bm{b}]_k &= \tfrac{2}{\sigma^2}\, \mathrm{Re}\{\bm{\Delta}^H\, \tilde{g}_k\}, \\
+    \bm{A}(\bm{\eta}) &= -\tilde{\bm{J}}(\bm{\eta}) + \bm{A}_\Delta(\bm{\eta}), &
+    [\bm{A}_\Delta]_{kl} &= \tfrac{2}{\sigma^2}\, \mathrm{Re}\{\bm{\Delta}^H\, \tilde{h}_{kl}\}. & &
+\end{align}
+The matrix \(\tilde{\bm{J}}\) is the FIM of \texttt{otfs\_fim.tex} evaluated at \(\hat{x}\) instead of \(x\); the new content of this document is the bias vector \(\bm{b}\) and the Hessian correction \(\bm{A}_\Delta\), both linear in the mismatch \(\bm{\Delta}\). The bilinear pairing \(\langle f, g \rangle := \sum_{l'=0}^{N-1}\sum_{k'=0}^{M-1} f^*[l',k']\, g[l',k']\) of \texttt{otfs\_fim.tex} is reused throughout.
+
+\section{Matrix B}
+
+\subsection{Single Target Case}
+
+For \(P=1\), drop the target index. The mismatch is \(\bm{\Delta} = \tilde{\alpha}\, \Phi_e\) where \(\Phi_e[l',k'] := \tfrac{1}{NM}\sum_{l,k} e[l,k]\, A(l'-l)\, B(k-k')\) (no ICI) or with \(A \to K\) (ICI).
+
+\subsubsection{No OFDM-side ICI}
+
+The matrix \(\tilde{\bm{J}}\) reproduces equations~(11)--(19) of \texttt{otfs\_fim.tex} with all inner products formed from \(\hat{x}\) instead of \(x\):
+\begin{align}
+    [\tilde{\bm{J}}]_{\tilde{\alpha}_R, \tilde{\alpha}_R} &= [\tilde{\bm{J}}]_{\tilde{\alpha}_I, \tilde{\alpha}_I} = \tfrac{2}{\sigma^2}\,\langle \tilde{\Phi},\tilde{\Phi}\rangle, &
+    [\tilde{\bm{J}}]_{\tilde{\alpha}_R, \tilde{\alpha}_I} &= 0, \\
+    [\tilde{\bm{J}}]_{\tau, \tau} &= \tfrac{8\pi^2 (\Delta f)^2 |\tilde{\alpha}|^2}{\sigma^2}\, \langle \tilde{\Psi},\tilde{\Psi}\rangle, &
+    [\tilde{\bm{J}}]_{\nu, \nu} &= \tfrac{8\pi^2 T_S^2 |\tilde{\alpha}|^2}{\sigma^2}\, \langle \tilde{\Omega},\tilde{\Omega}\rangle, \\
+    [\tilde{\bm{J}}]_{\tau, \nu} &= -\tfrac{8\pi^2 \Delta f\, T_S\, |\tilde{\alpha}|^2}{\sigma^2}\, \mathrm{Re}\{\langle \tilde{\Psi},\tilde{\Omega}\rangle\}, &
+    [\tilde{\bm{J}}]_{\tilde{\alpha}_R, \tau} &= \tfrac{4\pi\Delta f}{\sigma^2}\, \mathrm{Im}\{\tilde{\alpha}\, \langle \tilde{\Phi},\tilde{\Psi}\rangle\}, \\
+    [\tilde{\bm{J}}]_{\tilde{\alpha}_R, \nu} &= -\tfrac{4\pi T_S}{\sigma^2}\, \mathrm{Im}\{\tilde{\alpha}\, \langle \tilde{\Phi},\tilde{\Omega}\rangle\}, &
+    [\tilde{\bm{J}}]_{\tilde{\alpha}_I, \tau} &= -\tfrac{4\pi\Delta f}{\sigma^2}\, \mathrm{Re}\{\tilde{\alpha}\, \langle \tilde{\Phi},\tilde{\Psi}\rangle\}, \\
+    [\tilde{\bm{J}}]_{\tilde{\alpha}_I, \nu} &= \tfrac{4\pi T_S}{\sigma^2}\, \mathrm{Re}\{\tilde{\alpha}\, \langle \tilde{\Phi},\tilde{\Omega}\rangle\}. & &
+\end{align}
+
+\paragraph{Bias vector.} The inner products \(\bm{\Delta}^H \tilde{g}_k\) reduce, target by target, to
+\begin{align}
+    \bm{\Delta}^H \tilde{g}_{\tilde{\alpha}_R} &= \tilde{\alpha}^*\, \langle \Phi_e, \tilde{\Phi}\rangle, &
+    \bm{\Delta}^H \tilde{g}_{\tilde{\alpha}_I} &= j\, \tilde{\alpha}^*\, \langle \Phi_e, \tilde{\Phi}\rangle, \\
+    \bm{\Delta}^H \tilde{g}_\tau &= -j2\pi\Delta f\, |\tilde{\alpha}|^2\, \langle \Phi_e, \tilde{\Psi}\rangle, &
+    \bm{\Delta}^H \tilde{g}_\nu &= j2\pi T_S\, |\tilde{\alpha}|^2\, \langle \Phi_e, \tilde{\Omega}\rangle,
+\end{align}
+whose real parts give
+\begin{align}
+    b_{\tilde{\alpha}_R} &= \tfrac{2}{\sigma^2}\, \mathrm{Re}\{\tilde{\alpha}^*\, \langle \Phi_e, \tilde{\Phi}\rangle\}, &
+    b_{\tilde{\alpha}_I} &= -\tfrac{2}{\sigma^2}\, \mathrm{Im}\{\tilde{\alpha}^*\, \langle \Phi_e, \tilde{\Phi}\rangle\}, \\
+    b_\tau &= \tfrac{4\pi\Delta f\, |\tilde{\alpha}|^2}{\sigma^2}\, \mathrm{Im}\{\langle \Phi_e, \tilde{\Psi}\rangle\}, &
+    b_\nu &= -\tfrac{4\pi T_S\, |\tilde{\alpha}|^2}{\sigma^2}\, \mathrm{Im}\{\langle \Phi_e, \tilde{\Omega}\rangle\}.
+\end{align}
+The matrix \(\bm{B} = \tilde{\bm{J}} + \bm{b}\bm{b}^T\) is symmetric; setting \(e \equiv 0\) (\(p = 0\)) drives \(\bm{b} \to \bm{0}\) and reduces \(\bm{B}\) to \(\tilde{\bm{J}} = \bm{J}\).
+
+\paragraph{Expected \(\bm{B}\) under i.i.d.\ unit-energy QPSK with BSC error rate \(p\).} Using \(\mathrm{E}[e^*[l,k]\, \hat{x}[l,k]] = -2p\) and the Bartlett-identity collapse of \texttt{otfs\_fim.tex} \(\S\)3.1.1, the expected inner products are
+\begin{equation}
+    \mathrm{E}\{\langle \Phi_e, \tilde{\Phi}\rangle\} = -2p\, NM, \qquad
+    \mathrm{E}\{\langle \Phi_e, \tilde{\Psi}\rangle\} = -2p\, M\, P_1, \qquad
+    \mathrm{E}\{\langle \Phi_e, \tilde{\Omega}\rangle\} = -2p\, N\, Q_1,
+\end{equation}
+with \(P_a := \sum_{n=0}^{N-1} n^a\) and \(Q_b := \sum_{m=0}^{M-1} m^b\) as in \texttt{otfs\_fim.tex}. Substituting,
+\begin{align}
+    \mathrm{E}\{b_{\tilde{\alpha}_R}\} &= -\tfrac{4p\, \tilde{\alpha}_R\, NM}{\sigma^2}, &
+    \mathrm{E}\{b_{\tilde{\alpha}_I}\} &= -\tfrac{4p\, \tilde{\alpha}_I\, NM}{\sigma^2}, &
+    \mathrm{E}\{b_\tau\} &= 0, &
+    \mathrm{E}\{b_\nu\} &= 0,
+\end{align}
+since the expected inner products are real. As in the OFDM no-ICI MCRB, the dominant linear-in-\(p\) bias is on the gain components and points along the gain vector; the kinematic-parameter biases have zero mean over the random data realization.
+
+\subsubsection{With OFDM-side ICI}
+
+The matrix \(\tilde{\bm{J}}\) reproduces equations~(34)--(42) of \texttt{otfs\_fim.tex} with \(x \to \hat{x}\) (replace \(\Omega\) by \(\Lambda\) and drop \(T_S\) prefactors from the \(\nu\)-entries since \(T_S\) is absorbed into \(\Lambda\)):
+\begin{align}
+    [\tilde{\bm{J}}]_{\tilde{\alpha}_R, \tilde{\alpha}_R} &= [\tilde{\bm{J}}]_{\tilde{\alpha}_I, \tilde{\alpha}_I} = \tfrac{2}{\sigma^2}\, \langle \tilde{\Phi},\tilde{\Phi}\rangle, &
+    [\tilde{\bm{J}}]_{\tilde{\alpha}_R, \tilde{\alpha}_I} &= 0, \\
+    [\tilde{\bm{J}}]_{\tau, \tau} &= \tfrac{8\pi^2 (\Delta f)^2 |\tilde{\alpha}|^2}{\sigma^2}\, \langle \tilde{\Psi},\tilde{\Psi}\rangle, &
+    [\tilde{\bm{J}}]_{\nu, \nu} &= \tfrac{8\pi^2 |\tilde{\alpha}|^2}{\sigma^2}\, \langle \tilde{\Lambda},\tilde{\Lambda}\rangle, \\
+    [\tilde{\bm{J}}]_{\tau, \nu} &= -\tfrac{8\pi^2 \Delta f\, |\tilde{\alpha}|^2}{\sigma^2}\, \mathrm{Re}\{\langle \tilde{\Psi},\tilde{\Lambda}\rangle\}, &
+    [\tilde{\bm{J}}]_{\tilde{\alpha}_R, \tau} &= \tfrac{4\pi\Delta f}{\sigma^2}\, \mathrm{Im}\{\tilde{\alpha}\, \langle \tilde{\Phi},\tilde{\Psi}\rangle\}, \\
+    [\tilde{\bm{J}}]_{\tilde{\alpha}_R, \nu} &= -\tfrac{4\pi}{\sigma^2}\, \mathrm{Im}\{\tilde{\alpha}\, \langle \tilde{\Phi},\tilde{\Lambda}\rangle\}, &
+    [\tilde{\bm{J}}]_{\tilde{\alpha}_I, \tau} &= -\tfrac{4\pi\Delta f}{\sigma^2}\, \mathrm{Re}\{\tilde{\alpha}\, \langle \tilde{\Phi},\tilde{\Psi}\rangle\}, \\
+    [\tilde{\bm{J}}]_{\tilde{\alpha}_I, \nu} &= \tfrac{4\pi}{\sigma^2}\, \mathrm{Re}\{\tilde{\alpha}\, \langle \tilde{\Phi},\tilde{\Lambda}\rangle\}. & &
+\end{align}
+
+\paragraph{Bias vector.} The same template gives, with \(T_S\) absorbed into \(\tilde{\Lambda}\),
+\begin{align}
+    b_{\tilde{\alpha}_R} &= \tfrac{2}{\sigma^2}\, \mathrm{Re}\{\tilde{\alpha}^*\, \langle \Phi_e, \tilde{\Phi}\rangle\}, &
+    b_{\tilde{\alpha}_I} &= -\tfrac{2}{\sigma^2}\, \mathrm{Im}\{\tilde{\alpha}^*\, \langle \Phi_e, \tilde{\Phi}\rangle\}, \\
+    b_\tau &= \tfrac{4\pi\Delta f\, |\tilde{\alpha}|^2}{\sigma^2}\, \mathrm{Im}\{\langle \Phi_e, \tilde{\Psi}\rangle\}, &
+    b_\nu &= -\tfrac{4\pi\, |\tilde{\alpha}|^2}{\sigma^2}\, \mathrm{Im}\{\langle \Phi_e, \tilde{\Lambda}\rangle\}.
+\end{align}
+
+\paragraph{Expected \(\bm{B}\) under i.i.d.\ unit-energy QPSK with BSC error rate \(p\).} Using the diagonal-collapse identities of \texttt{otfs\_fim.tex} \(\S\)3.1.2 (now applied to \(\langle \Phi_e, \cdot\rangle\) inner products, which differ from \(\langle \tilde\Phi, \cdot \rangle\) only by the \(-2p\) scalar pre-factor),
+\begin{equation}
+    \mathrm{E}\{\langle \Phi_e, \tilde{\Phi}\rangle\} = -2p\, M\, \mathcal{S}_0, \quad
+    \mathrm{E}\{\langle \Phi_e, \tilde{\Psi}\rangle\} = -2p\, M\, \mathcal{S}_1, \quad
+    \mathrm{E}\{\langle \Phi_e, \tilde{\Lambda}\rangle\} = -2p\, [T_S\, Q_1\, \mathcal{S}_0 + M\, \mathcal{T}_0],
+\end{equation}
+with \(\mathcal{S}_a, \mathcal{T}_a\) the data-independent ICI sums of \texttt{ofdm\_fim.tex} (eqs.~(27) there) and \(Q_1 = M(M-1)/2\). Substituting,
+\begin{align}
+    \mathrm{E}\{b_{\tilde{\alpha}_R}\} &= -\tfrac{4p\, M\, \mathcal{S}_0}{\sigma^2}\, \tilde{\alpha}_R, &
+    \mathrm{E}\{b_{\tilde{\alpha}_I}\} &= -\tfrac{4p\, M\, \mathcal{S}_0}{\sigma^2}\, \tilde{\alpha}_I, \\
+    \mathrm{E}\{b_\tau\} &= 0, &
+    \mathrm{E}\{b_\nu\} &= \tfrac{8\pi\, p\, |\tilde{\alpha}|^2\, M}{\sigma^2}\, \mathrm{Im}\{\mathcal{T}_0\},
+\end{align}
+where the kinematic biases follow the same pattern as in the OFDM ICI case: \(\mathrm{E}\{b_\tau\} = 0\) because \(\mathcal{S}_1\) is real, and \(\mathrm{E}\{b_\nu\}\) inherits a small imaginary contribution from the generally complex \(\mathcal{T}_0\).
+
+\subsection{Multiple Target Case}
+
+For \(P > 1\), stack \(\bm{\eta} = [\bm{\eta}_1^T, \ldots, \bm{\eta}_P^T]^T\) with \(\bm{\eta}_p = [\tilde{\alpha}_{p,R}, \tilde{\alpha}_{p,I}, \tau_p, \nu_p]^T\). The mismatch is \(\bm{\Delta} = \sum_p \tilde{\alpha}_p\, \Phi_{e,p}\), and the bias vector entry for target \(p\) sums over the source target index \(r\):
+\begin{equation}
+    [\bm{b}]_{(p,k)} = \tfrac{2}{\sigma^2}\, \mathrm{Re}\!\left\{ \sum_{r=1}^{P} \tilde{\alpha}_r^*\, \langle \Phi_{e,r}, \tilde{g}_{p,k}\rangle \right\}.
+\end{equation}
+The matrix \(\tilde{\bm{J}}\) inherits the block structure of \texttt{otfs\_fim.tex} \(\S\)3.2 evaluated at \(\hat{x}\).
+
+\subsubsection{No OFDM-side ICI}
+
+Diagonal blocks \(\tilde{\bm{J}}_{p,p}\) reproduce the single-target no-ICI \(\tilde{\bm{J}}\). Off-diagonal blocks \(\tilde{\bm{J}}_{p,q}\) (\(p \neq q\)) follow the template of \texttt{otfs\_fim.tex} eqs.~(45)--(56) with \(x \to \hat{x}\) inside each per-target shorthand. Per-target bias entries:
+\begin{align}
+    b_{p, \tilde{\alpha}_R} &= \tfrac{2}{\sigma^2}\, \mathrm{Re}\!\left\{ \sum_r \tilde{\alpha}_r^*\, \langle \Phi_{e,r}, \tilde{\Phi}_p\rangle \right\}, &
+    b_{p, \tilde{\alpha}_I} &= -\tfrac{2}{\sigma^2}\, \mathrm{Im}\!\left\{ \sum_r \tilde{\alpha}_r^*\, \langle \Phi_{e,r}, \tilde{\Phi}_p\rangle \right\}, \\
+    b_{p, \tau} &= \tfrac{4\pi\Delta f}{\sigma^2}\, \mathrm{Im}\!\left\{ \tilde{\alpha}_p\, \sum_r \tilde{\alpha}_r^*\, \langle \Phi_{e,r}, \tilde{\Psi}_p\rangle \right\}, &
+    b_{p, \nu} &= -\tfrac{4\pi T_S}{\sigma^2}\, \mathrm{Im}\!\left\{ \tilde{\alpha}_p\, \sum_r \tilde{\alpha}_r^*\, \langle \Phi_{e,r}, \tilde{\Omega}_p\rangle \right\}.
+\end{align}
+Matrix \(\bm{B}\) is assembled block-wise as \(\bm{B}_{p,q} = \tilde{\bm{J}}_{p,q} + \bm{b}_p\, \bm{b}_q^T\). Under i.i.d.\ unit-energy QPSK \(x\) and BSC error rate \(p_e\), the expected cross-target inner products
+\begin{equation}
+    \mathrm{E}\{\langle \Phi_{e,r}, \tilde{\Phi}_p^{(a_1,b_1)}\rangle\} = -2 p_e\, F_{a_1}(-\Delta f\, \Delta\tau_{rp}, N)\, F_{b_1}(T_S\, \Delta\nu_{rp}, M),
+\end{equation}
+with \(F_a\) the Dirichlet-type sum of \texttt{otfs\_fim.tex} (eq.~(53)), \(\Delta\tau_{rp} := \tau_p - \tau_r\), \(\Delta\nu_{rp} := \nu_p - \nu_r\), and \(\tilde{\Phi}_p^{(a_1,b_1)} \in \{\tilde{\Phi}_p, \tilde{\Psi}_p, \tilde{\Omega}_p\}\). The expected \(\bm{b}_p\) is the OFDM no-ICI QPSK bias vector with the same cross-target Dirichlet weighting that links the OFDM and OTFS FIMs in \texttt{otfs\_fim.tex} \(\S\)3.2.1.
+
+\subsubsection{With OFDM-side ICI}
+
+Diagonal and off-diagonal block structures follow \texttt{otfs\_fim.tex} \(\S\)3.2.2 with \(x \to \hat{x}\). The bias vector entries become
+\begin{align}
+    b_{p, \tilde{\alpha}_R} &= \tfrac{2}{\sigma^2}\, \mathrm{Re}\!\left\{ \sum_r \tilde{\alpha}_r^*\, \langle \Phi_{e,r}, \tilde{\Phi}_p\rangle \right\}, &
+    b_{p, \tilde{\alpha}_I} &= -\tfrac{2}{\sigma^2}\, \mathrm{Im}\!\left\{ \sum_r \tilde{\alpha}_r^*\, \langle \Phi_{e,r}, \tilde{\Phi}_p\rangle \right\}, \\
+    b_{p, \tau} &= \tfrac{4\pi\Delta f}{\sigma^2}\, \mathrm{Im}\!\left\{ \tilde{\alpha}_p\, \sum_r \tilde{\alpha}_r^*\, \langle \Phi_{e,r}, \tilde{\Psi}_p\rangle \right\}, &
+    b_{p, \nu} &= -\tfrac{4\pi}{\sigma^2}\, \mathrm{Im}\!\left\{ \tilde{\alpha}_p\, \sum_r \tilde{\alpha}_r^*\, \langle \Phi_{e,r}, \tilde{\Lambda}_p\rangle \right\}.
+\end{align}
+Under i.i.d.\ unit-energy QPSK and BSC error rate \(p_e\), the expected cross-target inner products inherit the kernel-summed moments \(\mathcal{S}_a^{p,q}, \mathcal{T}_a^{p,q}, \check{\mathcal{T}}_a^{p,q}, \mathcal{U}^{p,q}\) of \texttt{otfs\_fim.tex} \(\S\)3.2.2 with an overall \(-2 p_e\) factor:
+\begin{align}
+    \mathrm{E}\{\langle \Phi_{e,r}, \tilde{\Phi}_p\rangle\} &= -2p_e\, \mathcal{S}_0^{r,p}\, F_0(T_S\Delta\nu_{rp}, M), &
+    \mathrm{E}\{\langle \Phi_{e,r}, \tilde{\Psi}_p\rangle\} &= -2p_e\, \mathcal{S}_1^{r,p}\, F_0(T_S\Delta\nu_{rp}, M), \\
+    \mathrm{E}\{\langle \Phi_{e,r}, \tilde{\Lambda}_p\rangle\} &= -2p_e\, \left[ T_S\, \mathcal{S}_0^{r,p}\, F_1(T_S\Delta\nu_{rp}, M) + \mathcal{T}_0^{r,p}\, F_0(T_S\Delta\nu_{rp}, M) \right]. & &
+\end{align}
+
+\section{Matrix A}
+
+\(\bm{A} = -\tilde{\bm{J}} + \bm{A}_\Delta\) with \(\tilde{\bm{J}}\) as in Section~1.
+
+\subsection{Single Target Case}
+
+Using \(\bm{\Delta} = \tilde{\alpha}\, \Phi_e\) and the Hessian table of the introduction (no OFDM-side ICI):
+\begin{align}
+    [\bm{A}_\Delta]_{\tilde{\alpha}_R, \tilde{\alpha}_R} &= [\bm{A}_\Delta]_{\tilde{\alpha}_I, \tilde{\alpha}_I} = [\bm{A}_\Delta]_{\tilde{\alpha}_R, \tilde{\alpha}_I} = 0, \\
+    [\bm{A}_\Delta]_{\tilde{\alpha}_R, \tau} &= \tfrac{4\pi\Delta f}{\sigma^2}\, \mathrm{Im}\{\tilde{\alpha}^*\, \langle \Phi_e, \tilde{\Psi}\rangle\}, &
+    [\bm{A}_\Delta]_{\tilde{\alpha}_R, \nu} &= -\tfrac{4\pi T_S}{\sigma^2}\, \mathrm{Im}\{\tilde{\alpha}^*\, \langle \Phi_e, \tilde{\Omega}\rangle\}, \\
+    [\bm{A}_\Delta]_{\tilde{\alpha}_I, \tau} &= \tfrac{4\pi\Delta f}{\sigma^2}\, \mathrm{Re}\{\tilde{\alpha}^*\, \langle \Phi_e, \tilde{\Psi}\rangle\}, &
+    [\bm{A}_\Delta]_{\tilde{\alpha}_I, \nu} &= -\tfrac{4\pi T_S}{\sigma^2}\, \mathrm{Re}\{\tilde{\alpha}^*\, \langle \Phi_e, \tilde{\Omega}\rangle\}, \\
+    [\bm{A}_\Delta]_{\tau, \tau} &= -\tfrac{8\pi^2 (\Delta f)^2 |\tilde{\alpha}|^2}{\sigma^2}\, \mathrm{Re}\{\langle \Phi_e, \tilde{\Xi}\rangle\}, &
+    [\bm{A}_\Delta]_{\nu, \nu} &= -\tfrac{8\pi^2 T_S^2 |\tilde{\alpha}|^2}{\sigma^2}\, \mathrm{Re}\{\langle \Phi_e, \tilde{\Theta}\rangle\}, \\
+    [\bm{A}_\Delta]_{\tau, \nu} &= \tfrac{8\pi^2 \Delta f\, T_S\, |\tilde{\alpha}|^2}{\sigma^2}\, \mathrm{Re}\{\langle \Phi_e, \tilde{\Omega}_1\rangle\}. & &
+\end{align}
+For the ICI case, substitute the kernels \(A \to K\), \(A' \to K^{(1)}\), \(A'' \to K^{(2)}\) on the delay side and use the ICI Hessian template. We separate the two channel models below.
+
+\subsubsection{No OFDM-side ICI}
+
+The entries above apply verbatim. Under i.i.d.\ unit-energy QPSK with BSC error rate \(p\), the inner products simplify via the (I)SFFT/Bartlett collapse of \texttt{otfs\_fim.tex} \(\S\)3.1.1:
+\begin{equation}
+    \mathrm{E}\{\langle \Phi_e, \tilde{\Psi}\rangle\} = -2p\, M\, P_1, \quad
+    \mathrm{E}\{\langle \Phi_e, \tilde{\Omega}\rangle\} = -2p\, N\, Q_1,
+\end{equation}
+\begin{equation}
+    \mathrm{E}\{\langle \Phi_e, \tilde{\Xi}\rangle\} = -2p\, M\, P_2, \quad
+    \mathrm{E}\{\langle \Phi_e, \tilde{\Omega}_1\rangle\} = -2p\, P_1\, Q_1, \quad
+    \mathrm{E}\{\langle \Phi_e, \tilde{\Theta}\rangle\} = -2p\, N\, Q_2,
+\end{equation}
+all real. Substituting,
+\begin{align}
+    \mathrm{E}\{[\bm{A}_\Delta]_{\tilde{\alpha}_R, \tau}\} &= 0, &
+    \mathrm{E}\{[\bm{A}_\Delta]_{\tilde{\alpha}_R, \nu}\} &= 0, \\
+    \mathrm{E}\{[\bm{A}_\Delta]_{\tilde{\alpha}_I, \tau}\} &= -\tfrac{8\pi\, p\, \tilde{\alpha}_R\, \Delta f\, M\, P_1}{\sigma^2}, &
+    \mathrm{E}\{[\bm{A}_\Delta]_{\tilde{\alpha}_I, \nu}\} &= \tfrac{8\pi\, p\, \tilde{\alpha}_R\, T_S\, N\, Q_1}{\sigma^2}, \\
+    \mathrm{E}\{[\bm{A}_\Delta]_{\tau, \tau}\} &= \tfrac{16\pi^2\, p\, |\tilde{\alpha}|^2\, (\Delta f)^2\, M\, P_2}{\sigma^2}, &
+    \mathrm{E}\{[\bm{A}_\Delta]_{\nu, \nu}\} &= \tfrac{16\pi^2\, p\, |\tilde{\alpha}|^2\, T_S^2\, N\, Q_2}{\sigma^2}, \\
+    \mathrm{E}\{[\bm{A}_\Delta]_{\tau, \nu}\} &= -\tfrac{16\pi^2\, p\, |\tilde{\alpha}|^2\, \Delta f\, T_S\, P_1\, Q_1}{\sigma^2}. & &
+\end{align}
+Combining with \(-\tilde{\bm{J}}\):
+\begin{equation}
+    \mathrm{E}\{[\bm{A}]_{\tau,\tau}\} = -(1-2p)\, \mathrm{E}\{[\bm{J}]_{\tau,\tau}\}, \qquad
+    \mathrm{E}\{[\bm{A}]_{\nu,\nu}\} = -(1-2p)\, \mathrm{E}\{[\bm{J}]_{\nu,\nu}\}, \qquad
+    \mathrm{E}\{[\bm{A}]_{\tau,\nu}\} = -(1-2p)\, \mathrm{E}\{[\bm{J}]_{\tau,\nu}\},
+\end{equation}
+and analogously on the \(\tilde{\alpha}_I\)-rows. The same \((1-2p)\)-shrinking that appeared in the OFDM no-ICI MCRB carries over to the OTFS no-ICI MCRB, as expected from the (I)SFFT-unitarity equivalence of \texttt{otfs\_fim.tex}.
+
+\subsubsection{With OFDM-side ICI}
+
+Hessian entries pick up the ICI-aware kernels. With \(\tilde{\Lambda}\) replacing \(\tilde{\Omega}\) (and \(T_S\) absorbed) on first derivatives, the second derivatives of \(\tilde\mu\) split as
+\begin{align}
+    \tilde{h}_{\tilde{\alpha}_R, \tau} &= -j2\pi\Delta f\, \tilde{\Psi}, &
+    \tilde{h}_{\tilde{\alpha}_R, \nu} &= j2\pi\, \tilde{\Lambda}, \\
+    \tilde{h}_{\tilde{\alpha}_I, \tau} &= 2\pi\Delta f\, \tilde{\Psi}, &
+    \tilde{h}_{\tilde{\alpha}_I, \nu} &= -2\pi\, \tilde{\Lambda}, \\
+    \tilde{h}_{\tau, \tau} &= -4\pi^2 (\Delta f)^2\, \tilde{\alpha}\, \tilde{\Xi}^K, &
+    \tilde{h}_{\nu, \nu} &= -4\pi^2\, \tilde{\alpha}\, \tilde{\Theta}^K, \\
+    \tilde{h}_{\tau, \nu} &= 4\pi^2 \Delta f\, \tilde{\alpha}\, \tilde{\Omega}_1^K, & &
+\end{align}
+with the ICI-extended shorthand
+\begin{align}
+    \tilde{\Xi}^K[l',k']      &:= \tfrac{1}{NM}\sum_{l,k} \hat{x}[l,k]\, K^{(2)}(l',l)\, B(k-k'), \\
+    \tilde{\Omega}_1^K[l',k'] &:= \tfrac{1}{NM}\sum_{l,k} \hat{x}[l,k]\, \left[ T_S\, K^{(1)}(l',l)\, B'(k-k') + K_{(1)}^{I'}(l',l)\, B(k-k') \right], \\
+    \tilde{\Theta}^K[l',k']   &:= \tfrac{1}{NM}\sum_{l,k} \hat{x}[l,k]\, \left[ T_S^2\, K(l',l)\, B''(k-k') + 2 T_S\, K^{I'}(l',l)\, B'(k-k') + K^{I''}(l',l)\, B(k-k') \right],
+\end{align}
+where \(K^{(2)}\) is the \((n')^2\)-weighted version of \(K\), \(K_{(1)}^{I'}\) is the \(n'\)-weighted \(I'\)-derivative kernel, and \(K^{I''}\) carries the second \(\nu\)-derivative of \(I\). The shorthand collapses to \(\tilde{\Xi},\, T_S\, \tilde{\Omega}_1,\, T_S^2\, \tilde{\Theta}\) respectively in the limit \(I \to \delta\), \(I' \to 0\). The \(\bm{A}_\Delta\) entries take the same form as the no-ICI listing above with these substitutions:
+\begin{align}
+    [\bm{A}_\Delta]_{\tilde{\alpha}_R, \nu} &= -\tfrac{4\pi}{\sigma^2}\, \mathrm{Im}\{\tilde{\alpha}^*\, \langle \Phi_e, \tilde{\Lambda}\rangle\}, &
+    [\bm{A}_\Delta]_{\tilde{\alpha}_I, \nu} &= -\tfrac{4\pi}{\sigma^2}\, \mathrm{Re}\{\tilde{\alpha}^*\, \langle \Phi_e, \tilde{\Lambda}\rangle\}, \\
+    [\bm{A}_\Delta]_{\tau, \tau} &= -\tfrac{8\pi^2 (\Delta f)^2 |\tilde{\alpha}|^2}{\sigma^2}\, \mathrm{Re}\{\langle \Phi_e, \tilde{\Xi}^K\rangle\}, &
+    [\bm{A}_\Delta]_{\nu, \nu} &= -\tfrac{8\pi^2 |\tilde{\alpha}|^2}{\sigma^2}\, \mathrm{Re}\{\langle \Phi_e, \tilde{\Theta}^K\rangle\}, \\
+    [\bm{A}_\Delta]_{\tau, \nu} &= \tfrac{8\pi^2 \Delta f\, |\tilde{\alpha}|^2}{\sigma^2}\, \mathrm{Re}\{\langle \Phi_e, \tilde{\Omega}_1^K\rangle\}, & &
+\end{align}
+and the \([\bm{A}_\Delta]_{\tilde{\alpha}_*, \tau}\), \([\bm{A}_\Delta]_{\tilde{\alpha}_R, \tilde{\alpha}_*}\) rows carry over from the no-ICI listing with \(\tilde{\Psi}\) the only modification.
+
+\paragraph{Expected \(\bm{A}\) under i.i.d.\ unit-energy QPSK with BSC error rate \(p\).} Using the data-collapse of \texttt{otfs\_fim.tex} \(\S\)3.1.2 with a \(-2p\) prefactor (and the compound ICI moments \(\mathcal{W}_0, \mathcal{W}_1, \mathcal{V}\) of \texttt{ofdm\_mcrb.tex}):
+\begin{align}
+    \mathrm{E}\{\langle \Phi_e, \tilde{\Psi}\rangle\} &= -2p\, M\, \mathcal{S}_1, &
+    \mathrm{E}\{\langle \Phi_e, \tilde{\Lambda}\rangle\} &= -2p\, \mathcal{W}_0, \\
+    \mathrm{E}\{\langle \Phi_e, \tilde{\Xi}^K\rangle\} &= -2p\, M\, \mathcal{S}_2, &
+    \mathrm{E}\{\langle \Phi_e, \tilde{\Theta}^K\rangle\} &= -2p\, \mathcal{V}, \\
+    \mathrm{E}\{\langle \Phi_e, \tilde{\Omega}_1^K\rangle\} &= -2p\, \mathcal{W}_1, & &
+\end{align}
+where \(\mathcal{W}_0 = T_S Q_1\, \mathcal{S}_0 + M\, \mathcal{T}_0\), \(\mathcal{W}_1 = T_S Q_1\, \mathcal{S}_1 + M\, \mathcal{T}_1\), \(\mathcal{V} = T_S^2 Q_2\, \mathcal{S}_0 + T_S\, M(M-1)\,\mathrm{Re}\{\mathcal{T}_0\} + M\, \mathcal{U}\). Substituting,
+\begin{align}
+    \mathrm{E}\{[\bm{A}_\Delta]_{\tilde{\alpha}_R, \tau}\} &= 0, &
+    \mathrm{E}\{[\bm{A}_\Delta]_{\tilde{\alpha}_R, \nu}\} &= \tfrac{8\pi\, p}{\sigma^2}\, \mathrm{Im}\{\tilde{\alpha}^*\, \mathcal{W}_0\}, \\
+    \mathrm{E}\{[\bm{A}_\Delta]_{\tilde{\alpha}_I, \tau}\} &= -\tfrac{8\pi\, p\, \tilde{\alpha}_R\, \Delta f\, M\, \mathcal{S}_1}{\sigma^2}, &
+    \mathrm{E}\{[\bm{A}_\Delta]_{\tilde{\alpha}_I, \nu}\} &= \tfrac{8\pi\, p}{\sigma^2}\, \mathrm{Re}\{\tilde{\alpha}^*\, \mathcal{W}_0\}, \\
+    \mathrm{E}\{[\bm{A}_\Delta]_{\tau, \tau}\} &= \tfrac{16\pi^2\, p\, |\tilde{\alpha}|^2\, M\, (\Delta f)^2}{\sigma^2}\, \mathcal{S}_2, &
+    \mathrm{E}\{[\bm{A}_\Delta]_{\nu, \nu}\} &= \tfrac{16\pi^2\, p\, |\tilde{\alpha}|^2}{\sigma^2}\, \mathcal{V}, \\
+    \mathrm{E}\{[\bm{A}_\Delta]_{\tau, \nu}\} &= -\tfrac{16\pi^2\, p\, |\tilde{\alpha}|^2\, \Delta f}{\sigma^2}\, \mathrm{Re}\{\mathcal{W}_1\}. & &
+\end{align}
+These match the OFDM ICI MCRB \(\bm{A}_\Delta\) entries (\texttt{ofdm\_mcrb.tex} \(\S\)2.1.2) exactly --- another manifestation of the (I)SFFT-unitarity equivalence noted in \texttt{otfs\_fim.tex}. The same scaling identity
+\begin{equation}
+    \mathrm{E}\{[\bm{A}_\Delta]_{kl}\} = 2p\, \mathrm{E}\{[\bm{J}]_{kl}\} \quad \text{for } (k,l) \in \{(\tau,\tau), (\nu,\nu), (\tau,\nu), (\tilde{\alpha}_I, \tau)\}
+\end{equation}
+holds, so \(\mathrm{E}\{[\bm{A}]_{kl}\} = -(1-2p)\, \mathrm{E}\{[\bm{J}]_{kl}\}\) on that four-entry set. The gain--Doppler rows deviate from the clean scaling because they involve \(\mathrm{Im/Re}\{\tilde\alpha^*\,\mathcal{W}_0\}\) in \(\bm{A}_\Delta\) versus \(\mathrm{Im/Re}\{\tilde\alpha\,\mathcal{W}_0\}\) in \(\bm{J}\); the two coincide only when \(\mathcal{W}_0\) is real (no-ICI limit).
+
+\subsection{Multiple Target Case}
+
+For \(P > 1\), cross-target Hessian entries vanish (\(\partial^2 \tilde{\mu}/\partial \eta_{p,k} \partial \eta_{q,l} = 0\) for \(p \neq q\)), so the cross-target structure of \(\bm{A}_\Delta\) is block-diagonal in the second-derivative target index while the mismatch contraction still sums over all targets:
+\begin{equation}
+    [\bm{A}_\Delta]_{(p,k),(q,l)} = \delta_{p,q}\, \tfrac{2}{\sigma^2}\, \mathrm{Re}\!\left\{ \sum_{r=1}^{P} \tilde{\alpha}_r^*\, \langle \Phi_{e,r}, \tilde{h}_{p, kl}\rangle \right\}.
+\end{equation}
+Off-diagonal blocks of \(\bm{A}\) thus collapse to \(\bm{A}_{p,q} = -\tilde{\bm{J}}_{p,q}\), inheriting the cross-target coupling of \texttt{otfs\_fim.tex} \(\S\)3.2 verbatim (with \(x \to \hat{x}\)). Diagonal blocks \(\bm{A}_{p,p} = -\tilde{\bm{J}}_{p,p} + \bm{A}_{\Delta, p,p}\) pick up the mismatch correction.
+
+\subsubsection{No OFDM-side ICI}
+
+Introducing the cross-target ``mismatch moment''
+\begin{equation}
+    \Sigma_p^{(a,b)} := \sum_{r=1}^{P} \tilde{\alpha}_r^*\, \langle \Phi_{e,r}, \tilde{\Phi}_p^{(a,b)}\rangle, \qquad \tilde{\Phi}_p^{(a,b)} \in \{\tilde{\Phi}_p, \tilde{\Psi}_p, \tilde{\Omega}_p, \tilde{\Xi}_p, \tilde{\Omega}_{1,p}, \tilde{\Theta}_p\},
+\end{equation}
+the diagonal-block entries of \(\bm{A}_\Delta\) read
+\begin{align}
+    [\bm{A}_{\Delta, p,p}]_{\tilde{\alpha}_R, \tau} &= \tfrac{4\pi\Delta f}{\sigma^2}\, \mathrm{Im}\{\Sigma_p^{(\Psi)}\}, &
+    [\bm{A}_{\Delta, p,p}]_{\tilde{\alpha}_R, \nu} &= -\tfrac{4\pi T_S}{\sigma^2}\, \mathrm{Im}\{\Sigma_p^{(\Omega)}\}, \\
+    [\bm{A}_{\Delta, p,p}]_{\tilde{\alpha}_I, \tau} &= \tfrac{4\pi\Delta f}{\sigma^2}\, \mathrm{Re}\{\Sigma_p^{(\Psi)}\}, &
+    [\bm{A}_{\Delta, p,p}]_{\tilde{\alpha}_I, \nu} &= -\tfrac{4\pi T_S}{\sigma^2}\, \mathrm{Re}\{\Sigma_p^{(\Omega)}\}, \\
+    [\bm{A}_{\Delta, p,p}]_{\tau, \tau} &= -\tfrac{8\pi^2 (\Delta f)^2}{\sigma^2}\, \mathrm{Re}\{\tilde{\alpha}_p\, \Sigma_p^{(\Xi)}\}, &
+    [\bm{A}_{\Delta, p,p}]_{\nu, \nu} &= -\tfrac{8\pi^2 T_S^2}{\sigma^2}\, \mathrm{Re}\{\tilde{\alpha}_p\, \Sigma_p^{(\Theta)}\}, \\
+    [\bm{A}_{\Delta, p,p}]_{\tau, \nu} &= \tfrac{8\pi^2 \Delta f\, T_S}{\sigma^2}\, \mathrm{Re}\{\tilde{\alpha}_p\, \Sigma_p^{(\Omega_1)}\}, & &
+\end{align}
+where \(\Sigma_p^{(\Psi)}\), \(\Sigma_p^{(\Omega)}\), \(\Sigma_p^{(\Xi)}\), \(\Sigma_p^{(\Omega_1)}\), \(\Sigma_p^{(\Theta)}\) abbreviate the cross-target sum with \(\tilde{\Phi}_p^{(a,b)}\) chosen accordingly. For \(r = p\) the contribution reduces to the single-target moment with \(\tilde{\alpha}_p^*\) factor; for \(r \neq p\) it picks up the standard cross-target Dirichlet weighting through the (I)SFFT \(F_a\)-factors of \texttt{otfs\_fim.tex} (eq.~(54)). Matrix \(\bm{A}\) is assembled as \(\bm{A}_{p,p} = -\tilde{\bm{J}}_{p,p} + \bm{A}_{\Delta, p,p}\) on the diagonal and \(\bm{A}_{p,q} = -\tilde{\bm{J}}_{p,q}\) off-diagonal.
+
+\subsubsection{With OFDM-side ICI}
+
+The diagonal-block \(\bm{A}_{\Delta, p,p}\) entries follow the single-target ICI template with \(\tilde{\Lambda}\), \(\tilde{\Xi}^K\), \(\tilde{\Omega}_1^K\), \(\tilde{\Theta}^K\) replacing the no-ICI counterparts and the inner products replaced by cross-target sums:
+\begin{align}
+    [\bm{A}_{\Delta, p,p}]_{\tilde{\alpha}_R, \tau} &= \tfrac{4\pi\Delta f}{\sigma^2}\, \mathrm{Im}\!\left\{ \sum_r \tilde{\alpha}_r^*\, \langle \Phi_{e,r}, \tilde{\Psi}_p\rangle \right\}, &
+    [\bm{A}_{\Delta, p,p}]_{\tilde{\alpha}_R, \nu} &= -\tfrac{4\pi}{\sigma^2}\, \mathrm{Im}\!\left\{ \sum_r \tilde{\alpha}_r^*\, \langle \Phi_{e,r}, \tilde{\Lambda}_p\rangle \right\}, \\
+    [\bm{A}_{\Delta, p,p}]_{\tilde{\alpha}_I, \tau} &= \tfrac{4\pi\Delta f}{\sigma^2}\, \mathrm{Re}\!\left\{ \sum_r \tilde{\alpha}_r^*\, \langle \Phi_{e,r}, \tilde{\Psi}_p\rangle \right\}, &
+    [\bm{A}_{\Delta, p,p}]_{\tilde{\alpha}_I, \nu} &= -\tfrac{4\pi}{\sigma^2}\, \mathrm{Re}\!\left\{ \sum_r \tilde{\alpha}_r^*\, \langle \Phi_{e,r}, \tilde{\Lambda}_p\rangle \right\}, \\
+    [\bm{A}_{\Delta, p,p}]_{\tau, \tau} &= -\tfrac{8\pi^2 (\Delta f)^2\, \tilde{\alpha}_p}{\sigma^2}\, \mathrm{Re}\!\left\{ \sum_r \tilde{\alpha}_r^*\, \langle \Phi_{e,r}, \tilde{\Xi}_p^K\rangle \right\}, &
+    [\bm{A}_{\Delta, p,p}]_{\nu, \nu} &= -\tfrac{8\pi^2\, \tilde{\alpha}_p}{\sigma^2}\, \mathrm{Re}\!\left\{ \sum_r \tilde{\alpha}_r^*\, \langle \Phi_{e,r}, \tilde{\Theta}_p^K\rangle \right\}, \\
+    [\bm{A}_{\Delta, p,p}]_{\tau, \nu} &= \tfrac{8\pi^2 \Delta f\, \tilde{\alpha}_p}{\sigma^2}\, \mathrm{Re}\!\left\{ \sum_r \tilde{\alpha}_r^*\, \langle \Phi_{e,r}, \tilde{\Omega}_{1,p}^K\rangle \right\}. & &
+\end{align}
+Under i.i.d.\ unit-energy QPSK and BSC error rate \(p_e\), the expected diagonal blocks coincide entry by entry with the OFDM ICI multi-target MCRB \(\bm{A}_{\Delta, p,p}\) of \texttt{ofdm\_mcrb.tex} \(\S\)2.2, by the same (I)SFFT-unitarity equivalence that linked the OTFS and OFDM FIMs in \texttt{otfs\_fim.tex} \(\S\)3.2.2. The off-diagonal blocks follow from \(\bm{A}_{p,q} = -\tilde{\bm{J}}_{p,q}\) using the ICI cross-target template of \texttt{otfs\_fim.tex} \(\S\)3.2.2 evaluated at \(\hat{x}\).
+
+\paragraph{Reduction to the matched case.} Setting \(e \equiv 0\) (\(p_e = 0\)) sends \(\bm{A}_\Delta \to 0\), \(\bm{b} \to \bm{0}\), and \(\bm{A} \to -\bm{J}\), \(\bm{B} \to \bm{J}\), so the Misspecified CRB \(\bm{A}^{-1} \bm{B}\, \bm{A}^{-T}\) collapses to the standard CRB \(\bm{J}^{-1}\) of \texttt{otfs\_fim.tex} in every regime considered above.
+
+\end{document}

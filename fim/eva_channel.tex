@@ -1,0 +1,127 @@
+\documentclass[11pt]{article}
+
+\usepackage[margin=1in]{geometry}
+\usepackage{amsmath,amssymb}
+\usepackage{booktabs}
+\usepackage{siunitx}
+
+\title{Extended Vehicular A (EVA) Channel Model}
+\author{}
+\date{}
+
+\begin{document}
+\maketitle
+
+\section{Overview}
+The Extended Vehicular A (EVA) channel is one of the standard multipath
+fading channel models specified by 3GPP in TS~36.101 for the conformance
+testing of LTE and LTE-Advanced user equipment. It represents a typical
+vehicular propagation environment and is widely used in the simulation of
+mobile broadband systems.
+
+The channel is modeled as a tapped delay line (TDL) with $L = 9$ resolvable
+paths. Each path is characterized by a complex path gain $\alpha_\ell$, an
+excess delay $\tau_\ell$, and its own Doppler shift $\nu_\ell$. The
+time-varying baseband channel impulse response is
+\begin{equation}
+    h(t,\tau) = \sum_{\ell=0}^{L-1} \alpha_\ell\,e^{j2\pi\nu_\ell t}\,\delta(\tau - \tau_\ell),
+\end{equation}
+where $\alpha_\ell$ is a zero-mean complex Gaussian random variable whose
+variance equals the relative average power $P_\ell$ of the $\ell$-th tap,
+and $\nu_\ell$ is bounded by the maximum Doppler frequency,
+$|\nu_\ell| \le f_d$.
+
+For a transmitted signal $x(t)$, the received signal $y(t)$ is obtained as
+the convolution of $x(t)$ with $h(t,\tau)$, plus additive white Gaussian
+noise $n(t)$:
+\begin{equation}
+    y(t) = \int_{-\infty}^{\infty} h(t,\tau)\,x(t-\tau)\,\mathrm{d}\tau + n(t)
+         = \sum_{\ell=0}^{L-1} \alpha_\ell\,e^{j2\pi\nu_\ell t}\,x(t-\tau_\ell) + n(t).
+\end{equation}
+
+\section{Power Delay Profile}
+The excess tap delays and relative average powers of the EVA channel are
+given in Table~\ref{tab:eva}.
+
+\begin{table}[h]
+    \centering
+    \caption{EVA channel power delay profile (3GPP TS~36.101).}
+    \label{tab:eva}
+    \begin{tabular}{c S[table-format=4.0] S[table-format=-2.1]}
+        \toprule
+        Tap index $\ell$ & {Excess delay $\tau_\ell$ (ns)} & {Relative power $P_\ell$ (dB)} \\
+        \midrule
+        0 &    0 &   0.0 \\
+        1 &   30 &  -1.5 \\
+        2 &  150 &  -1.4 \\
+        3 &  310 &  -3.6 \\
+        4 &  370 &  -0.6 \\
+        5 &  710 &  -9.1 \\
+        6 & 1090 &  -7.0 \\
+        7 & 1730 & -12.0 \\
+        8 & 2510 & -16.9 \\
+        \bottomrule
+    \end{tabular}
+\end{table}
+
+The maximum excess delay is $\tau_{\max} = \SI{2.51}{\micro\second}$, and the
+RMS delay spread is approximately $\SI{357}{\nano\second}$.
+
+\section{Doppler Configurations}
+Following the classical (Jakes) scattering assumption, the Doppler shift of
+each path is determined by the angle of arrival $\theta_\ell$ between the
+direction of motion and the incoming wavefront:
+\begin{equation}
+    \nu_\ell = \nu_{\max}\cos(\theta_\ell),
+    \qquad \theta_\ell \sim \mathcal{U}[0,\,2\pi),
+\end{equation}
+where $\nu_{\max} = v\,f_c / c$ is the maximum Doppler frequency, $v$ is the
+UE speed, $f_c$ is the carrier frequency, and $c$ is the speed of light.
+The angles $\{\theta_\ell\}$ are drawn independently across paths, so each
+tap experiences a different Doppler shift in $[-\nu_{\max},\,\nu_{\max}]$.
+
+Assuming a UE speed of $v = \SI{120}{\kilo\meter\per\hour} \approx
+\SI{33.33}{\meter\per\second}$ and an LTE carrier frequency of
+$f_c = \SI{2}{\giga\hertz}$, the maximum Doppler frequency is
+\begin{equation}
+    \nu_{\max}
+    = \frac{v\,f_c}{c}
+    = \frac{33.33 \times 2 \times 10^{9}}{3 \times 10^{8}}
+    \approx \SI{222.2}{\hertz}.
+\end{equation}
+
+\section{Reduced EVA Channel}
+For low-complexity simulation and analysis, a reduced version of the EVA
+channel is often used in which only the three most powerful taps of the
+original profile are retained. From Table~\ref{tab:eva}, these correspond to
+path indices $\ell \in \{0,\,4,\,2\}$ (listed in order of decreasing
+average power), giving the reduced power delay profile in
+Table~\ref{tab:eva-reduced}.
+
+\begin{table}[h]
+    \centering
+    \caption{Reduced EVA channel power delay profile (three strongest taps).}
+    \label{tab:eva-reduced}
+    \begin{tabular}{c c S[table-format=3.0] S[table-format=-1.1]}
+        \toprule
+        Tap index $\ell$ & Original index & {Excess delay $\tau_\ell$ (ns)} & {Relative power $P_\ell$ (dB)} \\
+        \midrule
+        0 & 0 &   0 &  0.0 \\
+        1 & 4 & 370 & -0.6 \\
+        2 & 2 & 150 & -1.4 \\
+        \bottomrule
+    \end{tabular}
+\end{table}
+
+With $L = 3$, the channel impulse response and received signal retain the
+same form as before:
+\begin{align}
+    h(t,\tau) &= \sum_{\ell=0}^{2} \alpha_\ell\,e^{j2\pi\nu_\ell t}\,\delta(\tau - \tau_\ell), \\
+    y(t)      &= \sum_{\ell=0}^{2} \alpha_\ell\,e^{j2\pi\nu_\ell t}\,x(t-\tau_\ell) + n(t),
+\end{align}
+where the path parameters $\{\alpha_\ell, \tau_\ell, \nu_\ell\}$ are taken
+from the reduced profile. To preserve unit average channel energy, the tap
+powers may optionally be renormalized so that
+$\sum_{\ell=0}^{2}\mathbb{E}\{|\alpha_\ell|^2\} = 1$.
+
+\end{document}

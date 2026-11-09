@@ -1,0 +1,162 @@
+\documentclass[11pt]{article}
+\usepackage[margin=1in]{geometry}
+\usepackage{amsmath,amssymb,bm}
+\usepackage{siunitx}
+\usepackage{hyperref}
+
+\newcommand{\df}{\Delta f}
+\newcommand{\CN}{\mathcal{CN}}
+\DeclareMathOperator*{\argmin}{arg\,min}
+
+\title{OFDM Channel Estimation and Data Demodulation\\
+       (EVA ICI channel, as implemented in \texttt{eva/})}
+\author{}
+\date{}
+
+\begin{document}
+\maketitle
+
+\section{Signal model}
+
+The frame is an $N\times M$ time--frequency (TF) grid: $n=0,\dots,N-1$ indexes the
+subcarriers (delay axis) and $m=0,\dots,M-1$ indexes the OFDM symbols (Doppler
+axis). With subcarrier spacing $\df$ and symbol duration $T=1/\df$ (no CP,
+$T_s=T$), the transmitted symbol on cell $(n,m)$ is $X[n,m]$, drawn from a
+unit-average-power $4$-QAM alphabet on data cells and set to a known pilot value
+on pilot cells.
+
+The channel has $P$ paths with complex gains $\alpha_p$, delays $\tau_p$
+(rounded to integer taps $\ell_p=\mathrm{round}(\tau_p N\df)$) and Dopplers
+$\nu_p=\nu_{\max}\cos\theta_p$. The doubly-selective OFDM input/output relation
+in the TF domain, including inter-carrier interference (ICI) from the Doppler, is
+\begin{equation}
+  Y[n,m]=\sum_{p=1}^{P}\alpha_p\sum_{n'=0}^{N-1}
+     X[n',m]\,
+     e^{-j2\pi n'\df\tau_p}\,
+     e^{\,j2\pi m T_s\nu_p}\,
+     I_p(n'-n)\;+\;Z[n,m],
+  \label{eq:io}
+\end{equation}
+where $Z[n,m]\sim\CN(0,\sigma^2)$ is white Gaussian noise ($\sigma^2=N_0$) and the
+ICI kernel (implemented in \texttt{get\_ici\_coeffs.m}) is
+\begin{equation}
+  I_p(\Delta)=\frac{e^{\,j2\pi\nu_pT}-1}{j2\pi(\Delta+\nu_pT)},\qquad
+  I_p(\Delta)\big|_{\Delta+\nu_pT=0}=1 .
+  \label{eq:ici}
+\end{equation}
+$I_p(\cdot)$ has unit peak at $\Delta=0$ and decays as $1/\Delta$; the normalized
+Doppler $\nu_{\max}T=\nu_{\max}/\df$ controls the ICI strength (here
+$\nu_{\max}/\df\approx0.03$, so the ICI is weak but nonzero). Equation
+\eqref{eq:io} is the function \texttt{ofdm\_mean.m}.
+
+\paragraph{Per-symbol matrix form.} Fixing the OFDM symbol $m$, \eqref{eq:io}
+is $\bm y_m=\bm H_m\bm x_m+\bm z_m$ with $\bm x_m=X[:,m]$, $\bm y_m=Y[:,m]$ and
+the banded circulant-like ICI matrix
+\begin{equation}
+  \big[\bm H_m\big]_{n,n'}=\sum_{p=1}^{P}\alpha_p\,
+     e^{\,j2\pi m T_s\nu_p}\,
+     e^{-j2\pi n'\df\tau_p}\,
+     I_p(n'-n).
+  \label{eq:Hm}
+\end{equation}
+Because $I_p$ decays quickly, $\bm H_m$ is effectively banded: only
+$|n'-n|\le W$ (with $W\gtrsim$ a few $\times\,k_\nu$, $k_\nu=\lceil\nu_{\max}
+M/\df\rceil$) is retained. The diagonal $n'=n$ carries $I_p(0)$; the off-diagonals
+are the ICI.
+
+\section{Pilot arrangement}
+
+Pilots are placed on a periodic TF sublattice
+\begin{equation}
+  \mathcal{P}=\{(n,m): n\in 1{:}d_N{:}N,\ m\in 1{:}d_M{:}M\},
+\end{equation}
+with spacings $(d_N,d_M)$ chosen (i)~fine enough to satisfy the
+delay/Doppler sampling limits $d_N<N/(2\ell_\tau)$, $d_M<M/(2k_\nu)$, and
+(ii)~so that the pilot count $|\mathcal{P}|$ matches the OTFS embedded-pilot
+overhead $(2\ell_\tau+1)M$ (\texttt{match\_pilot\_spacing.m}). All pilots share
+the same amplitude $a_p$, fixed so that the \emph{total} OFDM pilot power equals
+the energy of the single OTFS embedded pilot,
+\begin{equation}
+  |\mathcal{P}|\,a_p^2=E_p=10^{\mathrm{SNR}_p/10}\,N_0
+  \quad\Longrightarrow\quad
+  a_p=\sqrt{E_p/|\mathcal{P}|}.
+  \label{eq:pilotpow}
+\end{equation}
+Data occupy the complement $\mathcal{D}=\overline{\mathcal{P}}$.
+
+\section{Channel estimation}
+
+The receiver knows the pilot positions and values. At each pilot cell it forms
+the least-squares (LS) estimate of the effective TF channel by dividing out the
+known pilot,
+\begin{equation}
+  \widehat{H}_{\mathrm{LS}}[n_p,m_p]=\frac{Y[n_p,m_p]}{X[n_p,m_p]}
+   =\frac{Y[n_p,m_p]}{a_p},\qquad (n_p,m_p)\in\mathcal{P}.
+  \label{eq:ls}
+\end{equation}
+Comparing with \eqref{eq:io}, the LS value estimates the \emph{diagonal}
+(single-tap) frequency--time response
+\begin{equation}
+  H[n,m]\;\triangleq\;\big[\bm H_m\big]_{n,n}
+   =\sum_{p=1}^{P}\alpha_p\,I_p(0)\,
+      e^{-j2\pi n\df\tau_p}\,e^{\,j2\pi m T_s\nu_p},
+  \label{eq:Hdiag}
+\end{equation}
+corrupted by (a)~the ICI leaking from the neighbouring data symbols and
+(b)~noise $Z[n_p,m_p]/a_p$. Raising the pilot power (larger $\mathrm{SNR}_p$)
+suppresses the noise term but not the data-ICI term, which sets the
+high-$\mathrm{SNR}_p$ estimation floor.
+
+The full-grid estimate is obtained by $2$-D interpolation of the scattered LS
+samples (MATLAB \texttt{griddedInterpolant}, bilinear with nearest-neighbour
+extrapolation):
+\begin{equation}
+  \widehat{H}[n,m]=\mathcal{I}\!\left\{\widehat{H}_{\mathrm{LS}}[n_p,m_p]\right\}(n,m),
+  \qquad (n,m)\in\{0,\dots,N-1\}\times\{0,\dots,M-1\}.
+  \label{eq:interp}
+\end{equation}
+Because $H[n,m]$ in \eqref{eq:Hdiag} is a sum of $2$-D complex sinusoids in
+$(n,m)$, it is smooth on the sublattice scale and the interpolation is accurate
+provided the pilot spacings respect the sampling limits above.
+
+\section{Data demodulation}
+
+Two equalisers are used, both assuming unit-power data and noise variance $N_0$.
+
+\paragraph{(a) Known-channel banded MMSE (reference).}
+With the exact $\bm H_m$ from \eqref{eq:Hm} (kept to bandwidth $W$), each OFDM
+symbol is equalised by the linear MMSE filter
+\begin{equation}
+  \widehat{\bm x}_m=\big(\bm H_m^{\mathsf H}\bm H_m+N_0\,\bm I\big)^{-1}
+                    \bm H_m^{\mathsf H}\,\bm y_m ,
+  \label{eq:bmmse}
+\end{equation}
+which accounts for the ICI (\texttt{ofdm\_banded\_mmse.m}). This is the OFDM
+``ideal'' curve.
+
+\paragraph{(b) Pilot-aided one-tap MMSE (channel estimation case).}
+With only the estimated diagonal response $\widehat{H}[n,m]$ from
+\eqref{eq:interp}, the ICI off-diagonals are ignored and each cell is equalised
+independently:
+\begin{equation}
+  \widehat{X}[n,m]=\frac{\widehat{H}^{*}[n,m]\,Y[n,m]}
+                        {\,|\widehat{H}[n,m]|^{2}+N_0\,}.
+  \label{eq:onetap}
+\end{equation}
+The neglected ICI acts as a residual interference floor, so \eqref{eq:onetap}
+saturates at high SNR (the shallow, diversity-$1$ OFDM error floor).
+
+\paragraph{Hard decision.}
+The equalised soft symbols are mapped to the nearest constellation point,
+\begin{equation}
+  \widehat{X}_{\mathrm{hard}}[n,m]=
+     \argmin_{s\in\mathcal{A}}\big|\widehat{X}[n,m]-s\big|,\qquad (n,m)\in\mathcal{D},
+\end{equation}
+(implemented as \texttt{qamdemod}$\to$\texttt{qammod}), while pilot cells keep
+their known values. The resulting $\widehat{X}_{\mathrm{hard}}$ is the detected
+symbol grid: bit errors are counted from it for the BER curves, and, for the
+sensing analysis, its deviation from the transmitted $X$ is exactly the
+detected-symbol mismatch $E=X-\widehat{X}_{\mathrm{hard}}$ that drives the
+misspecified CRB.
+
+\end{document}

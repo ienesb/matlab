@@ -1,0 +1,121 @@
+\documentclass[11pt]{article}
+
+\usepackage{amsmath,amssymb,bm}
+\usepackage{hyperref}
+\usepackage{svg}
+\usepackage[a4paper,margin=1in]{geometry}
+
+\title{OFDM ICI Channel I/O Equations}
+\author{}
+\date{}
+
+\begin{document}
+\maketitle
+
+Assume OFDM signaling is used where \(N\) is the number of subcarriers and \(M\) is the number of OFDM symbols. The symbol for nth subcarrier and mth OFDM symbol is denoted by \(X[n,m]\). The mth OFDM symbol in time domain is
+\begin{equation}
+    s_m(t) = \sum_{n=0}^{N-1}X[n,m]e^{j2\pi n\Delta f t}, \quad 0 < t < T
+\end{equation}
+where \(\Delta f\) is the subcarrier spacing and \(T = 1/\Delta f\) is the OFDM symbol duration. The indices \(n\) and \(m\) satisfy \(0 \leq n \leq N-1\) and \(0 \leq m \leq M-1\). Cyclic prefix added to each symbols as:
+\begin{equation}
+    s_m^{CP}(t) = \begin{cases} s_m(t + T), & -T_{cp} < t < 0 \\ s_m(t), & 0 < t < T \end{cases}
+\end{equation}
+The transmitted signal is
+
+\begin{equation}
+    s(t) = \sum_{m=0}^{M-1} s_m^{CP}(t - mT_S)
+\end{equation}
+where \(T_S = T + T_{cp}\) is the OFDM symbol duration including cyclic prefix.
+The channel is modeled as a multipath channel with \(P\) paths, where the \(p\)th path has delay \(\tau_p\), Doppler shift \(\nu_p\), and complex gain \(\alpha_p\). The received signal is
+\begin{equation}
+    r(t) = \sum_{p=0}^{P-1} \alpha_p s(t - \tau_p) e^{j2\pi \nu_p t} + z(t)
+\end{equation}
+where \(z(t)\) is additive white Gaussian noise. The received signal is sampled at the receiver with sampling period \(T_S\) and the received symbol for nth subcarrier and mth OFDM symbol is obtained by taking the inner product of the received signal with the corresponding basis function:
+% \begin{equation}
+%     Y[n,m] = \int_{mT_S}^{mT_S + T} r(t) e^{-j2\pi n\Delta f t} dt
+% \end{equation}
+
+\begin{align}
+Y[n,m]
+&= \int_{mT_S}^{mT_S+T} r(t)\, e^{-j2\pi n\Delta f\, t}\, dt \notag \\
+&= \sum_p \alpha_p
+   \int_{mT_S}^{mT_S+T} s_m^{CP}(t - mT_S - \tau_p)\,
+   e^{j2\pi \nu_p t}\, e^{-j2\pi n\Delta f\, t}\, dt
+\end{align}
+
+\noindent Substituting $t' = t - mT_S$, $dt' = dt$:
+
+\begin{align}
+Y[n,m]
+&= \sum_p \alpha_p
+   \int_0^T s_m^{CP}(t' - \tau_p)\,
+   e^{j2\pi \nu_p(t' + mT_S)}\,
+   e^{-j2\pi n\Delta f(t' + mT_S)}\, dt' \\[6pt]
+&= \sum_{p=0}^{P-1} \alpha_p
+   \sum_{n'=0}^{N-1} X[n',m]
+   \int_0^T
+   e^{j2\pi n'\Delta f(t' - \tau_p)}\,
+   e^{j2\pi \nu_p(t' + mT_S)}\,
+   e^{-j2\pi n\Delta f(t' + mT_S)}\, dt' \\
+   &= \sum_{p=0}^{P-1} \alpha_p
+   \sum_{n'=0}^{N-1} X[n',m] 
+   {e^{-j2\pi n'\Delta f\, \tau_p}}
+    \cdot
+    {e^{j2\pi \nu_p\, mT_S}}
+    \cdot
+    {e^{-j2\pi n\Delta f\, mT_S}}
+    \cdot
+    \underbrace{
+    \int_0^T e^{j2\pi n'\Delta f\, t'}\,
+                e^{j2\pi \nu_p\, t'}\,
+                e^{-j2\pi n\Delta f\, t'}\, dt'
+    }_{\displaystyle = I_p(n'- n)} \\
+    &=  \sum_{p=0}^{P-1} \tilde{\alpha}_p
+   \sum_{n'=0}^{N-1} X[n',m] 
+   {e^{-j2\pi n'\Delta f\, \tau_p}}
+    {e^{j2\pi \nu_p\, mT_S}}
+    I_p(n'-n)
+\end{align}
+where
+\begin{equation}
+    \tilde{\alpha}_p = \alpha_p e^{-j2\pi n\Delta f\, mT_S}
+\end{equation}
+Therefore, if we ignore the inter-carrier interference (ICI) and assume that the integral is approximately 1 when \(n' = n\) and 0 otherwise, we can simplify the expression for \(Y[n,m]\) as follows:
+\begin{equation}
+Y[n,m]
+= \sum_p \tilde{\alpha}_p\, X[n,m]\,
+  e^{-j2\pi n\Delta f\, \tau_p}\,
+  e^{j2\pi mT_S\, \nu_p}
+\end{equation}
+
+\subsection*{Integral $I_p(n'-n)$}
+
+\begin{align}
+I_p(n'-n)
+&= \int_0^T e^{j2\pi(n'-n)\Delta f\, t'}\,
+             e^{j2\pi \nu_p\, t'}\, dt'
+ = \frac{e^{j2\pi\bigl[(n'-n)\Delta f + \nu_p\bigr]T} - 1}
+        {j2\pi\bigl[(n'-n)\Delta f + \nu_p\bigr]}
+ = \frac{e^{j2\pi\nu_pT} - 1}
+        {j2\pi\bigl[(n'-n)\Delta f + \nu_p\bigr]}
+\end{align}
+
+\begin{align}
+I_p(0)
+&= \int_0^T e^{j2\pi \nu_p\, t'}\, dt'
+ = \frac{e^{j2\pi \nu_p T} - 1}{j2\pi\nu_p}
+\qquad\Longrightarrow\qquad
+I_p(n)
+ = \frac{e^{j2\pi \nu_p T} - 1}{j2\pi(n\Delta f + \nu_p)}
+\end{align}
+
+If we do not ignore the inter-carrier interference (ICI), the received symbol \(Y[n,m]\) can be expressed as a sum of contributions from all subcarriers, weighted by the integral \(I(n'-n)\) which captures the effect of the Doppler shift and the subcarrier spacing:
+\begin{equation}
+Y[n,m]
+= \sum_{p=0}^{P-1} \tilde{\alpha}_p
+  \sum_{n'=0}^{N-1} X[n',m]\,
+  e^{-j2\pi n'\Delta f\, \tau_p}\,
+  e^{j2\pi mT_S\, \nu_p}\,
+  I_p(n'-n) 
+\end{equation}
+\end{document}

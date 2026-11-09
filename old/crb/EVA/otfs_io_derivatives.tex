@@ -1,0 +1,298 @@
+\documentclass[11pt]{article}
+\usepackage{amsmath, amssymb, mathtools}
+\usepackage{bm}
+\usepackage[a4paper,margin=1in]{geometry}
+
+\title{Derivatives of $y[k,\ell]$ w.r.t.\ Channel Parameters\\
+       (ICI, No ISI Case)}
+\date{}
+
+\newcommand{\deltaf}{\Delta f}
+\newcommand{\Deltaf}{\Delta f}
+\newcommand{\bmmu}{\bm{\mu}}
+\newcommand{\bmtildemu}{\bm{\tilde{\mu}}}
+\newcommand{\bmeta}{\bm{\eta}}
+\newcommand{\bmetabar}{\bm{\bar{\eta}}}
+\newcommand{\bmetahat}{\bm{\hat{\eta}}}
+\newcommand{\bmy}{\bm{y}}
+\newcommand{\bmY}{\bm{Y}}
+\newcommand{\bmX}{\bm{X}}
+\newcommand{\bmXhat}{\bm{\hat{X}}}
+\newcommand{\bmH}{\bm{H}}
+\newcommand{\bmg}{\bm{g}}
+\newcommand{\alphabar}{\bar{\alpha}}
+\newcommand{\taubar}{\bar{\tau}}
+\newcommand{\nubar}{\bar{\nu}}
+
+\begin{document}
+\maketitle
+
+\section*{Setup}
+
+From the last equation of \texttt{otfs\_io\_equations.tex},
+\begin{align}
+  y[k,\ell]
+  &= \frac{1}{MN}
+     \sum_{p=0}^{P-1}\alpha_p
+     \sum_{m=0}^{M-1}\sum_{n=0}^{N-1}\sum_{n'=0}^{N-1}
+     \sum_{k',\ell'}
+     x[k',\ell']\;
+     e^{\,j2\pi\!\left(\frac{m\ell'}{M}-\frac{n'k'}{N}\right)}
+     \nonumber\\
+  &\hspace{2.2cm}\times\;
+     e^{-j2\pi n'\Delta f\,\tau_p}\;
+     e^{\,j2\pi m T_s\,\nu_p}\;
+     I_p(n'-n;\nu_p)\;
+     e^{-j2\pi\!\left(\frac{m\ell}{M}-\frac{nk}{N}\right)}
+     \;+\;z[k,\ell].
+\end{align}
+Write
+\begin{equation}
+  y[k,\ell] \;=\; \sum_{p=0}^{P-1}\alpha_p\,\mu_p[k,\ell]\;+\;z[k,\ell],
+  \qquad
+  \alpha_p \;=\; a_p + j\,b_p,
+\end{equation}
+with
+\begin{equation}
+  \mu_p[k,\ell]
+  \triangleq
+  \frac{1}{MN}
+  \sum_{m,n,n',k',\ell'}
+  x[k',\ell']\,
+  e^{\,j2\pi\!\left(\frac{m(\ell'-\ell)}{M}-\frac{n'k'-nk}{N}\right)}
+  e^{-j2\pi n'\Delta f\tau_p}
+  e^{\,j2\pi m T_s\nu_p}
+  I_p(n'-n;\nu_p).
+  \label{eq:phi_p}
+\end{equation}
+$I_p(\cdot;\nu_p)$ depends on $\nu_p$ but not on $\tau_p$. 
+Denote
+\begin{equation}
+  I_p \triangleq I_p(n'-n;\nu_p),\qquad
+  I_p' \triangleq \frac{\partial I_p(n'-n;\nu_p)}{\partial \nu_p},\qquad
+  I_p'' \triangleq \frac{\partial^2 I_p(n'-n;\nu_p)}{\partial \nu_p^2}.
+\end{equation}
+
+Because $y[k,\ell]$ is a sum over paths, all derivatives w.r.t.\ parameters
+of path $p$ vanish for the $p'\neq p$ terms; the cross-path Hessian entries
+are zero.  Below, all sums are understood as in \eqref{eq:phi_p}.
+
+%% ============================================================
+\section*{First Derivatives}
+
+\paragraph{w.r.t.\ $a_p = \Re\{\alpha_p\}$:}
+\begin{equation}
+  \boxed{\;
+  \frac{\partial y[k,\ell]}{\partial a_p}
+  \;=\; \mu_p[k,\ell]
+  \;}
+\end{equation}
+
+\paragraph{w.r.t.\ $b_p = \Im\{\alpha_p\}$:}
+\begin{equation}
+  \boxed{\;
+  \frac{\partial y[k,\ell]}{\partial b_p}
+  \;=\; j\,\mu_p[k,\ell]
+  \;}
+\end{equation}
+
+\paragraph{w.r.t.\ $\tau_p$:}
+Only $e^{-j2\pi n'\Delta f\tau_p}$ depends on $\tau_p$, contributing a
+factor $-j2\pi n'\Delta f$:
+\begin{equation}
+  \boxed{\;
+  \frac{\partial y[k,\ell]}{\partial \tau_p}
+  \;=\; -\alpha_p\,\frac{j2\pi\Delta f}{MN}
+        \sum_{m,n,n',k',\ell'} n'\,
+        x[k',\ell']\,
+        e^{\,j2\pi\!\left(\frac{m(\ell'-\ell)}{M}-\frac{n'k'-nk}{N}\right)}
+        e^{-j2\pi n'\Delta f\tau_p}
+        e^{\,j2\pi m T_s\nu_p}
+        I_p
+  \;}
+\end{equation}
+
+\paragraph{w.r.t.\ $\nu_p$:}
+Both $e^{\,j2\pi m T_s\nu_p}$ and $I_p$ depend on $\nu_p$:
+\begin{equation}
+  \boxed{\;
+  \frac{\partial y[k,\ell]}{\partial \nu_p}
+  \;=\; \frac{\alpha_p}{MN}
+        \sum_{m,n,n',k',\ell'}
+        x[k',\ell']\,
+        e^{\,j2\pi\!\left(\frac{m(\ell'-\ell)}{M}-\frac{n'k'-nk}{N}\right)}
+        e^{-j2\pi n'\Delta f\tau_p}
+        e^{\,j2\pi m T_s\nu_p}
+        \bigl[\,j2\pi m T_s\,I_p + I_p'\,\bigr]
+  \;}
+\end{equation}
+
+%% ============================================================
+\section*{Second Derivatives}
+
+\paragraph{Pure amplitude entries:}
+Since $y$ is linear in $\alpha_p$,
+\begin{equation}
+  \boxed{\;
+  \frac{\partial^2 y[k,\ell]}{\partial a_p^2}
+  \;=\;
+  \frac{\partial^2 y[k,\ell]}{\partial b_p^2}
+  \;=\;
+  \frac{\partial^2 y[k,\ell]}{\partial a_p\,\partial b_p}
+  \;=\; 0.
+  \;}
+\end{equation}
+
+\paragraph{Mixed amplitude--delay / amplitude--Doppler:}
+\begin{align}
+  \boxed{\;
+  \frac{\partial^2 y[k,\ell]}{\partial a_p\,\partial \tau_p}
+  \;=\; \frac{1}{\alpha_p}\,\frac{\partial y[k,\ell]}{\partial \tau_p}
+  \;}
+  &\qquad
+  \boxed{\;
+  \frac{\partial^2 y[k,\ell]}{\partial b_p\,\partial \tau_p}
+  \;=\; \frac{j}{\alpha_p}\,\frac{\partial y[k,\ell]}{\partial \tau_p}
+  \;}
+  \\[6pt]
+  \boxed{\;
+  \frac{\partial^2 y[k,\ell]}{\partial a_p\,\partial \nu_p}
+  \;=\; \frac{1}{\alpha_p}\,\frac{\partial y[k,\ell]}{\partial \nu_p}
+  \;}
+  &\qquad
+  \boxed{\;
+  \frac{\partial^2 y[k,\ell]}{\partial b_p\,\partial \nu_p}
+  \;=\; \frac{j}{\alpha_p}\,\frac{\partial y[k,\ell]}{\partial \nu_p}
+  \;}
+\end{align}
+That is, just $\mu_p$-derivatives without the $\alpha_p$ pre-factor (and
+times $j$ for the $b_p$ row).
+
+\paragraph{Pure delay:}
+Each $\tau_p$-derivative pulls down another $j2\pi n'\Delta f$:
+\begin{equation}
+  \boxed{\;
+  \frac{\partial^2 y[k,\ell]}{\partial \tau_p^2}
+  \;=\; -\,\alpha_p\,\frac{(2\pi\Delta f)^2}{MN}
+        \sum_{m,n,n',k',\ell'} (n')^2\,
+        x[k',\ell']\,
+        e^{\,j2\pi\!\left(\frac{m(\ell'-\ell)}{M}-\frac{n'k'-nk}{N}\right)}
+        e^{-j2\pi n'\Delta f\tau_p}
+        e^{\,j2\pi m T_s\nu_p}
+        I_p
+  \;}
+\end{equation}
+
+\paragraph{Pure Doppler:}
+Differentiating
+$\bigl[j2\pi m T_s\,I_p + I_p'\bigr]\,e^{\,j2\pi m T_s\nu_p}$ once more
+in $\nu_p$ gives
+$\bigl[(j2\pi m T_s)^2 I_p + 2(j2\pi m T_s)\,I_p' + I_p''\bigr]\,e^{\,j2\pi m T_s\nu_p}$:
+\begin{equation}
+  \boxed{\;
+  \frac{\partial^2 y[k,\ell]}{\partial \nu_p^2}
+  \;=\; \frac{\alpha_p}{MN}
+        \sum_{m,n,n',k',\ell'}
+        x[k',\ell']\,
+        e^{\,j2\pi\!\left(\frac{m(\ell'-\ell)}{M}-\frac{n'k'-nk}{N}\right)}
+        e^{-j2\pi n'\Delta f\tau_p}
+        e^{\,j2\pi m T_s\nu_p}
+        \bigl[\,-(2\pi m T_s)^2 I_p + j4\pi m T_s\,I_p' + I_p''\,\bigr]
+  \;}
+\end{equation}
+
+\paragraph{Mixed delay--Doppler:}
+\begin{equation}
+  \boxed{\;
+  \frac{\partial^2 y[k,\ell]}{\partial \tau_p\,\partial \nu_p}
+  \;=\; -\frac{\alpha_p\,j2\pi\Delta f}{MN}
+        \sum_{m,n,n',k',\ell'} n'\,
+        x[k',\ell']\,
+        e^{\,j2\pi\!\left(\frac{m(\ell'-\ell)}{M}-\frac{n'k'-nk}{N}\right)}
+        e^{-j2\pi n'\Delta f\tau_p}
+        e^{\,j2\pi m T_s\nu_p}
+        \bigl[\,j2\pi m T_s\,I_p + I_p'\,\bigr]
+  \;}
+\end{equation}
+
+%% ============================================================
+\section*{Cross-path Hessian entries}
+
+For any parameters $\theta\in\{a_p,b_p,\tau_p,\nu_p\}$ and
+$\theta'\in\{a_{p'},b_{p'},\tau_{p'},\nu_{p'}\}$ with $p\neq p'$,
+\begin{equation}
+  \frac{\partial^2 y[k,\ell]}{\partial \theta\,\partial \theta'} = 0,
+\end{equation}
+because each path's contribution depends only on its own
+$(\alpha_p,\tau_p,\nu_p)$.
+
+%% ============================================================
+\section*{Summary (compact form)}
+
+Group the per-path derivatives via the convolution-like kernels
+\begin{align}
+  \mu_p[k,\ell]
+  &= \tfrac{1}{MN}\!\!\sum_{m,n,n',k',\ell'}
+     x[k',\ell']\,E_p[m,n,n';k,\ell,k',\ell'],
+  \\
+  \mu_p^{(\tau)}[k,\ell]
+  &= -\tfrac{j2\pi\Delta f}{MN}\!\!\sum_{m,n,n',k',\ell'}\!\! n'\,
+     x[k',\ell']\,E_p[m,n,n';k,\ell,k',\ell'],
+  \\
+  \mu_p^{(\nu)}[k,\ell]
+  &= \tfrac{1}{MN}\!\!\sum_{m,n,n',k',\ell'}
+     x[k',\ell']\,E_p[m,n,n';k,\ell,k',\ell']\,
+     \bigl(j2\pi m T_s + \tfrac{I_p'}{I_p}\bigr)\,I_p,
+\end{align}
+with
+\(
+  E_p[m,n,n';k,\ell,k',\ell']
+  \triangleq
+  e^{\,j2\pi(\frac{m(\ell'-\ell)}{M}-\frac{n'k'-nk}{N})}
+  e^{-j2\pi n'\Delta f\tau_p}
+  e^{\,j2\pi m T_s\nu_p}\,I_p.
+\)
+Then
+\begin{equation}
+  \begin{aligned}
+    \tfrac{\partial y}{\partial a_p} &= \mu_p, &
+    \tfrac{\partial y}{\partial b_p} &= j\mu_p, &
+    \tfrac{\partial y}{\partial \tau_p} &= \alpha_p\,\mu_p^{(\tau)}, &
+    \tfrac{\partial y}{\partial \nu_p} &= \alpha_p\,\mu_p^{(\nu)},
+  \end{aligned}
+\end{equation}
+which feeds directly into the gradient
+$\tilde{\bm g}_k(\bm\eta)=\partial\tilde{\bm\mu}/\partial\eta_k$ used in the
+MCRB derivations.
+
+\section*{MCRB}
+
+The A and B matrices are
+\begin{equation}
+  \bm{B}(\bm{\eta}) = \bm{J}(\bm{\eta}) + \bm{b}(\bm{\eta})\,\bm{b}^T(\bm{\eta})
+\end{equation}
+\begin{equation}
+  \bm{A}(\bm{\eta})
+  = -\bm{J}(\bm{\eta})
+    + \bm{A}_\Delta(\bm{\eta})
+\end{equation}
+where
+\begin{equation}
+    [\bm{b}(\bmeta)]_{k} = \frac{2}{\sigma^2}\Re\left\{(\bmmu(\bmetabar)-\bmtildemu(\bmeta))^H\left(\frac{\partial\bmtildemu (\bmeta)}{\partial \bmeta_k}\right)\right\}
+\end{equation}
+\begin{equation}
+  [\bm{A}_\Delta(\bm{\eta})]_{kl}
+  = \frac{2}{\sigma^2}
+    \Re\left\{(\bmmu(\bmetabar)-\bmtildemu(\bmeta))^H\left(\frac{\partial^2\bmtildemu (\bmeta)}{\partial \bmeta_k\partial \bmeta_l}\right)\right\}
+\end{equation}
+\begin{equation}
+  [\bm{J}(\bm{\eta})]_{k,l}
+  = \frac{2}{\sigma^2}
+    \Re\left\{
+    \left(\frac{\partial\bmtildemu (\bmeta)}{\partial \bmeta_k}\right)^H  
+    \left(\frac{\partial\bmtildemu (\bmeta)}{\partial \bmeta_l}\right)
+    \right\}
+  \label{eq:J-classical}
+\end{equation}
+
+\end{document}
