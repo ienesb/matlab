@@ -17,7 +17,9 @@ function run_manuscript_confirmation()
         end
     end
     run_manuscript_checks();
-    if isempty(gcp('nocreate')), parpool('Processes',8); end
+    % Default worker count of the local profile (8 on the old PC, 4 on the
+    % i7-4790); the results do not depend on it (crn_stream is keyed on the trial).
+    if isempty(gcp('nocreate')), parpool('Processes'); end
     t0 = tic;
     for k = 1:numel(variants)
         fprintf('\nCONFIRMATION variant=%s, seed=9101, trials=100, SNR=[4 8]\n',variants{k});

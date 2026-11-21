@@ -38,8 +38,8 @@ waveforms only.
 | `io/` | kernels (`exp_moments`, `ici_kernel`, `isi_kernel`), transforms, field builders (`fields_cp_ofdm`, `fields_rcp_ofdm`, `fields_rcp_otfs`), means (`io_*`), `rcp_otfs_time_sim` oracle |
 | `fim/` | `grad_stack`, `fim`, `fim_expected`, `crb_from_fim`, `crb_pilot_only`, `ct_crlb_floor`, `ici_moments`, `power_sums`, `dirichlet_moment`, `kappa_filter` |
 | `rx/` | `modem` (Gray 4/16-QAM, 16-PSK; no toolbox); OTFS `otfs_pilot_frame`, `otfs_threshold_ce`, `mp_detect_dd` (per-edge MP, Raviteja WCNC'18 damping); OFDM `ofdm_pilot_lattice`, `pilot_spacing_match`, `ofdm_ce` (interp / dft / dftdd), `ofdm_eq_1tap`, `ofdm_eq_banded`; BSC arms `bsc_symbols`, `bsc_match`; one-frame driver `ber_frame` |
-| `mcrb/` | `mcrb_AB_cp_ofdm`, `mcrb_AB_cp_otfs` (A, B, J̃, b, A_Δ at any evaluation point), `pseudo_true` (VARPRO / full-4P / closed form), `stab_quad_bin`, `mcrb_assemble` + `mcrb_eval` (affine-in-noise pieces G, F, BB, Gc), `mcrb_AB_expected`, `covb_cp_ofdm`, `covb_cp_otfs` (16×8 oracles), `mmle_cp` (mismatched MLE, overlay only) |
-| `run/` | CRB: `diag_cond_eva`, `run_crb_mt40_block` (Liu Fig. 1), `run_crb_eva`, `run_crb_mt40_frame`; BER: `run_ber_fig9` (Raviteja Fig. 9), `run_ber_eva`; MCRB: `run_covb_experiment`, `run_mcrb_bsc_eva`, `run_mcrb_rx_eva`, `run_mcrb_bsc_mt40` |
+| `mcrb/` | `mcrb_AB_cp_ofdm`, `mcrb_AB_cp_otfs` (A, B, J̃, b, A_Δ at any evaluation point), `pseudo_true` (VARPRO / full-4P / closed form), `stab_quad_bin`, `mcrb_assemble` + `mcrb_eval` (affine-in-noise pieces G, F, BB, Gc), `mcrb_AB_expected`, `covb_cp_ofdm`, `covb_cp_otfs` (16×8 oracles), `mmle_cp` (mismatched MLE; `'method','nm'` is the Nelder–Mead port, ~90 s per 512×128 frame; `'method','lsq'` is the same optimum by Gauss–Newton through `pseudo_true(..., 'target', Y)`, ~1 pseudo-true solve) |
+| `run/` | CRB: `diag_cond_eva`, `run_crb_mt40_block` (Liu Fig. 1), `run_crb_eva`, `run_crb_mt40_frame`; BER: `run_ber_fig9` (Raviteja Fig. 9), `run_ber_eva`; MCRB: `run_covb_experiment`, `run_mcrb_bsc_eva`, `run_mcrb_rx_eva`, `run_mcrb_bsc_mt40`; submission-plan Phase 2: `run_phase2_eva` (the `run_mcrb_rx_eva` frame loop with both control arms, estimator arms, speed and genie-CSI options, checkpoint/resume; writes `results/p2_*.mat`), `run_phase2_campaign` (the queue) |
 | `plot/` | `plot_liu_fig1`, `plot_crb_vs_snr`, `plot_fig9`, `plot_ber_vs_snr`, `plot_mcrb_vs_p`, `plot_mcrb_vs_snr`, `plot_ber_mcrb_panels`, `plot_mcrb_mt40` |
 | `test/` | `run_all_tests`, `test_*`, `oracles/` (independent direct-DD builders), `oracle_paths` (adds `old/eva/utils` inside tests only) |
 | `results/`, `figures/` | outputs (`.mat`, `.png`) |
@@ -136,6 +136,36 @@ receiver taps will come from the io layer (no twist phase, `TS` in the Doppler k
   intervals at 10–15 dB with a 200-trial check at the paper's 15 dB vertex, OFDM at all SNRs;
   the 16–18 dB OTFS tail is governed by ~2 %-rate tap-truncation floor frames and needs ~1000
   frames per point).
+
+## Phase 2 runs (2026-11-18)
+
+`run_phase2_eva` reproduces `run_mcrb_rx_eva` exactly: on the 8-frame benchmark (SNR 0, 8, 20 dB, seed 9100)
+every legacy field (`trial.tr`, `kappa`, exit flags, error counts) is bit-identical to a same-day
+`run_mcrb_rx_eva` run on this PC, and within 4e-13 (relative) of the September Windows/R2025b file. Its
+additions are stored in the struct `x` (per-trial `eta_bar`, `eta0`, kinematic blocks of `G` and the genie
+CRB, error energy, the control arms `x.ctl`, the estimator arms `x.mmle`); the file header documents the
+layout. The control arms share the error positions (the stream state is rewound), so `uniform` and `nearest`
+differ only in the value of the wrong symbol. Design, queue, commands and status are in
+`../../latex/submission_plan.md`; `../../latex/tools/phase2_summary.py` prints progress tables from finished
+files or checkpoints. `run_all_tests('full')` = 256/256 with the estimator checks added to `test_mcrb` (260/260 since 2026-11-20, see below).
+
+Frame cap (same day): `run_phase2_eva(..., 'frames', n)` runs trials 1..n of every cell of the pass and keeps
+the checkpoint; a later call without it tops the run up. A capped call followed by a top-up is identical
+(`isequaln`) to one uncapped call. `run_phase2_campaign` now defaults to `'frames', 250` and stages `'ABCDEF'`;
+stages `G` and `X` hold the parts trimmed for time. Stage `G` (genie-CSI detectors, 120 and 240 km/h, 4 and
+8 dB, files with the suffix `_geniecsi`) was run on 2026-11-19; stage `X` was not run. `reduce_mcrb_rx_stats` computes BER, SER and drop
+fractions over the trials that were run, which changes nothing for complete cells.
+
+Pinned OFDM pilot lattice (2026-11-20): `ofdm_pilot_lattice(..., tol, [dN dM])`, `ber_frame` option
+`rx.ofdm_lattice` and `run_phase2_eva(..., 'ofdm_lattice', [37 2])` (file suffix `_lat37x2`) fix the pilot
+spacing instead of the search in `pilot_spacing_match`, whose answer depends on `k_nu`: on the reduced EVA it
+is (37, 2) at 120-360 km/h but (4, 19) at 60 km/h (both 896 pilots), which made the first 60 km/h run
+incomparable. Campaign stage `L` reran 60 km/h with (37, 2); use `CKPT_p2_eva_reduced_v60_n500_s9100_lat37x2.mat`,
+not the file without the suffix. Four checks in `test_rx` (quick suite 214, full suite 260).
+
+Status (2026-11-20): all Phase 2 runs are finished at 250 frames per point; the results stay in
+`results/CKPT_p2_*.mat` (ignored by git, so on this disk only). `../../latex/tools/export_phase2.py` reads the
+nine valid files and writes the paper's figures, table bodies and number macros.
 
 ## Status (2026-09-07)
 

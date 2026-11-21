@@ -131,9 +131,44 @@ function r = test_mcrb()
         eh = mmle_cp(Ys, Xs, gs, 1, false);
         [~, th, nh] = eta_unpack(eh);
         err(t, :) = [th - cs.tau, nh - cs.nu];
+        if t <= 20      % Gauss-Newton variant: same optimum as the Nelder-Mead port
+            el = mmle_cp(Ys, Xs, gs, 1, false, struct('method', 'lsq'));
+            [~, tl, nl] = eta_unpack(el);
+            dlsq(t) = max(abs(tl - th)/gs.bin_tau, abs(nl - nh)/gs.bin_nu); %#ok<AGROW>
+        end
     end
+    r = tc(r, 'MMLE lsq == nm optimum, single target [bins]', max(dlsq), 1e-4);
     Sc = crb_from_fim(Jc, gs, cs);
     r = tc(r, 'MMLE matched: delay RMSE <= 1.2 sqrt(CRB)',   sqrt(mean(err(:,1).^2))/sqrt(Sc.crb_tau) - 1.2, 0);
     r = tc(r, 'MMLE matched: Doppler RMSE <= 1.2 sqrt(CRB)', sqrt(mean(err(:,2).^2))/sqrt(Sc.crb_nu) - 1.2, 0);
     fprintf('    (info) MMLE RMSE/sqrt(CRB): delay %.3f, Doppler %.3f\n', sqrt(mean(err(:,1).^2))/sqrt(Sc.crb_tau), sqrt(mean(err(:,2).^2))/sqrt(Sc.crb_nu));
+
+    % ---- MMLE 'lsq' and the pseudo_true target option: three targets, ICI, detected symbols ----
+    [e_def, i_def] = pseudo_true(X, Xh, g0, cr, true);
+    [e_tgt, i_tgt] = pseudo_true([], Xh, g0, cr, true, struct('target', io_cp_ofdm(X, g0, cr, true), 'mask_nu', false));
+    r = tc(r, 'pseudo_true target = true mean == default solve', double(~isequal(e_def, e_tgt) || i_def.resnorm ~= i_tgt.resnorm), 0);
+    % three resolvable targets on 32 x 16 (the 16 x 8 legacy preset has all its
+    % delays inside 0.1 bin, where no periodogram start can separate the paths)
+    c3.P = 3;  c3.alpha = [0.9*exp(1j*0.4); 0.6*exp(-1j*1.1); 0.7*exp(1j*2.0)];
+    c3.tau = [1.3; 4.6; 8.2]*gs.bin_tau;  c3.nu = [0.3; -2.4; 3.1]*gs.bin_nu;  c3.eta_bar = eta_pack(c3.alpha, c3.tau, c3.nu);
+    N0 = 1e-2;  rs = crn_stream(95, 0, 1);
+    X3 = gen_symbols(Ns, Ms, '4qam', rs);  X3h = bsc_symbols(X3, 0.1, mdm, rs);
+    Yn = io_cp_ofdm(X3, gs, c3, true) + sqrt(N0/2)*(randn(rs, Ns, Ms) + 1j*randn(rs, Ns, Ms));
+    [e_c, i_c] = mmle_cp(Yn, X3h, gs, 3, true, struct('method', 'lsq'));                        % CLEAN start
+    [e_t, i_t] = mmle_cp(Yn, X3h, gs, 3, true, struct('method', 'lsq', 'eta_init', c3.eta_bar)); % true start
+    e_n = mmle_cp(Yn, X3h, gs, 3, true);                                                         % Nelder-Mead port
+    obj = @(e) norm(Yn(:) - reshape(io_cp_ofdm(X3h, gs, cr_of(e), true), [], 1))^2;
+    r = tc(r, 'MMLE lsq resnorm == ||y - mu(xhat, eta_hat)||^2', abs(i_c.resnorm/obj(e_c) - 1), 1e-10);
+    r = tc(r, 'MMLE lsq (CLEAN start) objective <= nm objective', obj(e_c)/obj(e_n) - 1, 1e-9);
+    r = tc(r, 'MMLE lsq: CLEAN start and true start reach the same optimum', abs(i_c.resnorm/i_t.resnorm - 1), 1e-9);
+    [~, tc_, nc_] = eta_unpack(e_c);  [~, tt_, nt_] = eta_unpack(e_t);
+    r = tc(r, 'MMLE lsq: same paths from both starts [bins]', max([abs(sort(tc_) - sort(tt_))/gs.bin_tau; abs(sort(nc_) - sort(nt_))/gs.bin_nu]), 1e-4);
+    yd = sfft_dd(Yn);  xhd = sfft_dd(X3h);                      % the same data seen as a CP-OTFS frame
+    e_d = mmle_cp(yd, xhd, gs, 3, true, struct('method', 'lsq', 'domain', 'dd'));
+    r = tc(r, 'MMLE lsq domain dd == tf at the ISFFT grids', relerr(e_d, e_c), 1e-8);
+end
+
+function c = cr_of(eta)
+    [a, t, n] = eta_unpack(eta);
+    c = struct('alpha', a, 'tau', t, 'nu', n, 'P', numel(a));
 end

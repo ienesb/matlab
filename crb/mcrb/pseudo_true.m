@@ -20,18 +20,25 @@ function [eta0, info] = pseudo_true(X, Xhat, g, cr_true, use_ici, opts)
 %   mask_nu  auto (true when all cr_true.nu == 0): nu is not estimated, held at nu_bar
 %   p        BSC rate for the closed-form warm start
 %   solver   'lsqnonlin' (Optimization Toolbox) | 'lm' (built-in Levenberg-Marquardt)
+%   target   [] (default: the noise-free true mean mu(X, eta_bar)).  A grid in the
+%            same domain as X / Xhat replaces it: with a noisy observation Y this
+%            is the mismatched ML fit argmin || y - mu_tilde(Xhat, eta) ||^2
+%            started from eta_init (mmle_cp 'lsq'); cr_true then only supplies P
+%            and the default start, and X is not used.
 % info: resnorm, iterations, exitflag, method, seconds.
     % Tolerances are set for a trial-averaged bound: eta0 to ~1e-6 bins is far
     % below the pseudo-true jitter (~1e-2 bins), and the misspecified residual
     % is large, so Gauss-Newton converges linearly and over-tight tolerances only
     % add iterations (old/eva used 1e-10/1e-9/1e-8).
     d = struct('method', 'varpro', 'domain', 'tf', 'eta_init', [], 'mask_nu', [], 'p', [], 'solver', 'auto', ...
-        'ftol', 1e-9, 'steptol', 1e-8, 'opttol', 1e-7, 'maxiter', 200);
+        'ftol', 1e-9, 'steptol', 1e-8, 'opttol', 1e-7, 'maxiter', 200, 'target', []);
     if nargin < 6 || isempty(opts), opts = struct(); end
     fn = fieldnames(d);  for i = 1:numel(fn), if ~isfield(opts, fn{i}), opts.(fn{i}) = d.(fn{i}); end, end
     t0 = tic;
-    if strcmpi(opts.domain, 'dd'), X = isfft_dd(X);  Xhat = isfft_dd(Xhat); end
-    [N, M] = size(X);
+    if strcmpi(opts.domain, 'dd')
+        X = isfft_dd(X);  Xhat = isfft_dd(Xhat);
+        if ~isempty(opts.target), opts.target = isfft_dd(opts.target); end
+    end
     P = numel(cr_true.alpha);
     alpha_bar = cr_true.alpha(:);  tau_bar = cr_true.tau(:);  nu_bar = cr_true.nu(:);
     if isempty(opts.mask_nu), opts.mask_nu = all(nu_bar == 0); end
@@ -46,7 +53,8 @@ function [eta0, info] = pseudo_true(X, Xhat, g, cr_true, use_ici, opts)
         return;
     end
 
-    mu_true = io_cp_ofdm(X, g, cr_true, use_ici);  mu_true = mu_true(:);
+    if isempty(opts.target), mu_true = io_cp_ofdm(X, g, cr_true, use_ici); else, mu_true = opts.target; end
+    mu_true = mu_true(:);
     s_tau = g.bin_tau;  s_nu = g.bin_nu;
 
     if isempty(opts.eta_init)

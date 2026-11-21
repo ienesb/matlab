@@ -8,15 +8,25 @@ function [eta_hat, info] = mmle_cp(Y, Xhat, g, P, use_ici, opts)
 % cancellation) then joint refinement of all (tau, nu) in bin units.
 %   opts: Zpad (4), domain 'tf' | 'dd' (ISFFT first), mask_nu (auto when P
 %   targets are delay-only is NOT inferred -- pass true to search tau only).
+%   opts.method 'nm' (default; the port of old/eva/utils/mmle_OFDM.m: Nelder-Mead
+%   per target and jointly, ~90 s per 512 x 128 frame with P = 3) | 'lsq'
+%   (same objective, since argmax of the projected energy = argmin ||y - C alpha||^2:
+%   periodogram peak + single-target Gauss-Newton per CLEAN step, then the joint
+%   variable-projection least-squares fit of pseudo_true with y as the target;
+%   ~1 pseudo-true solve).  opts.eta_init (4P x 1, 'lsq' only) skips the CLEAN
+%   start, e.g. the true parameter for a locally initialized estimator.
 % Returns eta_hat (4P x 1) in CLEAN (descending strength) order; associate to
 % the true targets by nearest (tau, nu) in bin units before computing an MSE.
+% info ('lsq'): tau0, nu0 (start), exitflag, resnorm, iterations of the joint fit.
 % Ported from old/eva/utils/mmle_OFDM.m.
-    d = struct('Zpad', 4, 'domain', 'tf', 'mask_nu', false);
+    d = struct('Zpad', 4, 'domain', 'tf', 'mask_nu', false, 'method', 'nm', 'eta_init', []);
     if nargin < 6 || isempty(opts), opts = struct(); end
     fn = fieldnames(d);  for i = 1:numel(fn), if ~isfield(opts, fn{i}), opts.(fn{i}) = d.(fn{i}); end, end
     if strcmpi(opts.domain, 'dd'), Y = isfft_dd(Y);  Xhat = isfft_dd(Xhat); end
     [N, M] = size(Y);
     s_tau = g.bin_tau;  s_nu = g.bin_nu;
+    if strcmpi(opts.method, 'lsq'), [eta_hat, info] = mmle_lsq(Y, Xhat, g, P, use_ici, opts);  return; end
+    assert(strcmpi(opts.method, 'nm'), 'mmle_cp:method', 'unknown method %s', opts.method);
     steer = @(tau, nu) reshape(getfield(fields_cp_ofdm(Xhat, g, tau, nu, use_ici, 0), 'Phi'), [], 1);
     tau0 = zeros(P, 1);  nu0 = zeros(P, 1);
     R = Y;
@@ -60,6 +70,37 @@ function [eta_hat, info] = mmle_cp(Y, Xhat, g, P, use_ici, opts)
     alpha_hat = (C'*C) \ (C'*Y(:));
     eta_hat = eta_pack(alpha_hat, tau_hat, nu_hat);
     info = struct('tau0', tau0, 'nu0', nu0);
+end
+
+function [eta_hat, info] = mmle_lsq(Y, Xhat, g, P, use_ici, opts)
+% Gauss-Newton version (Y, Xhat already in TF).  Every fit is pseudo_true's
+% variable-projection solver with the observation (or the CLEAN residual) as target.
+    [N, M] = size(Y);
+    po = struct('domain', 'tf', 'mask_nu', opts.mask_nu);
+    if isempty(opts.eta_init)
+        a0 = zeros(P, 1);  tau0 = zeros(P, 1);  nu0 = zeros(P, 1);
+        R = Y;  Nz = opts.Zpad*N;  Mz = opts.Zpad*M;
+        for p = 1:P
+            Gp = fft(ifft(R .* conj(Xhat), Nz, 1), Mz, 2);
+            if opts.mask_nu, Gp = Gp(:, 1); end
+            [~, idx] = max(abs(Gp(:)).^2);
+            [ia, ib] = ind2sub(size(Gp), idx);
+            a = ia - 1;  if a > Nz/2, a = a - Nz; end
+            b = ib - 1;  if b > Mz/2, b = b - Mz; end
+            c1 = struct('alpha', 1, 'tau', a/opts.Zpad*g.bin_tau, 'nu', b/opts.Zpad*g.bin_nu);
+            po.target = R;
+            e1 = pseudo_true(Xhat, Xhat, g, c1, use_ici, po);
+            [a0(p), tau0(p), nu0(p)] = eta_unpack(e1);
+            Fp = fields_cp_ofdm(Xhat, g, tau0(p), nu0(p), use_ici, 0);
+            R = R - a0(p)*Fp.Phi;
+        end
+    else
+        [a0, tau0, nu0] = eta_unpack(opts.eta_init(:));
+    end
+    po.target = Y;
+    [eta_hat, pinfo] = pseudo_true(Xhat, Xhat, g, struct('alpha', a0, 'tau', tau0, 'nu', nu0), use_ici, po);
+    info = struct('tau0', tau0, 'nu0', nu0, 'exitflag', pinfo.exitflag, 'resnorm', pinfo.resnorm, ...
+        'iterations', pinfo.iterations, 'method', 'lsq');
 end
 
 function v = mf_metric(Y, c)

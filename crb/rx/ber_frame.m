@@ -15,13 +15,14 @@ function out = ber_frame(wf, g, ch, N0, rx, rs)
 %   E_pil = n_nondata * 10^(pilot_boost_dB/10) shared by both waveforms;
 %   explicit: x_p given; none: full data frame, ideal CSI only),
 %   pilot_boost_dB 0, x_p [], guard_extra [] (= l_tau),
+%   ofdm_lattice [] ([dN dM] pins the OFDM pilot spacing; default: pilot_spacing_match),
 %   ofdm_csi 'ce' | 'ideal1tap' | 'idealbanded', ce_mode 'dftdd', n_dd 2, W_ici 8,
 %   otfs_csi 'ce' | 'ideal', thr 3, E 10, tap_tol 0.02, mp_iter 20, mp_damp 0.7,
 %   mp_mode 'edge' | 'posterior', mp_tol 1e-4.
 % out: bits, bits_hat (data cells), nbits, nerr, ber, ser, X, Xhat, masks, cr,
 %      taps (OTFS), H_hat (OFDM), mp_info.
     d = struct('modtype', '4qam', 'data_amp', 1, 'use_ici', true, 'pilot', 'matched', ...
-        'pilot_boost_dB', 0, 'x_p', [], 'guard_extra', [], 'ofdm_csi', 'ce', 'ce_mode', 'dftdd', ...
+        'pilot_boost_dB', 0, 'x_p', [], 'guard_extra', [], 'ofdm_lattice', [], 'ofdm_csi', 'ce', 'ce_mode', 'dftdd', ...
         'n_dd', 2, 'W_ici', 8, 'otfs_csi', 'ce', 'thr', 3, 'E', 10, 'tap_tol', 0.02, ...
         'mp_iter', 20, 'mp_damp', 0.7, 'mp_mode', 'edge', 'mp_tol', 1e-4);
     fn = fieldnames(d);
@@ -53,10 +54,10 @@ function out = ber_frame(wf, g, ch, N0, rx, rs)
             if strcmp(rx.pilot, 'none') || ~strcmp(rx.ofdm_csi, 'ce')
                 X = Xd;  masks.data = true(N, M);  masks.pilot = false(N, M);
                 if ~strcmp(rx.pilot, 'none')    % keep the same overhead for fairness even with ideal CSI
-                    [X, masks] = ofdm_pilot_lattice(Xd, g, ch, n_nondata, E_pil);
+                    [X, masks] = ofdm_pilot_lattice(Xd, g, ch, n_nondata, E_pil, [], rx.ofdm_lattice);
                 end
             else
-                [X, masks] = ofdm_pilot_lattice(Xd, g, ch, n_nondata, E_pil);
+                [X, masks] = ofdm_pilot_lattice(Xd, g, ch, n_nondata, E_pil, [], rx.ofdm_lattice);
             end
             Y = io_cp_ofdm(X, g, cr, rx.use_ici) + Z;
             switch rx.ofdm_csi

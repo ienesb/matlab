@@ -86,6 +86,18 @@ function r = test_rx()
     r = tc(r, 'OFDM pilot energy == OTFS pilot energy',                 abs(mo.n_pilot*a_p^2 - mk.n_nondata)/mk.n_nondata, 1e-12);
     r = tc(r, 'dft CE Nyquist l_tau < N/dN',                            double(~(ch2.l_tau < N2/mo.dN)), 0);
 
+    % ---- pinned OFDM lattice (speed sweep: the search result depends on k_nu)
+    chR = chan_eva(g2, 'reduced', true);  ch60 = chan_eva(g2, 'reduced', true, 'v_kmh', 60);
+    nR = (2*chR.l_tau + 1)*M2;  Xr = gen_symbols(N2, M2, '4qam', crn_stream(82, 0, 1));
+    [dA, mA] = ofdm_pilot_lattice(Xr, g2, chR, nR, nR);
+    [dB, mB] = ofdm_pilot_lattice(Xr, g2, chR, nR, nR, [], [37 2]);
+    r = tc(r, 'EVA-reduced 120 km/h: search gives lattice (37, 2)',     abs(mA.dN - 37) + abs(mA.dM - 2), 0);
+    r = tc(r, 'pinned (37, 2) == searched lattice at 120 km/h',          double(~(isequal(dA, dB) && isequal(mA, mB))), 0);
+    [~, m6] = ofdm_pilot_lattice(Xr, g2, ch60, nR, nR);
+    [~, m6p] = ofdm_pilot_lattice(Xr, g2, ch60, nR, nR, [], [37 2]);
+    r = tc(r, 'EVA-reduced 60 km/h: search gives lattice (4, 19)',       abs(m6.dN - 4) + abs(m6.dM - 19), 0);
+    r = tc(r, 'pinned (37, 2) at 60 km/h: same pilot mask as 120 km/h',  double(~(isequal(m6p.pilot, mA.pilot) && m6p.n_pilot == m6.n_pilot)), 0);
+
     % ---- OFDM CE == legacy ce_ofdm (via mcrb_ce_ici local copy re-implemented here) on a mid grid
     N3 = 128; M3 = 16;  g3 = make_grid(N3, M3, df, 0, 'cp');  ch3 = chan_eva(g3, 'reduced', true);
     rs = crn_stream(80, 0, 1);  cr3 = chan_realize(ch3, g3, rs);

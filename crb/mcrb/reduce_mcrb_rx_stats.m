@@ -36,11 +36,12 @@ function res = reduce_mcrb_rx_stats(res, o)
     for iw = 1:nW, for si = 1:nS
         if ~any(isfinite(T.tr(:,1,si,iw))), continue; end
         vr = valid(:,si,iw); vb = valid_bsc(:,si,iw); vp = valid_pair(:,si,iw);
-        res.drop_frac(si,iw) = 1-mean(vr); res.drop_frac_bsc(si,iw) = 1-mean(vb); res.drop_frac_paired(si,iw) = 1-mean(vp);
+        dn = isfinite(T.nbits(:,si,iw));                 % trials that were run (all of them unless the cell is partly done)
+        res.drop_frac(si,iw) = 1-mean(vr(dn)); res.drop_frac_bsc(si,iw) = 1-mean(vb(dn)); res.drop_frac_paired(si,iw) = 1-mean(vp(dn));
         res.n_valid(si,iw) = nnz(vr); res.n_valid_bsc(si,iw) = nnz(vb); res.n_valid_paired(si,iw) = nnz(vp);
         res.kappa_max(si,iw) = max(T.kappa(:,si,iw));
-        res.ber(si,iw) = sum(T.nerr(:,si,iw))/max(sum(T.nbits(:,si,iw)),1);
-        res.ser(si,iw) = mean(T.ser(:,si,iw));
+        res.ber(si,iw) = sum(T.nerr(dn,si,iw))/max(sum(T.nbits(dn,si,iw)),1);
+        res.ser(si,iw) = mean(T.ser(dn,si,iw));
         for q = 1:nQ
             v = vr; if iscontrol(q), v = vb; end
             fn = strrep(trn{q}, 'tr_', 'rmse_');
