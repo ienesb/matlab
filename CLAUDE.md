@@ -41,6 +41,9 @@ detector option, checkpoints after every chunk and resume; `run/run_phase2_campa
 `results/CKPT_p2_*.mat` (`p2_*.mat` only once a run has all 500 frames; for 60 km/h use the file with the suffix
 `_lat37x2`, made on 2026-11-20 with the OFDM pilot lattice pinned by `'ofdm_lattice', [37 2]`, not the first one; the genie-CSI detector runs of 2026-11-19 have the suffix `_geniecsi`); see `../latex/submission_plan.md` (Phase 2) for the design, the commands and the status.
 All Phase 2 runs are finished (2026-11-20); `../latex/tools/export_phase2.py` turns the nine valid files into the paper's figures, tables and number macros.
+**Estimator supplement (2026-11-26):** `run/run_phase2_mmle.m` reruns only the estimator arms on the frames of a finished Phase 2 run (each regenerated
+frame is checked against the stored true parameter and bit-error count) and writes `results/p2mmle_*.mat`; the two files for 120 and 240 km/h hold the
+estimator at 2, 6, 10 and 24 dB (250 frames, 4.7 h for both), and the exporter reads them together with the campaign files. Log: `results/phase2_mmle.log`.
 Drivers in `crb/run/` take `'tier', 'smoke'|'dev'|'paper'` (or a trial count) and write
 `crb/results/*.mat` + `crb/figures/*.png`; every driver prints its acceptance table (PASS/WARN).
 Parallel Computing Toolbox: drivers use `parfor` (8 workers on the old PC, 4 here). Optimization Toolbox: `lsqnonlin`
